@@ -1,0 +1,60 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Ant.js</title>
+  <!--[if lt IE 9]>
+  <script type="text/javascript" src="../third-part/es5-shim.js"></script>
+  <![endif]-->
+  <script type="text/javascript" src="../ant.js"></script>
+</head>
+<body>
+	<div id=template>
+    <form name=form0 action="test" method=get>
+    	<label>文本框: <input {{abc}} type="text" z-model=text /> </label>
+    	<label>密码框: <input type="password" z-model=password /> </label>
+    	<label>复选框: <input type="checkbox" name=cb z-model=checkbox /></label>
+    	<label>单选框: </label>
+      <label>red: <input type="radio" z-model=radio value=red name=rd /></label>
+    	<label>blue: <input type="radio" checked z-model=radio value=blue name=rd /></label>
+    	<label>green: <input type="radio" z-model=radio value=green name=rd /></label>
+      <label>文本域: <textarea name=ta z-model=textarea>&lth1&gtunescape&lt/h1&gt</textarea></label>
+      <label>下拉列表1: <select z-model=select1>
+      		<option value="ant">ant</option>
+      		<option selected value="bear">bear</option>
+        </select></label>
+      <label>下拉列表2: <select name=select2 multiple z-model=select2>
+      		<option value="ant">ant</option>
+      		<option value="bee">bee</option>
+      		<option value="cicada">cicada</option>
+      		<option value="dragonfly">dragonfly</option>
+        </select></label>
+      <label>下拉列表3: <select name=select3 z-model=select3>
+      		<option z-repeat=select2 value="{{.}}">{{.}}</option>
+        </select></label>
+      <ul>
+      	<li>文本框的值是: {{text}}</li>
+      	<li>密码框的值是: {{password}}</li>
+      	<li>复选框的值是: {{checkbox}}</li>
+      	<li>单选框的值是: <span z-style="color:{{radio}}">{{radio}}</span></li>
+      	<li>文本域的值是: <pre>{{{textarea}}}</pre></li>
+      	<li>下拉框1的值是: {{select1}}</li>
+      	<li>下拉框2的值是: {{select2}}</li>
+      	<li z-if=select3>下拉框3的值是: {{select3}}</li>
+      </ul>
+      {{> partial}}
+    </form>
+  </div>
+<script type="text/javascript">
+document.body.onload = function(){
+  var ant = new Ant(document.getElementById('template'), {
+    data: {test:2, select2: ['cicada', 'bee']}
+  , partials: {
+      partial: '<em>{{text}}</em>'
+    }
+  });
+  ;
+};
+</script>
+</body>
+</html>
