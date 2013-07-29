@@ -666,7 +666,7 @@ setPrefix('a-');
           childVM = vm.$$getChild(path);
           if(childVM.$$generators && childVM.$$generators.length){
             for(var i = 0, l = childVM.$$generators.length; i < l; i++) {
-              if(childVM.$$generators[i].state === 0 || renderType !== RENDER_TYPE.PART){
+              if(childVM.$$generators[i].type == Generator.TYPE_IF || childVM.$$generators[i].state === 0 || renderType !== RENDER_TYPE.PART){
                 childVM.$$generators[i].generate(data, path);
               }
             }
