@@ -2,9 +2,8 @@
 (function(window, Ant) {
   if(typeof define === 'function'){
     define(Ant);
-  }else{
-    window.Ant = Ant();
   }
+  window.Ant = Ant();
 })(this, function() {
 'use strict';
 
@@ -77,14 +76,26 @@ var Event = {
   }
 };
 
-//将多个对象的属性并入一个对象中
+//将多个对象的属性深度并入一个对象中
 function extend(obj) {
-  var length = arguments.length, opt;
+  var length = arguments.length, opts, src, copy, clone;
   obj = obj || {};
   for(var i = 1; i < length; i++) {
-    if((opt = arguments[i]) != null) {
-      for(var key in opt) {
-        obj[key] = opt[key];
+    if((opts = arguments[i]) != null) {
+      for(var key in opts) {
+        src = obj[key];
+        copy = opts[key];
+        if(obj === copy){ continue; }
+        if(isObject(copy)){
+          if(Array.isArray(copy)){
+            clone = src && Array.isArray(src) ? src : [];
+          }else{
+            clone = src || {};
+          }
+          obj[key] = extend(clone, copy);
+        }else{
+          obj[key] = copy;
+        }
       }
     }
   }
@@ -113,13 +124,18 @@ var Class = {
   }
 };
 
+var RENDER_TYPE = {
+      RENDER: 0
+    , RESET: 1
+    , PART: 2
+    , PART_ARRAY_REPLACE: 3
+    };
 
 //# 视图模板
 
 //用法示例
 // ----
 //
-// **模板部分**
 //
 // ```html
 // <div id="ant">
@@ -154,7 +170,6 @@ var Class = {
    * @param {String | Object} tpl 模板应该是合法而且标准的 HTML 标签字符串或者直接是现有 DOM 树中的一个 element 对象.
    * @param {Object} [opts]
    * @param {Object} opts.data 渲染模板的数据. 该项如果为空, 稍后可以用 `tpl.render(model)` 来渲染生成 html.
-   * @param {String} opts.tagName 当传入的模板是 HTML 字符串时, 包裹模板的标签类型
    * @param {Boolean} opts.lazy 是否对 'input' 及 'textarea' 监听 `change` 事件, 而不是 `input` 事件
    * @param {Object} opts.events 
    * @constructor
@@ -199,11 +214,10 @@ var Class = {
     /**
      * ### ant.isRendered
      * 该模板是否已经绑定数据
-     * @type {Boolean} 在 `render` 或者 `update` 绑定数据后, 该属性将为 `true`
+     * @type {Boolean} 在 `render` 或者 `reset` 绑定数据后, 该属性将为 `true`
      */
     this.isRendered = false;
     
-    this.vm = opts.viewModel;
     this.addBinding = addBinding;
     
     if(typeof opts.addBinding === 'function'){
@@ -227,12 +241,16 @@ var Class = {
       this.on(event, events[event]);
     }
     
-    this.set(data);
-    if(opts.data){ this.render(); }
+    if(opts.data){
+      checkObj(data, this);
+      this.render();
+    }
     this.init.apply(this, arguments);
   }
   
-  extend(Ant, Class);
+  extend(Ant, Class, {
+    RENDER_TYPE: RENDER_TYPE
+  });
   
   //方法
   //----
@@ -242,8 +260,18 @@ var Class = {
      * 更新模板. 
      * @param {Object} data 要更新的数据. 增量数据或全新的数据.
      */
-    update: function(data) {
-      callRender(this, data || this.data, data ? 'part' : 'all');
+    update: function(keyPath, data, type) {
+      var src;
+      if(isObject(keyPath)){
+        type = data;
+        data = keyPath;
+      }else if(typeof keyPath === 'string'){
+        data = typeof data === 'undefined' ? deepSet(keyPath, src = this.get(keyPath), {}) : data;
+        type = Array.isArray(src) ? RENDER_TYPE.PART_ARRAY_REPLACE : RENDER_TYPE.PART;
+      }
+      
+      if(typeof type === 'undefined'){ type = RENDER_TYPE.PART; }
+      callRender(this, data || this.data, type);
       this.trigger('update', data);
     }
     /**
@@ -251,8 +279,16 @@ var Class = {
      * 渲染模板
      */
   , render: function(data) {
-      callRender(this, data || this.data);
+      callRender(this, data || this.data, RENDER_TYPE.RENDER);
       this.trigger('render');
+    }
+    /**
+     * ### ant.rest
+     * 用新的数据重新渲染
+     */
+  , reset: function(data) {
+      this.set(data, {reset: true});
+      this.trigger('reset');
     }
     /**
      * ### ant.clone
@@ -269,7 +305,7 @@ var Class = {
     }
     
   , set: function(key, val, opt) {
-      var attrs = {}, changed, old;
+      var attrs = {}, changed, old, type;
       
       if(!key){ return this; }
       
@@ -282,6 +318,7 @@ var Class = {
             this.data[attr] = attrs[attr];
             if(!opt.silence){
               changed = true;
+              type = opt.reset ? RENDER_TYPE.RESET : RENDER_TYPE.PART;
             }
           }
         }
@@ -292,12 +329,15 @@ var Class = {
         if(!opt.silence && old !== val) {
           extend(this.data, attrs);
           changed = true;
+          type = Array.isArray(old) ? RENDER_TYPE.PART_ARRAY_REPLACE : RENDER_TYPE.PART;
         }
       }
       
      checkObj(attrs, this);
       
-      if(changed){ this.update(attrs, opt); }
+      if(changed){
+        this.update(attrs, type);
+      }
     }
   , parse: function(data) {
       return data;
@@ -332,25 +372,25 @@ var Class = {
   //TODO
   var arrayMethods = {
     splice: afterFn([].splice, function() {
-      this.__view__.update();
+      this.__ant__.update(null, null, 3);
     })
   , push: afterFn([].push, function() {
-      this.__view__.update();
+      this.__ant__.update(null, null, 3);
     })
   , pop: afterFn([].pop, function() {
-      this.__view__.update();
+      this.__ant__.update(null, null, 3);
     })
   , sort: afterFn([].sort, function() {
-      this.__view__.update();
+      this.__ant__.update(null, null, 3);
     })
   , reverse: afterFn([].reverse, function(){
-      this.__view__.update();
+      this.__ant__.update(null, null, 3);
     })
   , unshift: afterFn([].unshift, function() {
-      this.__view__.update();
+      this.__ant__.update(null, null, 3);
     })
   , shift: afterFn([].shift, function() {
-      this.__view__.update();
+      this.__ant__.update(null, null, 3);
     })
   };
   
@@ -368,15 +408,17 @@ var Class = {
   
   function callRender(ant, data, renderType) {
     ant.vm.$$render(data, renderType);
-    if(renderType !== 'part'){
+    if(renderType <= 1){
+    //`render, reset` 时
       ant.isRendered = true;
     }
   }
   
   function buildViewModel(ant) {
-    var vm = ant.vm = ant.vm || new ViewModel();
+    var vm = new ViewModel();
     vm.$$root = vm;
     vm.$$ant = ant;
+    ant.vm = vm;
     travelEl(ant.el, vm);
   }
     
@@ -439,15 +481,16 @@ var Class = {
   //双向绑定
   function view2Model(el, key, vm) {
     var ant = vm.$$root.$$ant
+      , cur = vm.$$getChild(key)
       , ev = 'change'
       , attr, value = attr = 'value'
-      , isSetDefaut = typeof ant.get(key) === 'undefined'//界面的初始值不会覆盖 model 的初始值
+      , isSetDefaut = typeof ant.get(cur.$$keyPath) === 'undefined'//界面的初始值不会覆盖 model 的初始值
       , watcher = function(vm, path) {
           var newVal = vm.$$getData(path) || '';
           if(newVal !== el[attr]){ el[attr] = newVal; }
         }
       , handler = function() {
-          ant.set(key, el[value]);
+          ant.set(cur.$$keyPath, el[value]);
         }
       ;
     
@@ -485,7 +528,7 @@ var Class = {
             for(var i = 0, l = el.options.length; i < l; i++){
               if(el.options[i].selected){ vals.push(el.options[i].value) }
             }
-            ant.set(key, vals);
+            ant.set(cur.$$keyPath, vals);
           };
           watcher = function(vm, path){
             var vals = vm.$$getData(path);
@@ -498,7 +541,7 @@ var Class = {
       break;
     }
     
-    ant.vm.$$getChild(key).$$watchers.push(watcher);
+    cur.$$watchers.push(watcher);
     
     ev.split(/\s+/g).forEach(function(e){
       detachEvent(el, e, handler);
@@ -513,6 +556,7 @@ var Class = {
   
   //根据模板站位标签生成
   function ViewModel() {
+    this.$$keyPath = '';
     this.$$watchers = [];
   }
   
@@ -524,6 +568,7 @@ var Class = {
   , $$generators: null
   , $$ant: null
   , $$data: null
+  , $$keyPath: null
     
     //用节点中的模板占位符来更新 vm
   , $$updateVM: function(node, el) {
@@ -533,7 +578,7 @@ var Class = {
     }
   
   //获取当前 vm 的 path 上的子 vm, 不存在的话将新建一个.
-  , $$getChild: function(path, isGenerator) {
+  , $$getChild: function(path) {
       var key, vm
         , cur = this
         , keyChain
@@ -547,15 +592,11 @@ var Class = {
           vm = new ViewModel();
           vm.$$parent = cur;
           vm.$$root = cur.$$root || cur;
+          vm.$$keyPath = cur.$$keyPath + (cur.$$keyPath && '.') + key;
           cur[key] = vm;
         }
         
         cur = cur[key];
-      }
-      
-      if(isGenerator) {
-        //generator 子节点的 root 是其自身
-        cur.$$root = cur;
       }
       return cur;
     }
@@ -578,16 +619,20 @@ var Class = {
     }
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
-  , $$getData: function(key) {
-      for(var vm = this; vm; vm = vm.$$parent){
-        if(vm.$$data && typeof vm.$$data[key] !== 'undefined'){
-          return vm.$$data[key];
+  , $$getData: function(key, isStrict) {
+      if(isStrict){
+        return this.$$data[key];
+      }else{
+        for(var vm = this; vm; vm = vm.$$parent){
+          if(vm.$$data && typeof vm.$$data[key] !== 'undefined'){
+            return vm.$$data[key];
+          }
         }
       }
     }
   , $$render: function (data, renderType) {
       var vm = this
-        , map = renderType === 'part' ? data : this
+        , map = renderType >= RENDER_TYPE.PART ? data : this
         , childVM
         ;
         
@@ -602,7 +647,7 @@ var Class = {
           childVM = vm.$$getChild(path);
           if(childVM.$$generators && childVM.$$generators.length){
             for(var i = 0, l = childVM.$$generators.length; i < l; i++) {
-              if(childVM.$$generators[i].state === 0 || renderType){
+              if(childVM.$$generators[i].state === 0 || renderType !== RENDER_TYPE.PART){
                 childVM.$$generators[i].generate(data, path);
               }
             }
@@ -670,6 +715,11 @@ var Class = {
     
     if(text.length > start){
       textMap.push(text.slice(start, text.length));
+    }
+    
+    //TODO 将文本节点分割是最完美的方案
+    if(type === 'text' && textMap.length > 1){
+      
     }
     
     return {
@@ -812,7 +862,6 @@ var Class = {
     
     this.el = el;
     this.vm = vm;
-    this.ant = vm.$$root.$$ant;
     this.type = type;
     
     this.relateEl = relateEl;
@@ -848,11 +897,12 @@ var Class = {
         that.empty();
         data && data.forEach(function(data, i) {
           var el = that.el.cloneNode(true)
-            , vm = that.vm.$$getChild(i + '', true)
+            , vm = that.vm.$$getChild(i + '')
             ;
             
           frag.appendChild(el);
-          vm.$$ant = new Ant(el, extend(that.ant.options, {data: data, viewModel: vm}));
+          travelEl(el, vm);
+          vm.$$render(data);
           
           that.instances.push(el);
         });
@@ -914,7 +964,7 @@ var Class = {
   function afterFn(oriFn, fn, breakCheck) {
     return function() {
       var ret = oriFn.apply(this, arguments);
-      if(breakCheck && breakCheck.call(ret)){
+      if(breakCheck && breakCheck.call(this, ret)){
         return ret;
       }
       fn.apply(this, arguments);
