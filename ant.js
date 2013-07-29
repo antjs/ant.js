@@ -130,6 +130,19 @@ var RENDER_TYPE = {
     , PART: 2
     , PART_ARRAY_REPLACE: 3
     };
+    
+var prefix, IF, REPEAT, MODEL;
+
+function setPrefix(newPrefix) {
+  if(newPrefix){
+    prefix = newPrefix;
+    IF = prefix + 'if';
+    REPEAT = prefix + 'repeat';
+    MODEL = prefix + 'model';
+  }
+}
+
+setPrefix('a-');
 
 //# 视图模板
 
@@ -250,6 +263,7 @@ var RENDER_TYPE = {
   
   extend(Ant, Class, {
     RENDER_TYPE: RENDER_TYPE
+  , setPrefix: setPrefix
   });
   
   //方法
@@ -470,14 +484,6 @@ var RENDER_TYPE = {
     
   }
   
-  var prefix = 'z-'
-    , prefixReg = /^z-/
-    
-    , IF = prefix + 'if'
-    , REPEAT = prefix + 'repeat'
-    , MODEL = prefix + 'model'
-    ;
-  
   //双向绑定
   function view2Model(el, key, vm) {
     var ant = vm.$$root.$$ant
@@ -500,9 +506,11 @@ var RENDER_TYPE = {
         switch(el.type) {
           case 'checkbox':
             value = attr = 'checked';
+            if(el.attachEvent) { ev += ' propertychange'; }
           break;
           case 'radio':
             attr = 'checked';
+            if(el.attachEvent) { ev += ' propertychange'; }
             watcher = function(vm, path) {
               el.checked = el.value === vm.$$getData(path);
             };
@@ -554,7 +562,7 @@ var RENDER_TYPE = {
     if(el[value] && isSetDefaut){ handler(); }
   }
   
-  //根据模板站位标签生成
+  
   function ViewModel() {
     this.$$keyPath = '';
     this.$$watchers = [];
@@ -604,12 +612,23 @@ var RENDER_TYPE = {
   , $$addWatcher: function(node, el) {
       var tokenMap = parseTokens(node, el)
         , tokens = tokenMap.tokens
+        , textMap = tokenMap.textMap
         , that = this
         ;
       
-      tokens.forEach(function(token){
-        addBinding(tokenMap, that, token);
-      });
+       //分割文本节点
+      if(tokenMap.type === 'text' && textMap.length > 1){
+        textMap.forEach(function(text, i) {
+          var tn = document.createTextNode(text);
+          el.insertBefore(tn, node);
+          that.$$updateVM(tn, el);
+        });
+        el.removeChild(node);
+      }else{
+        tokens.forEach(function(token){
+          addBinding(tokenMap, that, token);
+        });
+      }
     }
   , $$addGenerator: function(el, relativeScope, type) {
       this.$$generators = this.$$generators || [];
@@ -677,7 +696,7 @@ var RENDER_TYPE = {
       , textMap = []
       , start = 0
       , text = node.nodeValue
-      , nodeName
+      , nodeName, index
       ;
     
     if(node.nodeType === 3){//文本节点
@@ -685,8 +704,8 @@ var RENDER_TYPE = {
     }else if(node.nodeType === 2){//属性节点
       type = 'attr';
       nodeName = node.nodeName;
-      if(prefixReg.test(nodeName)){
-        nodeName = node.nodeName.replace(prefixReg, '');
+      if((index = nodeName.indexOf(prefix)) === 0){
+        nodeName = node.nodeName.slice(prefix.length);
       }
     }else{
       console.error('我们需要一个文本节点或者属性节点');
@@ -715,11 +734,6 @@ var RENDER_TYPE = {
     
     if(text.length > start){
       textMap.push(text.slice(start, text.length));
-    }
-    
-    //TODO 将文本节点分割是最完美的方案
-    if(type === 'text' && textMap.length > 1){
-      
     }
     
     return {
