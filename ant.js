@@ -289,13 +289,13 @@ setPrefix('a-');
         type = data;
         data = keyPath;
       }else if(typeof keyPath === 'string'){
-        if(typeof data === 'undefined'){
+        if(isUndefined(data)){
           data =  deepSet(keyPath, val = this.get(keyPath), {});
           type = Array.isArray(val) ? RENDER_TYPE.ARRAY_REPLACE : RENDER_TYPE.EXTEND;
         }
       }
       
-      if(typeof type === 'undefined'){ type = RENDER_TYPE.EXTEND; }
+      if(isUndefined(type)){ type = RENDER_TYPE.EXTEND; }
       callRender(this, data || this.data, type);
       this.trigger('update', data);
     }
@@ -358,7 +358,7 @@ setPrefix('a-');
         if(!opt.silence && old !== val) {
           extend(this.data, attrs);
           changed = true;
-          if(typeof opt.type === 'undefined'){
+          if(isUndefined(opt.type)){
             type = Array.isArray(old) ? RENDER_TYPE.ARRAY_REPLACE : RENDER_TYPE.EXTEND;
           }else{
             type = opts.type;
@@ -516,7 +516,7 @@ setPrefix('a-');
       , cur = vm.$$getChild(key)
       , ev = 'change'
       , attr, value = attr = 'value'
-      , isSetDefaut = typeof ant.get(cur.$$keyPath) === 'undefined'//界面的初始值不会覆盖 model 的初始值
+      , isSetDefaut = isUndefined(ant.get(cur.$$keyPath))//界面的初始值不会覆盖 model 的初始值
       , watcher = function(vm, path) {
           var newVal = vm.$$getData(path) || '';
           if(newVal !== el[attr]){ el[attr] = newVal; }
@@ -670,7 +670,7 @@ setPrefix('a-');
         return this.$$data[key];
       }else{
         for(var vm = this; vm; vm = vm.$$parent){
-          if(vm.$$data && typeof vm.$$data[key] !== 'undefined'){
+          if(vm.$$data && !isUndefined(vm.$$data[key])){
             return vm.$$data[key];
           }
         }
@@ -704,7 +704,7 @@ setPrefix('a-');
             }
           }
           
-          typeof data[path] !== 'undefined' && childVM.$$render(data[path], renderType);
+          (!isUndefined(data[path])) && childVM.$$render(data[path], renderType);
         }
       }
     }
@@ -987,6 +987,10 @@ setPrefix('a-');
 
   function isObject(val) {
     return typeof val === 'object' && val !== null;
+  }
+  
+  function isUndefined(val) {
+    return typeof val === 'undefined';
   }
 
 
