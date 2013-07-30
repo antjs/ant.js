@@ -1,3 +1,15 @@
+/***
+ *          .o.                       .           o8o          
+ *         .888.                    .o8           `"'          
+ *        .8"888.     ooo. .oo.   .o888oo        oooo  .oooo.o 
+ *       .8' `888.    `888P"Y88b    888          `888 d88(  "8 
+ *      .88ooo8888.    888   888    888           888 `"Y88b.  
+ *     .8'     `888.   888   888    888 . .o.     888 o.  )88b 
+ *    o88o     o8888o o888o o888o   "888" Y8P     888 8""888P' 
+ *                                                888          
+ *                                            .o. 88P          
+ *                                            `Y888P           
+ */               
 
 (function(window, Ant) {
   if(typeof define === 'function'){
@@ -7,10 +19,7 @@
 })(this, function() {
 'use strict';
 
-//基础对象
-//----
-
-//### 自定义事件原型对象
+//自定义事件原型对象
 //所有需要自定义事件的对象都可以 extend 该对象: `extend(obj, Event)`
 var Event = {
   /**
@@ -127,8 +136,8 @@ var Class = {
 var RENDER_TYPE = {
       RENDER: 0
     , RESET: 1
-    , PART: 2
-    , PART_ARRAY_REPLACE: 3
+    , EXTEND: 2
+    , ARRAY_REPLACE: 3
     };
     
 var prefix, IF, REPEAT, MODEL;
@@ -198,7 +207,7 @@ setPrefix('a-');
     tpl = el.tpl;
     el = el.el;
     
-    if(opts.parse !== false) { data = this.parse(data, opts); }
+    data = this.parse(data, opts);
         
     //属性
     //----
@@ -275,16 +284,18 @@ setPrefix('a-');
      * @param {Object} data 要更新的数据. 增量数据或全新的数据.
      */
     update: function(keyPath, data, type) {
-      var src;
+      var val;
       if(isObject(keyPath)){
         type = data;
         data = keyPath;
       }else if(typeof keyPath === 'string'){
-        data = typeof data === 'undefined' ? deepSet(keyPath, src = this.get(keyPath), {}) : data;
-        type = Array.isArray(src) ? RENDER_TYPE.PART_ARRAY_REPLACE : RENDER_TYPE.PART;
+        if(typeof data === 'undefined'){
+          data =  deepSet(keyPath, val = this.get(keyPath), {});
+          type = Array.isArray(val) ? RENDER_TYPE.ARRAY_REPLACE : RENDER_TYPE.EXTEND;
+        }
       }
       
-      if(typeof type === 'undefined'){ type = RENDER_TYPE.PART; }
+      if(typeof type === 'undefined'){ type = RENDER_TYPE.EXTEND; }
       callRender(this, data || this.data, type);
       this.trigger('update', data);
     }
@@ -301,7 +312,7 @@ setPrefix('a-');
      * 用新的数据重新渲染
      */
   , reset: function(data) {
-      this.set(data, {reset: true});
+      this.set(data, {type: RENDER_TYPE.RESET});
       this.trigger('reset');
     }
     /**
@@ -311,7 +322,7 @@ setPrefix('a-');
      * @return {TemplateObject} 一个新 `Ant` 实例
      */
   , clone: function(opts) {
-      return new this.constructor(this.el.cloneNode(true), extend(this.options, opts));
+      return new this.constructor(this.tpl, extend(this.options, opts));
     }
     
   , get: function(key) {
@@ -324,35 +335,50 @@ setPrefix('a-');
       if(!key){ return this; }
       
       if(isObject(key)){
-        attrs = key;
         opt = val;
         opt = opt || {};
+        attrs = this.parse(key, opt);
+        key = '';
+        //TODO 深度设置
         for(var attr in attrs){
           if(this.data[attr] !== attrs[attr]){
             this.data[attr] = attrs[attr];
             if(!opt.silence){
               changed = true;
-              type = opt.reset ? RENDER_TYPE.RESET : RENDER_TYPE.PART;
+              type = opt.type;
             }
           }
         }
       }else{
-        old = deepGet(key, this.data);
         opt = opt || {};
+        old = deepGet(key, this.data);
         deepSet(key, val, attrs);
+        val = deepGet(key, attrs);
+        attrs = this.parse(attrs, opt);
         if(!opt.silence && old !== val) {
           extend(this.data, attrs);
           changed = true;
-          type = Array.isArray(old) ? RENDER_TYPE.PART_ARRAY_REPLACE : RENDER_TYPE.PART;
+          if(typeof opt.type === 'undefined'){
+            type = Array.isArray(old) ? RENDER_TYPE.ARRAY_REPLACE : RENDER_TYPE.EXTEND;
+          }else{
+            type = opts.type;
+          }
         }
       }
       
-     checkObj(attrs, this);
+      checkObj(attrs, this);
       
       if(changed){
         this.update(attrs, type);
       }
     }
+  , _virtual: function(keypath, getter, setter){
+    }
+    /**
+     * 数据预处理.
+     * @param {Object} data
+     * @return {Object}
+     */
   , parse: function(data) {
       return data;
     }
@@ -506,11 +532,12 @@ setPrefix('a-');
         switch(el.type) {
           case 'checkbox':
             value = attr = 'checked';
-            if(el.attachEvent) { ev += ' propertychange'; }
+            //IE6, IE7 下监听 propertychange 会挂?
+            if(el.attachEvent) { ev += ' click'; }
           break;
           case 'radio':
             attr = 'checked';
-            if(el.attachEvent) { ev += ' propertychange'; }
+            if(el.attachEvent) { ev += ' click'; }
             watcher = function(vm, path) {
               el.checked = el.value === vm.$$getData(path);
             };
@@ -618,7 +645,7 @@ setPrefix('a-');
       
        //分割文本节点
       if(tokenMap.type === 'text' && textMap.length > 1){
-        textMap.forEach(function(text, i) {
+        textMap.forEach(function(text) {
           var tn = document.createTextNode(text);
           el.insertBefore(tn, node);
           that.$$updateVM(tn, el);
@@ -651,14 +678,14 @@ setPrefix('a-');
     }
   , $$render: function (data, renderType) {
       var vm = this
-        , map = renderType >= RENDER_TYPE.PART ? data : this
         , childVM
         ;
-        
+      
       vm.$$data = data;
         
-      for(var path in map) {
-        if(!vm.hasOwnProperty(path) || (path in ViewModel.prototype)){
+      for(var path in vm) {
+        if(!vm.hasOwnProperty(path) || (path in ViewModel.prototype) || 
+          (renderType >= RENDER_TYPE.EXTEND && isObject(data) && !(path in data))){
         //传入的数据键值不能和 vm 中的自带属性名相同.
         //所以不推荐使用 '$$' 作为 JSON 数据键值的开头.
           continue;
@@ -666,7 +693,7 @@ setPrefix('a-');
           childVM = vm.$$getChild(path);
           if(childVM.$$generators && childVM.$$generators.length){
             for(var i = 0, l = childVM.$$generators.length; i < l; i++) {
-              if(childVM.$$generators[i].type == Generator.TYPE_IF || childVM.$$generators[i].state === 0 || renderType !== RENDER_TYPE.PART){
+              if(childVM.$$generators[i].type == Generator.TYPE_IF || childVM.$$generators[i].state === 0 || renderType !== RENDER_TYPE.EXTEND){
                 childVM.$$generators[i].generate(data, path);
               }
             }
@@ -677,7 +704,7 @@ setPrefix('a-');
             }
           }
           
-          childVM.$$render(data[path], renderType);
+          typeof data[path] !== 'undefined' && childVM.$$render(data[path], renderType);
         }
       }
     }
@@ -774,15 +801,15 @@ setPrefix('a-');
     }
   });
   
-  //局部模板. {{> childview}}
+  //局部模板. {{> anotherant}}
   var pertialReg = /^>\s*(?=.+)/
   addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
-    var pertial, ant, el;
+    var pName, pertial, ant, el;
     if(tokenMap.type === 'text' && pertialReg.test(token.path)){
-      pertial = token.path.replace(pertialReg, '');
+      pName = token.path.replace(pertialReg, '');
       ant = vm.$$root.$$ant;
-      if(ant.partials[pertial]) {
-        el = tplParse(ant.partials[pertial]).el;
+      if(pertial = ant.partials[pName]) {
+        el = pertial instanceof Ant ? pertial.el : tplParse(pertial).el;
         travelEl(el, vm);
         tokenMap.node.parentNode.insertBefore(el, tokenMap.node);
       }
@@ -992,8 +1019,8 @@ setPrefix('a-');
       return ret === false; 
     })
   }
-  var keyPathReg = /(?:\]\.?|\]?\[\]?|\.)/g
-    , bra = /\]$/
+  var keyPathReg = /(?:\.|\[)/g
+    , bra = /\]/g
     ;
   function deepSet(keyStr, value, obj) {
     var chain = keyStr.replace(bra, '').split(keyPathReg)
