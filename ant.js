@@ -94,7 +94,7 @@ function extend(obj) {
       for(var key in opts) {
         src = obj[key];
         copy = opts[key];
-        if(obj === copy){ continue; }
+        if(obj === copy || key === '__ant__'){ continue; }
         if(isObject(copy)){
           if(Array.isArray(copy)){
             clone = src && Array.isArray(src) ? src : [];
@@ -273,6 +273,7 @@ setPrefix('a-');
   extend(Ant, Class, {
     RENDER_TYPE: RENDER_TYPE
   , setPrefix: setPrefix
+  , Event: Event
   });
   
   //方法
@@ -704,7 +705,9 @@ setPrefix('a-');
             }
           }
           
-          (!isUndefined(data[path])) && childVM.$$render(data[path], renderType);
+          if(!isUndefined(data[path]) || renderType < RENDER_TYPE.EXTEND){
+            childVM.$$render(isUndefined(data[path]) ? {} : data[path], renderType);
+          }
         }
       }
     }
