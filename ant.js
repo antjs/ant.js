@@ -90,7 +90,7 @@ function extend(obj) {
   var length = arguments.length, opts, src, copy, clone;
   obj = obj || {};
   for(var i = 1; i < length; i++) {
-    if((opts = arguments[i]) != null) {
+    if((opts = arguments[i]) !== null) {
       for(var key in opts) {
         src = obj[key];
         copy = opts[key];
@@ -480,14 +480,12 @@ setPrefix('a-');
     if(r){
       vm.$$getChild(r).$$addGenerator(el, vm.$$getChild(r), Generator.TYPE_REPEAT);
       flag = true;
-    }else{
-      if(i){
-        vm.$$getChild(i).$$addGenerator(el, vm.$$getChild(i), Generator.TYPE_IF);
-        flag = true;
-      }
-      if(m){
-        view2Model(el, m, vm);
-      }
+    }else if(i){
+      i = i.replace(invertedReg, '');
+      vm.$$getChild(i).$$addGenerator(el, vm.$$getChild(i), Generator.TYPE_IF);
+      flag = true;
+    }else if(m){
+      view2Model(el, m, vm);
     }
     
     if(!flag){
@@ -518,12 +516,19 @@ setPrefix('a-');
       , ev = 'change'
       , attr, value = attr = 'value'
       , isSetDefaut = isUndefined(ant.get(cur.$$keyPath))//界面的初始值不会覆盖 model 的初始值
+      , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
       , watcher = function(vm, path) {
-          var newVal = vm.$$getData(path) || '';
-          if(newVal !== el[attr]){ el[attr] = newVal; }
+          var newVal = vm.$$getData(path) || ''
+            , val = el[attr]
+            ;
+          val.replace && (val = val.replace(crlf, '\n'));
+          if(newVal !== val){ el[attr] = newVal; }
         }
       , handler = function() {
-          ant.set(cur.$$keyPath, el[value]);
+          var val = el[value];
+          
+          val.replace && (val = val.replace(crlf, '\n'));
+          ant.set(cur.$$keyPath, val);
         }
       ;
     
@@ -786,6 +791,8 @@ setPrefix('a-');
     });
   }
   
+  var invertedReg = /^\^/;
+  
   //{{data: str}}
   addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
     var tokenStr = token.path
@@ -796,8 +803,9 @@ setPrefix('a-');
       var path = pair[0].trim()
         , value = pair[1].trim()
         ;
-      vm.$$getChild(path).$$watchers.push(function(_vm, _path) {
-        var newVal = _vm.$$getData(_path) ? value : '';
+      vm.$$getChild(path.replace(invertedReg, '')).$$watchers.push(function(_vm, _path) {
+        var val = _vm.$$getData(_path);
+        var newVal = (invertedReg.test(path) ? !val : val) ? value : '';
         updateDom(newVal, token, tokenMap);
       });
       return false;
@@ -898,6 +906,8 @@ setPrefix('a-');
       }
     }
     
+    this.path = el.getAttribute(attr);
+    
     el.removeAttribute(attr);
     
     if(attr === IF){
@@ -951,6 +961,7 @@ setPrefix('a-');
           that.instances.push(el);
         });
       }else{
+        if(invertedReg.test(this.path)){ data = !data; }
         if(data) {
           if(!that.lastIfState) {
             frag.appendChild(that.el);
@@ -1002,7 +1013,7 @@ setPrefix('a-');
   function beforeFn(oriFn, fn, breakCheck) {
     return function() {
       var ret = fn.apply(this, arguments);
-      if(breakCheck && breakCheck.call(ret)){
+      if(breakCheck && breakCheck.call(this, ret)){
         return ret;
       }
       return oriFn.apply(this, arguments);
