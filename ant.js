@@ -478,11 +478,11 @@ setPrefix('a-');
     
   
     if(r){
-      vm.$$getChild(r).$$addGenerator(el, vm.$$getChild(r), Generator.TYPE_REPEAT);
+      vm.$$getChild(r).$$addGenerator(el, vm, Generator.TYPE_REPEAT);
       flag = true;
     }else if(i){
       i = i.replace(invertedReg, '');
-      vm.$$getChild(i).$$addGenerator(el, vm.$$getChild(i), Generator.TYPE_IF);
+      vm.$$getChild(i).$$addGenerator(el, vm, Generator.TYPE_IF);
       flag = true;
     }else if(m){
       view2Model(el, m, vm);
@@ -665,7 +665,7 @@ setPrefix('a-');
     }
   , $$addGenerator: function(el, relativeScope, type) {
       this.$$generators = this.$$generators || [];
-      var generator = new Generator(el, relativeScope, type);
+      var generator = new Generator(el, this, relativeScope, type);
       this.$$generators.push(generator);
       return generator;
     }
@@ -883,7 +883,7 @@ setPrefix('a-');
   }
   
   //处理动态节点(z-repeat, z-if)
-  function Generator(el, vm, type){
+  function Generator(el, vm, relativeVm, type){
     //文档参照节点. 延迟节点在插入 DOM 的时候需要一个参照点, 是其后面相邻的节点或者父节点
     var relateEl = el
       , relateType
@@ -911,7 +911,7 @@ setPrefix('a-');
     el.removeAttribute(attr);
     
     if(attr === IF){
-      travelEl(el, vm.$$parent);
+      travelEl(el, relativeVm);
     }
     
     this.el = el;
