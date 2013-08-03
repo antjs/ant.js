@@ -477,8 +477,8 @@ setPrefix('a-');
     
   //遍历元素及其子元素的所有属性节点及文本节点
   function travelEl(el, vm) {
-    if(el.nodeType === 8){
-      //注释节点
+    if(el.nodeType === 8 || el.nodeType === 3){
+      //注释节点和文本节点
       return;
     }
     var r = el.getAttribute(REPEAT)
@@ -533,7 +533,7 @@ setPrefix('a-');
           var newVal = vm.$$getData(path) || ''
             , val = el[attr]
             ;
-          val.replace && (val = val.replace(crlf, '\n'));
+          val && val.replace && (val = val.replace(crlf, '\n'));
           if(newVal !== val){ el[attr] = newVal; }
         }
       , handler = function() {
