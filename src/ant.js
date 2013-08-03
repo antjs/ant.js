@@ -819,15 +819,16 @@ setPrefix('a-');
   //局部模板. {{> anotherant}}
   var pertialReg = /^>\s*(?=.+)/
   addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
-    var pName, pertial, ant, el;
+    var pName, pertial, ant, el, pn = tokenMap.node.parentNode;
     if(tokenMap.type === 'text' && pertialReg.test(token.path)){
       pName = token.path.replace(pertialReg, '');
       ant = vm.$$root.$$ant;
       if(pertial = ant.partials[pName]) {
         el = pertial instanceof Ant ? pertial.el : tplParse(pertial).el;
         travelEl(el, vm);
-        tokenMap.node.parentNode.insertBefore(el, tokenMap.node);
+        pn.insertBefore(el, tokenMap.node);
       }
+      pn.removeChild(tokenMap.node);
       return false;
     }
   });
