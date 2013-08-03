@@ -32,7 +32,5 @@
       $(this.el).off.apply($(this.el), args);
       return this;
     }
-  }, {
-    router: router
   });
 })(this, jQuery);

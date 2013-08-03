@@ -13,15 +13,22 @@
 
 (function(window, Ant) {
   if(typeof module === 'object' && module){
-    module.exports = Ant();//NodeJs
+    var jsdom = require('jsdom')
+      , doc = jsdom.jsdom()
+      ;
+    module.exports = Ant(doc);//NodeJs
   }else{
     if(typeof define === 'function'){
-      define(Ant);
+      define(function() {
+        return Ant();
+      });
     }
     window.Ant = Ant();
   }
-})(this, function() {
+})(this, function(doc) {
 'use strict';
+
+doc = doc || document;
 
 //自定义事件原型对象
 //所有需要自定义事件的对象都可以 extend 该对象: `extend(obj, Event)`
@@ -440,11 +447,12 @@ setPrefix('a-');
   };
   
   function tplParse(tpl) {
-    var el, div = document.createElement('div');
+    var el, div;
     if(isObject(tpl)){
       el = tpl;
-      tpl = div.outerHTML;
+      tpl = el.outerHTML;
     }else{
+      div = doc.createElement('div');
       div.innerHTML = tpl.trim();
       el = div.firstChild;
     }
@@ -656,7 +664,7 @@ setPrefix('a-');
        //分割文本节点
       if(tokenMap.type === 'text' && textMap.length > 1){
         textMap.forEach(function(text) {
-          var tn = document.createTextNode(text);
+          var tn = doc.createTextNode(text);
           el.insertBefore(tn, node);
           that.$$updateVM(tn, el);
         });
@@ -680,7 +688,7 @@ setPrefix('a-');
         return this.$$data[key];
       }else{
         for(var vm = this; vm; vm = vm.$$parent){
-          if(vm.$$data && !isUndefined(vm.$$data[key])){
+          if(isObject(vm.$$data) && (key in vm.$$data)){
             return vm.$$data[key];
           }
         }
@@ -852,7 +860,7 @@ setPrefix('a-');
       
       if(!token.escape && tokenMap.type === 'text') {
         //没有转义的 HTML 代码
-        var div = document.createElement('div')
+        var div = doc.createElement('div')
           , nodes
           ;
         
@@ -945,7 +953,7 @@ setPrefix('a-');
   , STATE_GENEND: 1
   , generate: function(values, path) {
       var that = this
-        , frag = document.createDocumentFragment()
+        , frag = doc.createDocumentFragment()
         , data = values[path]
         ;
       if(that.type === Generator.TYPE_REPEAT){
