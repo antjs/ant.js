@@ -214,7 +214,7 @@ setPrefix('a-');
       , events = opts.events || {}
       ;
     
-    el = tplParse(tpl);
+    el = tplParse(tpl, opts.el);
     tpl = el.tpl;
     el = el.el;
     
@@ -264,7 +264,7 @@ setPrefix('a-');
      */
     this.isLazy = !!opts.lazy;
     
-    this.partials = opts.partials || {};
+    this.partials = opts.partials;
     
     this.options = opts;
     
@@ -446,15 +446,14 @@ setPrefix('a-');
     })
   };
   
-  function tplParse(tpl) {
-    var el, div;
+  function tplParse(tpl, target) {
+    var el;
     if(isObject(tpl)){
       el = tpl;
       tpl = el.outerHTML;
     }else{
-      div = doc.createElement('div');
-      div.innerHTML = tpl.trim();
-      el = div.firstChild;
+      el = isObject(target) ? target : doc.createElement(target || 'div');
+      el.innerHTML = tpl.trim();
     }
     return {el: el, tpl: tpl};
   }
@@ -472,13 +471,27 @@ setPrefix('a-');
     vm.$$root = vm;
     vm.$$ant = ant;
     ant.vm = vm;
-    travelEl(ant.el, vm);
+    travelEls(ant.el, vm);
   }
-    
+  
+  function travelEls(els, vm) {
+    if(els.nodeType && !els.length){
+      travelEl(els, vm);
+    }else{
+      for(var i = 0, l = els.length; i < l; i++) {
+        travelEl(els[i], vm);
+      }
+    }
+  }
+  
   //遍历元素及其子元素的所有属性节点及文本节点
   function travelEl(el, vm) {
-    if(el.nodeType === 8 || el.nodeType === 3){
-      //注释节点和文本节点
+    if(el.nodeType === 8){
+      //注释节点
+      return;
+    }else if(el.nodeType === 3){
+      //文本节点
+      vm.$$updateVM(el, el.parentNode);
       return;
     }
     var r = el.getAttribute(REPEAT)
@@ -827,14 +840,16 @@ setPrefix('a-');
   //局部模板. {{> anotherant}}
   var pertialReg = /^>\s*(?=.+)/
   addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
-    var pName, pertial, ant, el, pn = tokenMap.node.parentNode;
+    var pName, pertial, ant, els, pn = tokenMap.node.parentNode;
     if(tokenMap.type === 'text' && pertialReg.test(token.path)){
       pName = token.path.replace(pertialReg, '');
       ant = vm.$$root.$$ant;
-      if(pertial = ant.partials[pName]) {
-        el = pertial instanceof Ant ? pertial.el : tplParse(pertial).el;
-        travelEl(el, vm);
-        pn.insertBefore(el, tokenMap.node);
+      if(ant.partials && (pertial = ant.partials[pName])) {
+        els = tplParse(pertial).el.childNodes;
+        travelEls(els, vm);
+        for(var i = 0, l = els.length; i < l; i++){
+          pn.insertBefore(els[0], tokenMap.node);
+        }
       }
       pn.removeChild(tokenMap.node);
       return false;

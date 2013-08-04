@@ -50,7 +50,7 @@ document.body.onload = function(){
   var ant = new Ant(document.getElementById('template'), {
     data: {test:2, select2: ['cicada', 'bee']}
   , partials: {
-      partial: '<em>{{text}}</em>'
+      partial: '<em>{{text}}</em><pre>{{textarea}}</pre>'
     }
   });
   ;
