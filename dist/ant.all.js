@@ -205,6 +205,8 @@ setPrefix('a-');
    * @param {Object} opts.data 渲染模板的数据. 该项如果为空, 稍后可以用 `tpl.render(model)` 来渲染生成 html.
    * @param {Boolean} opts.lazy 是否对 'input' 及 'textarea' 监听 `change` 事件, 而不是 `input` 事件
    * @param {Object} opts.events 
+   * @param {Object} opts.partials
+   * @param {String | HTMLELement} opts.el
    * @constructor
    */
   function Ant(tpl, opts) {
@@ -214,7 +216,7 @@ setPrefix('a-');
       , events = opts.events || {}
       ;
     
-    el = tplParse(tpl);
+    el = tplParse(tpl, opts.el);
     tpl = el.tpl;
     el = el.el;
     
@@ -225,11 +227,11 @@ setPrefix('a-');
     
     
     /**
-     * ### ant.tpl
+     * ### ant.template
      * 模板字符串
      * @type {String}
      */
-    this.tpl = tpl;
+    this.template = tpl;
     
     /**
      * ### ant.el
@@ -264,7 +266,7 @@ setPrefix('a-');
      */
     this.isLazy = !!opts.lazy;
     
-    this.partials = opts.partials || {};
+    this.partials = opts.partials;
     
     this.options = opts;
     
@@ -334,7 +336,7 @@ setPrefix('a-');
      * @return {TemplateObject} 一个新 `Ant` 实例
      */
   , clone: function(opts) {
-      return new this.constructor(this.tpl, extend(this.options, opts));
+      return new this.constructor(this.template, extend(this.options, opts));
     }
     
   , get: function(key) {
@@ -446,15 +448,20 @@ setPrefix('a-');
     })
   };
   
-  function tplParse(tpl) {
-    var el, div;
+  function tplParse(tpl, target) {
+    var el;
     if(isObject(tpl)){
-      el = tpl;
+      if(target){
+        el = target = isObject(target) ? target : doc.createElement(target);
+        el.innerHTML = '';//清空目标对象
+        target.appendChild(tpl);
+      }else{
+        el = tpl;
+      }
       tpl = el.outerHTML;
     }else{
-      div = doc.createElement('div');
-      div.innerHTML = tpl.trim();
-      el = div.firstChild;
+      el = isObject(target) ? target : doc.createElement(target || 'div');
+      el.innerHTML = tpl;
     }
     return {el: el, tpl: tpl};
   }
@@ -472,13 +479,27 @@ setPrefix('a-');
     vm.$$root = vm;
     vm.$$ant = ant;
     ant.vm = vm;
-    travelEl(ant.el, vm);
+    travelEls(ant.el, vm);
   }
-    
+  
+  function travelEls(els, vm) {
+    if(els.nodeType && !els.length){
+      travelEl(els, vm);
+    }else{
+      for(var i = 0, l = els.length; i < l; i++) {
+        travelEl(els[i], vm);
+      }
+    }
+  }
+  
   //遍历元素及其子元素的所有属性节点及文本节点
   function travelEl(el, vm) {
     if(el.nodeType === 8){
       //注释节点
+      return;
+    }else if(el.nodeType === 3){
+      //文本节点
+      vm.$$updateVM(el, el.parentNode);
       return;
     }
     var r = el.getAttribute(REPEAT)
@@ -533,7 +554,7 @@ setPrefix('a-');
           var newVal = vm.$$getData(path) || ''
             , val = el[attr]
             ;
-          val.replace && (val = val.replace(crlf, '\n'));
+          val && val.replace && (val = val.replace(crlf, '\n'));
           if(newVal !== val){ el[attr] = newVal; }
         }
       , handler = function() {
@@ -827,14 +848,22 @@ setPrefix('a-');
   //局部模板. {{> anotherant}}
   var pertialReg = /^>\s*(?=.+)/
   addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
-    var pName, pertial, ant, el, pn = tokenMap.node.parentNode;
+    var pName, partial, ant, els, pn = tokenMap.node.parentNode;
     if(tokenMap.type === 'text' && pertialReg.test(token.path)){
       pName = token.path.replace(pertialReg, '');
       ant = vm.$$root.$$ant;
-      if(pertial = ant.partials[pName]) {
-        el = pertial instanceof Ant ? pertial.el : tplParse(pertial).el;
-        travelEl(el, vm);
-        pn.insertBefore(el, tokenMap.node);
+      if(ant.partials && (partial = ant.partials[pName])) {
+        if(token.escape && !isObject(partial)){
+          els = doc.createTextNode(partial);
+          pn.insertBefore(els, tokenMap.node);
+          travelEl(els, vm);
+        }else{
+          els = tplParse(partial).el.childNodes;
+          travelEls(els, vm);
+          for(var i = 0, l = els.length; i < l; i++){
+            pn.insertBefore(els[0], tokenMap.node);
+          }
+        }
       }
       pn.removeChild(tokenMap.node);
       return false;
