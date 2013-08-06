@@ -148,7 +148,7 @@ var RENDER_TYPE = {
       RENDER: 0
     , RESET: 1
     , EXTEND: 2
-    , ARRAY_REPLACE: 3
+    , REPLACE: 3
     };
     
 var prefix, IF, REPEAT, MODEL;
@@ -298,19 +298,23 @@ setPrefix('a-');
      * @param {Object} data 要更新的数据. 增量数据或全新的数据.
      */
     update: function(keyPath, data, type) {
-      var val;
+      var val, vm = this.vm;
       if(isObject(keyPath)){
         type = data;
-        data = keyPath;
+        val = data = keyPath;
       }else if(typeof keyPath === 'string'){
         if(isUndefined(data)){
           data =  deepSet(keyPath, val = this.get(keyPath), {});
-          type = Array.isArray(val) ? RENDER_TYPE.ARRAY_REPLACE : RENDER_TYPE.EXTEND;
+        }else{
+          val = data;
         }
+        vm = vm.$$getChild(keyPath);
+      }else{
+        val = this.data;
       }
       
       if(isUndefined(type)){ type = RENDER_TYPE.EXTEND; }
-      callRender(this, data || this.data, type);
+      callRender(vm, val, type);
       this.trigger('update', data);
     }
     /**
@@ -318,7 +322,7 @@ setPrefix('a-');
      * 渲染模板
      */
   , render: function(data) {
-      callRender(this, data || this.data, RENDER_TYPE.RENDER);
+      callRender(this.vm, data || this.data, RENDER_TYPE.RENDER);
       this.trigger('render');
     }
     /**
@@ -344,7 +348,7 @@ setPrefix('a-');
     }
     
   , set: function(key, val, opt) {
-      var attrs = {}, changed, old, type;
+      var attrs = {}, changed, old, type, parent, keys, path;
       
       if(!key){ return this; }
       
@@ -352,39 +356,39 @@ setPrefix('a-');
         opt = val;
         opt = opt || {};
         attrs = this.parse(key, opt);
-        key = '';
-        //TODO 深度设置
+        //深度检测?
         for(var attr in attrs){
           if(this.data[attr] !== attrs[attr]){
-            this.data[attr] = attrs[attr];
             if(!opt.silence){
               changed = true;
               type = opt.type;
             }
           }
         }
+        extend(this.data, attrs);
       }else{
         opt = opt || {};
         old = deepGet(key, this.data);
         deepSet(key, val, attrs);
-        val = deepGet(key, attrs);
         attrs = this.parse(attrs, opt);
+        val = deepGet(key, attrs);
+        
         if(!opt.silence && old !== val) {
-          extend(this.data, attrs);
           changed = true;
-          if(isUndefined(opt.type)){
-            type = Array.isArray(old) ? RENDER_TYPE.ARRAY_REPLACE : RENDER_TYPE.EXTEND;
-          }else{
-            type = opts.type;
-          }
+          type = isUndefined(opt.type) ? RENDER_TYPE.REPLACE : opt.type;
         }
+        keys = parseKeyPath(key);
+        if(keys.length > 1){
+          path = keys.pop();
+          parent = deepGet(keys.join('.'), this.data) || deepSet(keys.join(''), {}, {});
+        }else{
+          parent = this.data;
+          path = key;
+        }
+        parent[path] = val;
       }
-      
-      checkObj(attrs, this);
-      
-      if(changed){
-        this.update(attrs, type);
-      }
+      checkObj(this.data, this);
+      changed && (isObject(key) ? this.update(attrs, type) : this.update(key, attrs, type));
     }
   , _virtual: function(keypath, getter, setter){
     }
@@ -466,11 +470,11 @@ setPrefix('a-');
     return {el: el, tpl: tpl};
   }
   
-  function callRender(ant, data, renderType) {
-    ant.vm.$$render(data, renderType);
+  function callRender(vm, data, renderType) {
+    vm.$$render(data, renderType);
     if(renderType <= 1){
     //`render, reset` 时
-      ant.isRendered = true;
+      vm.$$root.$$ant.isRendered = true;
     }
   }
   
@@ -511,11 +515,11 @@ setPrefix('a-');
     
   
     if(r){
-      vm.$$getChild(r).$$addGenerator(el, vm.$$getChild(r), Generator.TYPE_REPEAT);
+      vm.$$getChild(r).$$addGenerator(el, vm, Generator.TYPE_REPEAT);
       flag = true;
     }else if(i){
       i = i.replace(invertedReg, '');
-      vm.$$getChild(i).$$addGenerator(el, vm.$$getChild(i), Generator.TYPE_IF);
+      vm.$$getChild(i).$$addGenerator(el, vm, Generator.TYPE_IF);
       flag = true;
     }else if(m){
       view2Model(el, m, vm);
@@ -543,15 +547,16 @@ setPrefix('a-');
   }
   
   //双向绑定
-  function view2Model(el, key, vm) {
+  function view2Model(el, keyPath, vm) {
+    keyPath = keyPath.trim();
     var ant = vm.$$root.$$ant
-      , cur = vm.$$getChild(key)
+      , cur = vm.$$getChild(keyPath)
       , ev = 'change'
       , attr, value = attr = 'value'
       , isSetDefaut = isUndefined(ant.get(cur.$$keyPath))//界面的初始值不会覆盖 model 的初始值
       , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
-      , watcher = function(vm, path) {
-          var newVal = vm.$$getData(path) || ''
+      , watcher = function() {
+          var newVal = vm.$$getData(keyPath) || ''
             , val = el[attr]
             ;
           val && val.replace && (val = val.replace(crlf, '\n'));
@@ -577,8 +582,8 @@ setPrefix('a-');
           case 'radio':
             attr = 'checked';
             if(el.attachEvent) { ev += ' click'; }
-            watcher = function(vm, path) {
-              el.checked = el.value === vm.$$getData(path);
+            watcher = function() {
+              el.checked = el.value === vm.$$getData(keyPath);
             };
             isSetDefaut = el.checked;
           break;
@@ -604,8 +609,8 @@ setPrefix('a-');
             }
             ant.set(cur.$$keyPath, vals);
           };
-          watcher = function(vm, path){
-            var vals = vm.$$getData(path);
+          watcher = function(){
+            var vals = vm.$$getData(keyPath);
             for(var i = 0, l = el.options.length; i < l; i++){
               el.options[i].selected = vals && vals.indexOf(el.options[i].value) !== -1;
             }
@@ -698,53 +703,53 @@ setPrefix('a-');
     }
   , $$addGenerator: function(el, relativeScope, type) {
       this.$$generators = this.$$generators || [];
-      var generator = new Generator(el, relativeScope, type);
+      var generator = new Generator(el, this, relativeScope, type);
       this.$$generators.push(generator);
       return generator;
     }
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
   , $$getData: function(key, isStrict) {
-      if(isStrict){
-        return this.$$data[key];
+      var curVal = deepGet(key, this.$$data);
+      if(isStrict || !this.$$parent || !isUndefined(curVal)){
+        return curVal;
       }else{
-        for(var vm = this; vm; vm = vm.$$parent){
-          if(isObject(vm.$$data) && (key in vm.$$data)){
-            return vm.$$data[key];
-          }
-        }
+        return this.$$parent.$$getData(key);
       }
     }
   , $$render: function (data, renderType) {
       var vm = this
         , childVM
+        , gens = this.$$generators
+        , map
         ;
       
-      vm.$$data = data;
+      if(renderType === RENDER_TYPE.EXTEND){
+        vm.$$data = isObject(vm.$$data) ? extend(vm.$$data, data) : data;
+        map = data;
+      }else{
+        vm.$$data = data;
+        map = this;
+      }
+      
+      if(gens){
+        for(var i = 0, l = gens.length; i < l; i++){
+          if(gens[i].type === Generator.TYPE_IF || gens[i].state === 0 || renderType !== RENDER_TYPE.EXTEND){
+            gens[i].generate();
+          }
+        }
+      }
+      
+      for(var i = 0, l = this.$$watchers.length; i < l; i++){
+        this.$$watchers[i]();
+      }
         
-      for(var path in vm) {
-        if(!vm.hasOwnProperty(path) || (path in ViewModel.prototype) || 
-          (renderType >= RENDER_TYPE.EXTEND && isObject(data) && !(path in data))){
-        //传入的数据键值不能和 vm 中的自带属性名相同.
-        //所以不推荐使用 '$$' 作为 JSON 数据键值的开头.
-          continue;
-        }else{
-          childVM = vm.$$getChild(path);
-          if(childVM.$$generators && childVM.$$generators.length){
-            for(var i = 0, l = childVM.$$generators.length; i < l; i++) {
-              if(childVM.$$generators[i].type == Generator.TYPE_IF || childVM.$$generators[i].state === 0 || renderType !== RENDER_TYPE.EXTEND){
-                childVM.$$generators[i].generate(data, path);
-              }
-            }
-          }
-          if(vm[path].$$watchers.length){
-            for(var i = 0, l = childVM.$$watchers.length; i < l; i++) {
-              childVM.$$watchers[i](vm, path);
-            }
-          }
-          
-          if(!isUndefined(data[path]) || renderType < RENDER_TYPE.EXTEND){
-            childVM.$$render(isUndefined(data[path]) ? {} : data[path], renderType);
+      if(isObject(map)){
+        for(var path in map) {
+          if(vm.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
+          //传入的数据键值不能和 vm 中的自带属性名相同.
+          //所以不推荐使用 '$$' 作为 JSON 数据键值的开头.
+            this[path].$$render(isUndefined(data[path]) ? '' : data[path], renderType);
           }
         }
       }
@@ -815,11 +820,10 @@ setPrefix('a-');
   }
   
   var addBinding = function (tokenMap, vm, token) {
-    var childVm = vm.$$getChild(token.path);
+    var childVm = token.path === '.' ? vm : vm.$$getChild(token.path);
     
-    childVm.$$watchers.push(function(vm, path) {
-      var newVal = path === '.' ? vm.$$data : vm.$$getData(path);
-      //只更新变化了的部分.
+    childVm.$$watchers.push(function() {
+      var newVal = token.path === '.' ? childVm.$$data : vm.$$getData(token.path);
       updateDom(newVal, token, tokenMap);
     });
   }
@@ -834,10 +838,11 @@ setPrefix('a-');
       
     if(pair.length === 2){
       var path = pair[0].trim()
+        , _path = path.replace(invertedReg, '')
         , value = pair[1].trim()
         ;
-      vm.$$getChild(path.replace(invertedReg, '')).$$watchers.push(function(_vm, _path) {
-        var val = _vm.$$getData(_path);
+      vm.$$getChild(_path).$$watchers.push(function() {
+        var val = vm.$$getData(_path);
         var newVal = (invertedReg.test(path) ? !val : val) ? value : '';
         updateDom(newVal, token, tokenMap);
       });
@@ -925,7 +930,7 @@ setPrefix('a-');
   }
   
   //处理动态节点(z-repeat, z-if)
-  function Generator(el, vm, type){
+  function Generator(el, vm, relativeVm, type){
     //文档参照节点. 延迟节点在插入 DOM 的时候需要一个参照点, 是其后面相邻的节点或者父节点
     var relateEl = el
       , relateType
@@ -953,11 +958,13 @@ setPrefix('a-');
     el.removeAttribute(attr);
     
     if(attr === IF){
-      travelEl(el, vm.$$parent);
+      //if 属性不用切换作用域
+      travelEl(el, relativeVm);
     }
     
     this.el = el;
     this.vm = vm;
+    this.relativeVm = relativeVm;
     this.type = type;
     
     this.relateEl = relateEl;
@@ -980,10 +987,10 @@ setPrefix('a-');
   Generator.prototype = {
     STATE_READY: 0
   , STATE_GENEND: 1
-  , generate: function(values, path) {
+  , generate: function() {
       var that = this
         , frag = doc.createDocumentFragment()
-        , data = values[path]
+        , data = this.relativeVm.$$getData(this.path.replace(invertedReg, ''))
         ;
       if(that.type === Generator.TYPE_REPEAT){
         if(data && !Array.isArray(data)){
@@ -1082,8 +1089,12 @@ setPrefix('a-');
   var keyPathReg = /(?:\.|\[)/g
     , bra = /\]/g
     ;
+    
+  function parseKeyPath(keyPath){
+    return keyPath.replace(bra, '').split(keyPathReg);
+  }
   function deepSet(keyStr, value, obj) {
-    var chain = keyStr.replace(bra, '').split(keyPathReg)
+    var chain = parseKeyPath(keyStr)
       , cur = obj
       ;
       
@@ -1103,7 +1114,7 @@ setPrefix('a-');
     return obj;
   }
   function deepGet(keyStr, obj) {
-    var chain = keyStr.replace(bra, '').split(keyPathReg)
+    var chain = parseKeyPath(keyStr)
       , cur = obj
       , key
       ;
