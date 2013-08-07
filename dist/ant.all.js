@@ -1,4 +1,59 @@
-/***
+//ES5 shim for Ant.js
+
+if(!Array.prototype.forEach){
+  Array.prototype.forEach = function(fn, scope) {
+    for(var i = 0, len = this.length; i < len; ++i) {
+      if (i in this) {
+        fn.call(scope, this[i], i, this);
+      }
+    }
+  };
+}
+
+if(!Array.isArray){
+  Array.isArray = function(val) {//是否数组
+    return ({}).toString.call(val) === '[object Array]'
+  }
+}
+
+if(!String.prototype.trim) {
+  String.prototype.trim = function() {
+    return this.replace(/^\s+|\s+$/g,'');
+  };
+}
+
+if (!Array.prototype.indexOf) {
+  Array.prototype.indexOf = function (searchElement /*, fromIndex */ ) {
+    'use strict';
+    if (this == null) {
+      throw new TypeError();
+    }
+    var n, k, t = Object(this),
+        len = t.length >>> 0;
+
+    if (len === 0) {
+      return -1;
+    }
+    n = 0;
+    if (arguments.length > 1) {
+      n = Number(arguments[1]);
+      if (n != n) { // shortcut for verifying if it's NaN
+        n = 0;
+      } else if (n != 0 && n != Infinity && n != -Infinity) {
+        n = (n > 0 || -1) * Math.floor(Math.abs(n));
+      }
+    }
+    if (n >= len) {
+      return -1;
+    }
+    for (k = n >= 0 ? n : Math.max(len - Math.abs(n), 0); k < len; k++) {
+      if (k in t && t[k] === searchElement) {
+        return k;
+      }
+    }
+    return -1;
+  };
+};/***
  *          .o.                       .           o8o          
  *         .888.                    .o8           `"'          
  *        .8"888.     ooo. .oo.   .o888oo        oooo  .oooo.o 
@@ -253,12 +308,6 @@ setPrefix('a-');
      */
     this.isRendered = false;
     
-    this.addBinding = addBinding;
-    
-    if(typeof opts.addBinding === 'function'){
-      this.addBinding = _beforeFn(addBinding, opts.addBinding);
-    }
-    
     /**
      * ### ant.isLazy
      * 是否使用的是延时的 model -> view 同步方式.
@@ -298,24 +347,23 @@ setPrefix('a-');
      * @param {Object} data 要更新的数据. 增量数据或全新的数据.
      */
     update: function(keyPath, data, type) {
-      var val, vm = this.vm;
+      var attrs, vm = this.vm;
       if(isObject(keyPath)){
         type = data;
-        val = data = keyPath;
+        attrs = data = keyPath;
       }else if(typeof keyPath === 'string'){
         if(isUndefined(data)){
-          data =  deepSet(keyPath, val = this.get(keyPath), {});
-        }else{
-          val = data;
+          data = this.get(keyPath);
         }
+        attrs = deepSet(keyPath, data, {});
         vm = vm.$$getChild(keyPath);
       }else{
-        val = this.data;
+        data = this.data;
       }
       
       if(isUndefined(type)){ type = RENDER_TYPE.EXTEND; }
-      callRender(vm, val, type);
-      this.trigger('update', data);
+      callRender(vm, data, type);
+      this.trigger('update', attrs);
     }
     /**
      * ### ant.render
@@ -348,38 +396,41 @@ setPrefix('a-');
     }
     
   , set: function(key, val, opt) {
-      var attrs = {}, changed, old, type, parent, keys, path;
+      var changed, type, parent, keys, path;
       
       if(!key){ return this; }
       
       if(isObject(key)){
         opt = val;
         opt = opt || {};
-        attrs = key;
         //深度检测?
-        for(var attr in attrs){
-          if(this.data[attr] !== attrs[attr]){
+        for(var attr in key){
+          if(this.data[attr] !== key[attr]){
             if(!opt.silence){
               changed = true;
               type = opt.type;
+              break;
             }
           }
         }
-        extend(this.data, attrs);
+        extend(this.data, key);
       }else{
         opt = opt || {};
-        old = deepGet(key, this.data);
-        deepSet(key, val, attrs);
-        val = deepGet(key, attrs);
         
-        if(!opt.silence && old !== val) {
+        if(!opt.silence && deepGet(key, this.data) !== val) {
           changed = true;
           type = isUndefined(opt.type) ? RENDER_TYPE.REPLACE : opt.type;
         }
         keys = parseKeyPath(key);
         if(keys.length > 1){
           path = keys.pop();
-          parent = deepGet(keys.join('.'), this.data) || deepSet(keys.join(''), {}, this.data);
+          parent = deepGet(keys.join('.'), this.data);
+          if(isUndefined(parent)){
+            deepSet(keys.join(''), parent = {}, this.data);
+          }else if(!isObject(parent)){
+            var oldParent = parent;
+            deepSet(keys.join(''), parent = {toString: function() { return oldParent; }}, this.data);
+          }
         }else{
           parent = this.data;
           path = key;
@@ -387,9 +438,7 @@ setPrefix('a-');
         parent[path] = val;
       }
       checkObj(this.data, this);
-      changed && (isObject(key) ? this.update(attrs, type) : this.update(key, attrs, type));
-    }
-  , _virtual: function(keypath, getter, setter){
+      changed && (isObject(key) ? this.update(key, type) : this.update(key, val, type));
     }
     /**
      * 数据预处理.
@@ -555,7 +604,8 @@ setPrefix('a-');
       , isSetDefaut = isUndefined(ant.get(cur.$$keyPath))//界面的初始值不会覆盖 model 的初始值
       , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
       , watcher = function() {
-          var newVal = vm.$$getData(keyPath) || ''
+          //执行这里的时候, 很可能 render 还未执行. vm.$$getData(keyPath) 未定义, 不能返回新设置的值
+          var newVal = this.$$data || vm.$$getData(keyPath) || ''
             , val = el[attr]
             ;
           val && val.replace && (val = val.replace(crlf, '\n'));
@@ -740,7 +790,7 @@ setPrefix('a-');
       }
       
       for(var i = 0, l = this.$$watchers.length; i < l; i++){
-        this.$$watchers[i]();
+        this.$$watchers[i].call(this);
       }
         
       if(isObject(map)){
@@ -768,7 +818,7 @@ setPrefix('a-');
       , textMap = []
       , start = 0
       , text = node.nodeValue
-      , nodeName, index
+      , nodeName
       ;
     
     if(node.nodeType === 3){//文本节点
@@ -776,7 +826,7 @@ setPrefix('a-');
     }else if(node.nodeType === 2){//属性节点
       type = 'attr';
       nodeName = node.nodeName;
-      if((index = nodeName.indexOf(prefix)) === 0){
+      if(nodeName.indexOf(prefix) === 0){
         nodeName = node.nodeName.slice(prefix.length);
       }
     }else{
@@ -1104,7 +1154,7 @@ setPrefix('a-');
         if(cur && cur.hasOwnProperty(key)){
           cur = cur[key];
         }else{
-          cur[key] = chain[i + 1] && /^\d+$/.test(chain[i + 1]) ? [] : {};
+          cur[key] = {};
           cur = cur[key];
         }
       }
