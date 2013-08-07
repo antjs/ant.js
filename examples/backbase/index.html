@@ -6,8 +6,10 @@
 </head>
 <body>
 <div id="container">
+  <span a-if=user>{{user.username}}</span>
+  <span id=login a-if='^user'>login</span>
   <ul>
-  	<li a-repeat=comments>
+  	<li a-repeat=comments data-id={{id}}>
   		<div>{{comment}}</div>
   	</li>
   </ul>
@@ -18,5 +20,8 @@
 <script type="text/javascript" src="../../third-part/jquery.min.js"></script>
 <script type="text/javascript" src="../../dist/ant.all.js"></script>
 <script src='https://cdn.firebase.com/v0/firebase.js'></script>
+<script type='text/javascript'
+        src='https://cdn.firebase.com/v0/firebase-simple-login.js'>
+</script>
 <script type="text/javascript" src="js/app.js"></script>
 </html>

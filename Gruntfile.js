@@ -8,7 +8,7 @@ module.exports = function(grunt) {
         separator: ';'
       },
       dist: {
-        src: ['src/ant.js', 'src/event.js', 'src/router.js'],
+        src: ['src/ant-es5-shim.js', 'src/ant.js', 'src/event.js', 'src/router.js'],
         dest: 'dist/ant.all.js'
       }
     },
@@ -29,12 +29,20 @@ module.exports = function(grunt) {
           'dist/ant.min.js': ['src/ant.js']
         }
       }
+    },
+    mocha: {
+      all: {
+        src: ['test/*.html'],
+        options: {
+          run: true
+        }
+      }
     }
   });
 
-  // Load the plugin that provides the "uglify" task.
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-mocha');
 
   // Default task(s).
   grunt.registerTask('default', ['concat', 'uglify']);
