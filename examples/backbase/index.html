@@ -1,0 +1,22 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<title>Ant.js</title>
+</head>
+<body>
+<div id="container">
+  <ul>
+  	<li a-repeat=comments>
+  		<div>{{comment}}</div>
+  	</li>
+  </ul>
+  <input type="text" a-model=newComment.comment />
+  <button id="comment">提交</button>
+</div>
+</body>
+<script type="text/javascript" src="../../third-part/jquery.min.js"></script>
+<script type="text/javascript" src="../../dist/ant.all.js"></script>
+<script src='https://cdn.firebase.com/v0/firebase.js'></script>
+<script type="text/javascript" src="js/app.js"></script>
+</html>

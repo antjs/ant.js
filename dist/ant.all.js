@@ -355,7 +355,7 @@ setPrefix('a-');
       if(isObject(key)){
         opt = val;
         opt = opt || {};
-        attrs = this.parse(key, opt);
+        attrs = key;
         //深度检测?
         for(var attr in attrs){
           if(this.data[attr] !== attrs[attr]){
@@ -370,7 +370,6 @@ setPrefix('a-');
         opt = opt || {};
         old = deepGet(key, this.data);
         deepSet(key, val, attrs);
-        attrs = this.parse(attrs, opt);
         val = deepGet(key, attrs);
         
         if(!opt.silence && old !== val) {
@@ -380,7 +379,7 @@ setPrefix('a-');
         keys = parseKeyPath(key);
         if(keys.length > 1){
           path = keys.pop();
-          parent = deepGet(keys.join('.'), this.data) || deepSet(keys.join(''), {}, {});
+          parent = deepGet(keys.join('.'), this.data) || deepSet(keys.join(''), {}, this.data);
         }else{
           parent = this.data;
           path = key;
