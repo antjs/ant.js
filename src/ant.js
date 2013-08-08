@@ -144,13 +144,6 @@ var Class = {
   }
 };
 
-var RENDER_TYPE = {
-      RENDER: 0
-    , RESET: 1
-    , EXTEND: 2
-    , REPLACE: 3
-    };
-    
 var prefix, IF, REPEAT, MODEL;
 
 function setPrefix(newPrefix) {
@@ -278,8 +271,7 @@ setPrefix('a-');
   }
   
   extend(Ant, Class, {
-    RENDER_TYPE: RENDER_TYPE
-  , setPrefix: setPrefix
+    setPrefix: setPrefix
   , Event: Event
   });
   
@@ -290,11 +282,16 @@ setPrefix('a-');
      * ### ant.update
      * 更新模板. 
      * @param {Object} data 要更新的数据. 增量数据或全新的数据.
+     * @param {String} [keyPath] 需要更新的数据路径.
+     * @param {AnyType|Object} [data] 需要更新的数据. 省略的话将使用现有的数据.
+     * @param {Boolean} [isExtend] 界面更新类型. 默认为 true
+              为 true 时, 是扩展式更新, 原有的数据不变
+              为 false 时, 是替换时更新, 不在 data 中的变量, 将在 DOM 中被清空.
      */
-    update: function(keyPath, data, type) {
+    update: function(keyPath, data, isExtend) {
       var attrs, vm = this.vm;
       if(isObject(keyPath)){
-        type = data;
+        isExtend = data;
         attrs = data = keyPath;
       }else if(typeof keyPath === 'string'){
         if(isUndefined(data)){
@@ -306,8 +303,8 @@ setPrefix('a-');
         data = this.data;
       }
       
-      if(isUndefined(type)){ type = RENDER_TYPE.EXTEND; }
-      callRender(vm, data, type);
+      if(isUndefined(isExtend)){ isExtend = true; }
+      callRender(vm, data, isExtend);
       this.trigger('update', attrs);
     }
     /**
@@ -315,16 +312,10 @@ setPrefix('a-');
      * 渲染模板
      */
   , render: function(data) {
-      callRender(this.vm, data || this.data, RENDER_TYPE.RENDER);
+      this.set(data, {isExtend: false, silence: true});
+      callRender(this.vm, data || this.data, false);
+      this.isRendered = true;
       this.trigger('render');
-    }
-    /**
-     * ### ant.rest
-     * 用新的数据重新渲染
-     */
-  , reset: function(data) {
-      this.set(data, {type: RENDER_TYPE.RESET});
-      this.trigger('reset');
     }
     /**
      * ### ant.clone
@@ -340,50 +331,72 @@ setPrefix('a-');
       return deepGet(key, this.data);
     }
     
+    /**
+     * ### ant.set
+     * 更新 `ant.data` 中的数据
+     * @param {String} [key] 数据路径. 
+     * @param {AnyType|Object} val 数据内容. 如果数据路径被省略, 第一个参数是一个对象. 那么 val 将替换 ant.data 或者并入其中
+     * @param {Object} [opt] 参数项
+     * @param {Boolean} opt.silence 是否静静的更新数据而不触发 `update` 事件及更新 DOM.
+     * @param {Boolean} opt.isExtend 数据设置类型. 是否将数据并入原数据. 
+              第一个参数是数据路径是该值默认为 false, 而第一个数据是数据对象的时候则默认为 true
+     */
   , set: function(key, val, opt) {
-      var changed, type, parent, keys, path;
+      var changed, isExtend, parent, keys, path;
       
       if(!key){ return this; }
       
       if(isObject(key)){
         opt = val;
         opt = opt || {};
-        //深度检测?
+        //深度检测, 精确的 diff?
         for(var attr in key){
           if(this.data[attr] !== key[attr]){
-            if(!opt.silence){
-              changed = true;
-              type = opt.type;
-              break;
-            }
+            changed = true;
+            break;
           }
         }
-        extend(this.data, key);
+        if(changed){
+          if(opt.isExtend !== false){
+            isExtend = true;
+            extend(this.data, key);
+          }else{
+            isExtend = false;
+            this.data = key;
+          }
+        }
       }else{
         opt = opt || {};
         
-        if(!opt.silence && deepGet(key, this.data) !== val) {
+        if(deepGet(key, this.data) !== val) {
           changed = true;
-          type = isUndefined(opt.type) ? RENDER_TYPE.REPLACE : opt.type;
         }
-        keys = parseKeyPath(key);
-        if(keys.length > 1){
-          path = keys.pop();
-          parent = deepGet(keys.join('.'), this.data);
-          if(isUndefined(parent)){
-            deepSet(keys.join(''), parent = {}, this.data);
-          }else if(!isObject(parent)){
-            var oldParent = parent;
-            deepSet(keys.join(''), parent = {toString: function() { return oldParent; }}, this.data);
+        if(changed){
+          if(opt.isExtend !== true){
+            keys = parseKeyPath(key);
+            if(keys.length > 1){
+              path = keys.pop();
+              parent = deepGet(keys.join('.'), this.data);
+              if(isUndefined(parent)){
+                deepSet(keys.join('.'), parent = {}, this.data);
+              }else if(!isObject(parent)){
+                var oldParent = parent;
+                deepSet(keys.join('.'), parent = {toString: function() { return oldParent; }}, this.data);
+              }
+            }else{
+              parent = this.data;
+              path = key;
+            }
+            parent[path] = val;
+            isExtend = false;
+          }else{
+            extend(this.data, deepSet(key, val, {}));
+            isExtend = true;
           }
-        }else{
-          parent = this.data;
-          path = key;
         }
-        parent[path] = val;
       }
       checkObj(this.data, this);
-      changed && (isObject(key) ? this.update(key, type) : this.update(key, val, type));
+      changed && (isObject(key) ? this.update(key, isExtend) : this.update(key, val, isExtend));
     }
     /**
      * 数据预处理.
@@ -423,25 +436,25 @@ setPrefix('a-');
   //TODO
   var arrayMethods = {
     splice: afterFn([].splice, function() {
-      this.__ant__.update(null, null, 3);
+      this.__ant__.update(null, null, 0);
     })
   , push: afterFn([].push, function() {
-      this.__ant__.update(null, null, 3);
+      this.__ant__.update(null, null, 0);
     })
   , pop: afterFn([].pop, function() {
-      this.__ant__.update(null, null, 3);
+      this.__ant__.update(null, null, 0);
     })
   , sort: afterFn([].sort, function() {
-      this.__ant__.update(null, null, 3);
+      this.__ant__.update(null, null, 0);
     })
   , reverse: afterFn([].reverse, function(){
-      this.__ant__.update(null, null, 3);
+      this.__ant__.update(null, null, 0);
     })
   , unshift: afterFn([].unshift, function() {
-      this.__ant__.update(null, null, 3);
+      this.__ant__.update(null, null, 0);
     })
   , shift: afterFn([].shift, function() {
-      this.__ant__.update(null, null, 3);
+      this.__ant__.update(null, null, 0);
     })
   };
   
@@ -465,10 +478,6 @@ setPrefix('a-');
   
   function callRender(vm, data, renderType) {
     vm.$$render(data, renderType);
-    if(renderType <= 1){
-    //`render, reset` 时
-      vm.$$root.$$ant.isRendered = true;
-    }
   }
   
   function buildViewModel(ant) {
@@ -711,14 +720,14 @@ setPrefix('a-');
         return this.$$parent.$$getData(key);
       }
     }
-  , $$render: function (data, renderType) {
+  , $$render: function (data, isExtend) {
       var vm = this
         , childVM
         , gens = this.$$generators
         , map
         ;
       
-      if(renderType === RENDER_TYPE.EXTEND){
+      if(isExtend){
         vm.$$data = isObject(vm.$$data) ? extend(vm.$$data, data) : data;
         map = data;
       }else{
@@ -728,7 +737,7 @@ setPrefix('a-');
       
       if(gens){
         for(var i = 0, l = gens.length; i < l; i++){
-          if(gens[i].type === Generator.TYPE_IF || gens[i].state === 0 || renderType !== RENDER_TYPE.EXTEND){
+          if(gens[i].type === Generator.TYPE_IF || gens[i].state === 0 || !isExtend){
             gens[i].generate();
           }
         }
@@ -743,7 +752,7 @@ setPrefix('a-');
           if(vm.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
           //传入的数据键值不能和 vm 中的自带属性名相同.
           //所以不推荐使用 '$$' 作为 JSON 数据键值的开头.
-            this[path].$$render(isUndefined(data[path]) ? '' : data[path], renderType);
+            this[path].$$render(isUndefined(data[path]) ? '' : data[path], isExtend);
           }
         }
       }
@@ -857,7 +866,7 @@ setPrefix('a-');
           pn.insertBefore(els, tokenMap.node);
           travelEl(els, vm);
         }else{
-          els = tplParse(partial).el.childNodes;
+          els = tplParse(partial, 'div').el.childNodes;
           travelEls(els, vm);
           for(var i = 0, l = els.length; i < l; i++){
             pn.insertBefore(els[0], tokenMap.node);
