@@ -15,14 +15,12 @@
       handler.guid = callback.guid;
       return this;
     }
-  , trigger: function(name) {
-      var args = [].slice.call(arguments)
-        , en = args.shift().trim().split(/\s+/)
-        ;
-      
-      args.unshift(en[0]);
-      
-      $(this.el).trigger.apply($(this.el), args);
+  , trigger: function(name, data, onlyHandlers) {
+      if(name === 'render' || name === 'update'){
+        //这两个模板更新事件不冒泡
+        onlyHandlers = true;
+      }
+      $.event.trigger(name, data, this.el, onlyHandlers);
       return this;
     }
   , off: function(name, handler) {

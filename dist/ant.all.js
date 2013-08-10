@@ -197,6 +197,18 @@ var Class = {
     
     return sub;
   }
+// , before: function(cons) {
+    // var Fn = beforeFn(this, cons);
+    // Fn.prototype = this.prototype;
+    // extend(Fn, this);
+    // return Fn.extend();
+  // }
+// , after: function(cons) {
+    // var Fn = afterFn(this, cons);
+    // Fn.prototype = this.prototype;
+    // extend(Fn, this);
+    // return Fn.extend();
+  // }
 };
 
 var prefix, IF, REPEAT, MODEL;
@@ -308,9 +320,11 @@ setPrefix('a-');
      */
     this.isLazy = !!opts.lazy;
     
-    this.partials = opts.partials;
-    
     this.options = opts;
+    
+    if(opts.partials){
+      this.partials = {};
+    }
     
     buildViewModel(this);
     
@@ -328,6 +342,7 @@ setPrefix('a-');
   extend(Ant, Class, {
     setPrefix: setPrefix
   , Event: Event
+  , beforeFn: beforeFn
   });
   
   //方法
@@ -911,11 +926,12 @@ setPrefix('a-');
   //局部模板. {{> anotherant}}
   var pertialReg = /^>\s*(?=.+)/
   addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
-    var pName, partial, ant, els, pn = tokenMap.node.parentNode;
+    var pName, partial, ant, els, pn = tokenMap.node.parentNode, opts;
     if(tokenMap.type === 'text' && pertialReg.test(token.path)){
       pName = token.path.replace(pertialReg, '');
       ant = vm.$$root.$$ant;
-      if(ant.partials && (partial = ant.partials[pName])) {
+      opts = ant.options;
+      if(opts && opts.partials && (partial = opts.partials[pName])) {
         if(token.escape && !isObject(partial)){
           els = doc.createTextNode(partial);
           pn.insertBefore(els, tokenMap.node);
@@ -1224,14 +1240,12 @@ setPrefix('a-');
       handler.guid = callback.guid;
       return this;
     }
-  , trigger: function(name) {
-      var args = [].slice.call(arguments)
-        , en = args.shift().trim().split(/\s+/)
-        ;
-      
-      args.unshift(en[0]);
-      
-      $(this.el).trigger.apply($(this.el), args);
+  , trigger: function(name, data, onlyHandlers) {
+      if(name === 'render' || name === 'update'){
+        //这两个模板更新事件不冒泡
+        onlyHandlers = true;
+      }
+      $.event.trigger(name, data, this.el, onlyHandlers);
       return this;
     }
   , off: function(name, handler) {

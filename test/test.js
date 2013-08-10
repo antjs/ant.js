@@ -73,10 +73,13 @@ describe('实例接口', function(){
     });
   });
   
+});
+
+describe('模板语法', function() {
   describe('子模板', function() {
     var prefix = '下面有个子节点: ', postfix = ' !'
       , getTpl = function(partial){partial = partial || '{{> content}}'; return '<h1>父模板</h1><p>' + prefix + partial + postfix + '</p>' }
-      , content = ' -- <span>这里是子节点, 里面可以包含变量标签: </span>{{title}} --'
+      , content = '-- <span>这里是子节点, 里面可以包含变量标签: </span>{{title}} --'
       , ant
       ;
     it('字符串子模板, {{>partial}}', function() {
@@ -101,12 +104,12 @@ describe('实例接口', function(){
           content: content
         }
       });
-      expect($(ant.el).children('p').html()).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
+      expect($(ant.el).children('p').html().toLowerCase()).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
     });
     
     it('DOM 子模板', function() {
       content = document.createElement('div');
-      var html = content.innerHTML = '<span>{{title}}</span><pre>这里是DOM子节点</pre>';
+      var html = content.innerHTML = '<span>{{title}}</span><pre>这里是子节点</pre>';
       ant = new Ant(getTpl(), {
         data: {
           title: '标题'
@@ -116,19 +119,14 @@ describe('实例接口', function(){
         }
       });
       expect($(ant.el).children('p').children('div')[0]).to.be(content);
-      expect(content.innerHTML).to.be(html.replace('{{title}}', ant.data.title))
-    })
+      expect(content.innerHTML.toLowerCase()).to.be(html.replace('{{title}}', ant.data.title))
+    });
     
-    it('ant 子模板', function() {
-      content = new Ant(getTpl());
-      ant = new Ant(getTpl(), {
+    it('异常情况: 有子模板标记, 没有子模板数据', function() {
+      var ant = new Ant(getTpl(), {
         data: {}
-      , partials: {
-          content: content
-        }
       });
-      //$('body').append(ant.el)
-      expect($(ant.el).children('p').children('div')[0]).to.be(content.el);
-    })
+      expect($(ant.el).children('p').text()).to.be(prefix + postfix);
+    });
   });
 })
