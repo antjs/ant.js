@@ -3,18 +3,22 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Ant.js</title>
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.css" media="all" />
 </head>
 <body>
-<div id="container">
+<div id="container" class='container'>
   <span a-if=user>{{user.username}}</span>
   <span id=login a-if='^user'>login</span>
-  <ul>
-  	<li a-repeat=comments data-id={{id}}>
-  		<div>{{comment}}</div>
+  <ul class='list-group'>
+  	<li class='list-group-item' a-repeat=comments data-id={{id}}>
+       <a class="badge edit">编辑</a><a class="badge delete">删除</a>
+  		<div>{{{comment}}}</div>
   	</li>
   </ul>
-  <input type="text" a-model=newComment.comment />
-  <button id="comment">提交</button>
+  <div>{{{newComment.comment}}}</div>
+  <input type="hidden" a-model='newComment.id' />
+  <textarea class='form-control' type="text" a-model=newComment.commentMarked></textarea>
+  <a id="comment" class='btn btn-primary btn-lg'>提交</a>
 </div>
 </body>
 <script type="text/javascript" src="../../third-part/jquery.min.js"></script>
@@ -23,5 +27,6 @@
 <script type='text/javascript'
         src='https://cdn.firebase.com/v0/firebase-simple-login.js'>
 </script>
+<script type="text/javascript" src="js/marked.js"></script>
 <script type="text/javascript" src="js/app.js"></script>
 </html>

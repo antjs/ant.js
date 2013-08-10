@@ -326,11 +326,11 @@ setPrefix('a-');
       this.partials = {};
     }
     
-    buildViewModel(this);
-    
     for(var event in events) {
       this.on(event, events[event]);
     }
+    
+    buildViewModel(this);
     
     if(opts.data){
       checkObj(data, this);
@@ -703,7 +703,9 @@ setPrefix('a-');
     el.removeAttribute(MODEL);
     
     //根据表单元素的初始化默认值设置对应 model 的值
-    if(el[value] && isSetDefaut){ handler(); }
+    if(el[value] && isSetDefaut){
+       handler(); 
+    }
   }
   
   
@@ -822,7 +824,7 @@ setPrefix('a-');
           if(vm.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
           //传入的数据键值不能和 vm 中的自带属性名相同.
           //所以不推荐使用 '$$' 作为 JSON 数据键值的开头.
-            this[path].$$render(isUndefined(data[path]) ? '' : data[path], isExtend);
+            this[path].$$render(!data || isUndefined(data[path]) ? '' : data[path], isExtend);
           }
         }
       }
@@ -943,6 +945,7 @@ setPrefix('a-');
             pn.insertBefore(els[0], tokenMap.node);
           }
         }
+        //TODO 设置 this.partials 于 els 的对应关系
       }
       pn.removeChild(tokenMap.node);
       return false;

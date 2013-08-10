@@ -2,6 +2,7 @@ var antData = new Firebase('https://ant.firebaseIO.com/');
 
 Ant = Ant.extend({
   parse: function(commentsObj) {
+    commentsObj = commentsObj || {};
     var ids = Object.keys(commentsObj);
     var comments = [];
     for(var i = 0, l = ids.length; i < l; i++) {
@@ -16,10 +17,40 @@ Ant = Ant.extend({
 var ant = new Ant($('#container')[0], {
   events: {
     'click #comment': function() {
-      this.data.newComment && antData.push(this.data.newComment)
+      if(this.data.newComment){
+        if(this.data.newComment.id){
+          antData.child(this.data.newComment.id).set(this.data.newComment);
+        }else{
+          antData.push(this.data.newComment);
+        }
+        this.set('newComment');
+      }
     }
   , 'click #login': function() {
       auth.login('github')
+    }
+  , 'click .delete': function(e) {
+      antData.child($(e.target.parentNode).data('id')).remove();
+    }
+  , 'click .edit': function(e) {
+      var id = $(e.target.parentNode).data('id')
+        , comment
+        ;
+      for(var i = 0, l = this.data.comments.length; i < l; i++) {
+        if(this.data.comments[i].id === id){
+          comment = this.data.comments[i];
+          break;
+        }
+      }
+      this.set('newComment', comment);
+    }
+  , 'update': function(e, info){
+      var that = this;
+      if(info && info.newComment && typeof info.newComment.commentMarked !== 'undefined'){
+        marked(this.data.newComment.commentMarked, {}, function(err, comment){
+          that.set('newComment.comment', comment);
+        })
+      }
     }
   }
 });
