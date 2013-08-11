@@ -29,7 +29,7 @@ var ant = new Ant($('#container')[0], {
   , 'click #login': function() {
       auth.login('github')
     }
-  , 'click .delete': function(e) {
+  , 'click .close': function(e) {
       antData.child($(e.target.parentNode).data('id')).remove();
     }
   , 'click .edit': function(e) {
@@ -82,4 +82,11 @@ var auth = new FirebaseSimpleLogin(antData, function(error, user) {
     ant.set('user');
     // user is logged out
   }
+});
+
+marked.setOptions({
+  highlight: function (code, lang) {
+    return hljs.highlightAuto(code, lang).value;
+  }
+, sanitize: true
 });

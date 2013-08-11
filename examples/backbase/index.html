@@ -4,14 +4,16 @@
 	<meta charset="UTF-8">
 	<title>Ant.js</title>
   <link rel="stylesheet" type="text/css" href="css/bootstrap.css" media="all" />
+  <link rel="stylesheet" type="text/css" href="css/default.min.css" media="all" />
 </head>
 <body>
 <div id="container" class='container'>
   <span a-if=user>{{user.username}}</span>
-  <span id=login a-if='^user'>login</span>
+  <a href='javascript:;' id=login a-if='^user'>login with github</a>
   <ul class='list-group'>
   	<li class='list-group-item' a-repeat=comments data-id={{id}}>
-       <a class="badge edit">编辑</a><a class="badge delete">删除</a>
+       <span class="label label-default edit">编辑</span>
+       <span class="label label-danger close">删除</span>
   		<div>{{{comment}}}</div>
   	</li>
   </ul>
@@ -27,6 +29,7 @@
 <script type='text/javascript'
         src='https://cdn.firebase.com/v0/firebase-simple-login.js'>
 </script>
+<script type="text/javascript" src="js/highlight.min.js"></script>
 <script type="text/javascript" src="js/marked.js"></script>
 <script type="text/javascript" src="js/app.js"></script>
 </html>
