@@ -44,6 +44,9 @@ var ant = new Ant($('#container')[0], {
       }
       this.set('newComment', comment);
     }
+  , 'click .edit-cancel': function(){
+      this.set('newComment', {});
+    }
   , 'update': function(e, info){
       var that = this;
       if(info && info.newComment && typeof info.newComment.commentMarked !== 'undefined'){

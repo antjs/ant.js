@@ -254,7 +254,7 @@ setPrefix('a-');
     /**
      * ### ant.isRendered
      * 该模板是否已经绑定数据
-     * @type {Boolean} 在 `render` 或者 `reset` 绑定数据后, 该属性将为 `true`
+     * @type {Boolean} 在调用 `render` 方法后, 该属性将为 `true`
      */
     this.isRendered = false;
     
@@ -287,7 +287,6 @@ setPrefix('a-');
   extend(Ant, Class, {
     setPrefix: setPrefix
   , Event: Event
-  , beforeFn: beforeFn
   });
   
   //方法

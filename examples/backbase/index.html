@@ -21,6 +21,7 @@
   <input type="hidden" a-model='newComment.id' />
   <textarea class='form-control' type="text" a-model=newComment.commentMarked></textarea>
   <a id="comment" class='btn btn-primary btn-lg'>提交</a>
+  <a a-if='newComment.id' class='btn btn-default edit-cancel'>取消修改</a>
 </div>
 </body>
 <script type="text/javascript" src="../../third-part/jquery.min.js"></script>
