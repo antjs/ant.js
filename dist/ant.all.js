@@ -90,6 +90,7 @@ if (!Function.prototype.bind) {
  *                                            `Y888P           
  */               
 
+
 (function(window, Ant) {
   if(typeof module === 'object' && module){
     var jsdom = require('jsdom')
@@ -185,7 +186,7 @@ function extend(obj) {
         src = obj[key];
         copy = opts[key];
         if(obj === copy || key === '__ant__'){ continue; }
-        if(isObject(copy)){
+        if(isPlainObject(copy) || Array.isArray(copy)){
           if(Array.isArray(copy)){
             clone = src && Array.isArray(src) ? src : [];
           }else{
@@ -346,9 +347,7 @@ setPrefix('a-');
     
     this.options = opts;
     
-    if(opts.partials){
-      this.partials = {};
-    }
+    this.partials = null;
     
     for(var event in events) {
       this.on(event, events[event]);
@@ -396,7 +395,7 @@ setPrefix('a-');
         data = this.data;
       }
       
-      if(isUndefined(isExtend)){ isExtend = true; }
+      if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
       callRender(vm, data, isExtend);
       this.trigger('update', attrs);
     }
@@ -442,21 +441,22 @@ setPrefix('a-');
       if(isObject(key)){
         opt = val;
         opt = opt || {};
-        //深度检测, 精确的 diff?
-        for(var attr in key){
-          if(this.data[attr] !== key[attr]){
-            changed = true;
-            break;
+        if(opt.isExtend !== false){
+          //深度检测, 精确的 diff?
+          for(var attr in key){
+            if(this.data[attr] !== key[attr]){
+              changed = true;
+              break;
+            }
           }
-        }
-        if(changed){
-          if(opt.isExtend !== false){
+          if(changed){
             isExtend = true;
             extend(this.data, key);
-          }else{
-            isExtend = false;
-            this.data = key;
           }
+        }else{
+          changed = this.data !== key;
+          isExtend = false;
+          this.data = key;
         }
       }else{
         opt = opt || {};
@@ -490,6 +490,50 @@ setPrefix('a-');
       }
       checkObj(this.data, this);
       changed && (isObject(key) ? this.update(key, isExtend) : this.update(key, val, isExtend));
+    }
+    /**
+     * ### ant.setPartial
+     * 添加子模板
+     * @param {Object} info 子模板信息
+     * @param {String|HTMLElement} info.content 子模板内容
+     * @param {String} [info.name] 子模板标示符
+     * @param {HTMLElement} [info.node] 子模板的目标节点
+     * @param {Boolean} [info.escape] 是否转义字符串子模板
+     * @param {String} [info.path] 指定子模板中变量在数据中的作用域
+     */
+  , setPartial: function(info) {
+      if(!info){ return; }
+      this.partials = this.partials || {};
+      
+      info = extend({}, this.partials[info.name], info);
+      
+      var els, vm
+        , name = info.name
+        , node = info.node
+        , pn = node && node.parentNode
+        , partial = info.content
+        ;
+      if(name){
+        this.partials[name] = info;
+      }
+      if(partial) {
+        vm = this.vm.$$getChild(info.path);
+        if(info.escape && !isObject(partial)){
+          els = [doc.createTextNode(partial)];
+          pn && pn.insertBefore(els[0], info.node);
+          travelEl(els[0], vm);
+        }else{
+          els = tplParse(partial, 'div').el.childNodes;
+          travelEls(els, vm);
+          for(var i = 0, l = els.length; i < l; i++){
+            pn && pn.insertBefore(els[0], info.node);
+          }
+        }
+        this.isRendered && vm.$$render(deepGet(info.path, this.data));
+        // if(name){
+          // this.partials[name].els = els;
+        // }
+      }
     }
     /**
      * 数据预处理.
@@ -761,19 +805,21 @@ setPrefix('a-');
         , keyChain
         ;
       
-      keyChain = path.split(/(?!^)\.(?!$)/);
-      for(var i = 0, l = keyChain.length; i < l; i++){
-        key = keyChain[i];
-        
-        if(!cur[key]){
-          vm = new ViewModel();
-          vm.$$parent = cur;
-          vm.$$root = cur.$$root || cur;
-          vm.$$keyPath = cur.$$keyPath + (cur.$$keyPath && '.') + key;
-          cur[key] = vm;
+      if(path){
+        keyChain = path.split(/(?!^)\.(?!$)/);
+        for(var i = 0, l = keyChain.length; i < l; i++){
+          key = keyChain[i];
+          
+          if(!cur[key]){
+            vm = new ViewModel();
+            vm.$$parent = cur;
+            vm.$$root = cur.$$root || cur;
+            vm.$$keyPath = cur.$$keyPath + (cur.$$keyPath && '.') + key;
+            cur[key] = vm;
+          }
+          
+          cur = cur[key];
         }
-        
-        cur = cur[key];
       }
       return cur;
     }
@@ -951,26 +997,22 @@ setPrefix('a-');
   //局部模板. {{> anotherant}}
   var pertialReg = /^>\s*(?=.+)/
   addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
-    var pName, partial, ant, els, pn = tokenMap.node.parentNode, opts;
+    var pName, ant, opts, node;
     if(tokenMap.type === 'text' && pertialReg.test(token.path)){
       pName = token.path.replace(pertialReg, '');
       ant = vm.$$root.$$ant;
       opts = ant.options;
-      if(opts && opts.partials && (partial = opts.partials[pName])) {
-        if(token.escape && !isObject(partial)){
-          els = doc.createTextNode(partial);
-          pn.insertBefore(els, tokenMap.node);
-          travelEl(els, vm);
-        }else{
-          els = tplParse(partial, 'div').el.childNodes;
-          travelEls(els, vm);
-          for(var i = 0, l = els.length; i < l; i++){
-            pn.insertBefore(els[0], tokenMap.node);
-          }
-        }
-        //TODO 设置 this.partials 于 els 的对应关系
-      }
-      pn.removeChild(tokenMap.node);
+      node = doc.createTextNode('');
+      tokenMap.el.insertBefore(node, tokenMap.node);
+      tokenMap.el.removeChild(tokenMap.node);
+      
+      ant.setPartial({
+        name: pName
+      , content: opts && opts.partials && opts.partials[pName]
+      , node: node
+      , escape: token.escape
+      , path: vm.$$keyPath
+      });
       return false;
     }
   });
@@ -1102,7 +1144,8 @@ setPrefix('a-');
           var el = that.el.cloneNode(true)
             , vm = that.vm.$$getChild(i + '')
             ;
-            
+          
+          el.setAttribute('data-' + prefix + 'index', i);
           frag.appendChild(el);
           travelEl(el, vm);
           vm.$$render(data);
@@ -1155,8 +1198,16 @@ setPrefix('a-');
   function isUndefined(val) {
     return typeof val === 'undefined';
   }
-
-
+  
+  //简单对象的简易判断
+  function isPlainObject(o){
+    if (!o || ({}).toString.call(o) !== '[object Object]' || o.nodeType || o === o.window) {
+      return false;
+    }else{
+      return true;
+    }
+  }
+  
   //函数切面
   //前面的函数返回值传入 breakCheck 判断, breakCheck 返回值为真时不执行后面的函数
   function beforeFn(oriFn, fn, breakCheck) {
@@ -1214,20 +1265,18 @@ setPrefix('a-');
     return obj;
   }
   function deepGet(keyStr, obj) {
-    var chain = parseKeyPath(keyStr)
-      , cur = obj
-      , key
-      ;
-      
-    for(var i = 0, l = chain.length; i < l; i++) {
-      key = chain[i];
-      if(cur && cur.hasOwnProperty(key)){
-        cur = cur[key];
-      }else{
-        return;
+    var chain, cur = obj, key;
+    if(keyStr){
+      chain = parseKeyPath(keyStr);
+      for(var i = 0, l = chain.length; i < l; i++) {
+        key = chain[i];
+        if(cur && cur.hasOwnProperty(key)){
+          cur = cur[key];
+        }else{
+          return;
+        }
       }
     }
-    
     return cur;
   }
   

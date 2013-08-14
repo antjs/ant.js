@@ -71,6 +71,13 @@ describe('实例接口', function(){
       expect(ant.data.person.name).to.be(val3);
       expect(ant.data.person + '').to.be(val0);
     });
+    
+    it('替换 ant.set(obj, {isExtend: false})', function() {
+      ant.set({only: 1}, {isExtend: false});
+      expect(ant.data.person).to.be();
+      expect(ant.data.path).to.be();
+      expect(ant.data.only).to.be(1);
+    })
   });
   
 });
@@ -108,7 +115,7 @@ describe('模板语法', function() {
     });
     
     it('DOM 子模板', function() {
-      content = document.createElement('div');
+      var content = document.createElement('div');
       var html = content.innerHTML = '<span>{{title}}</span><pre>这里是子节点</pre>';
       ant = new Ant(getTpl(), {
         data: {
@@ -128,5 +135,17 @@ describe('模板语法', function() {
       });
       expect($(ant.el).children('p').text()).to.be(prefix + postfix);
     });
+    
+    it('延时添加子模板. ant.addPartial', function() {
+      var ant = new Ant(getTpl(), {
+        data: {title: 'Ant'}
+      });
+      //document.body.appendChild(ant.el);
+      ant.setPartial({
+        name: 'content'
+      , content: content
+      });
+      expect($(ant.el).children('p').text()).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
+    })
   });
 })
