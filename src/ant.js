@@ -983,27 +983,10 @@ setPrefix('a-');
   //处理动态节点(z-repeat, z-if)
   function Generator(el, vm, relativeVm, type){
     //文档参照节点. 延迟节点在插入 DOM 的时候需要一个参照点, 是其后面相邻的节点或者父节点
-    var relateEl = el
-      , relateType
+    var relateEl = doc.createTextNode('')
       , attr = type === Generator.TYPE_IF ? IF : REPEAT
       ;
       
-    while(true){
-      relateEl = relateEl.nextSibling;
-      if(relateEl && relateEl.hasAttributes){
-        if(Generator.isGenTempl(relateEl)){
-          continue;
-        }else{
-          relateType = 'sibling';
-          break;
-        }
-      }else{
-        relateEl = el.parentNode;
-        relateType = 'parent';
-        break;
-      }
-    }
-    
     this.path = el.getAttribute(attr);
     
     el.removeAttribute(attr);
@@ -1019,12 +1002,12 @@ setPrefix('a-');
     this.type = type;
     
     this.relateEl = relateEl;
-    this.relateType = relateType;
     
     this.instances = [];
     
     this.state = this.STATE_READY;
-    el.parentNode && el.parentNode.removeChild(el);
+    el.parentNode.insertBefore(relateEl, el);
+    el.parentNode.removeChild(el);
   }
   
   extend(Generator, {
@@ -1075,9 +1058,7 @@ setPrefix('a-');
         that.lastIfState = data;
       }
       
-      that.relateType === 'sibling' ? 
-          that.relateEl.parentNode.insertBefore(frag, that.relateEl) : 
-          that.relateEl.appendChild(frag);
+      that.relateEl.parentNode.insertBefore(frag, that.relateEl);
           
       that.state = this.STATE_GENEND;
     }
