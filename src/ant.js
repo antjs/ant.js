@@ -143,18 +143,6 @@ var Class = {
     
     return sub;
   }
-// , before: function(cons) {
-    // var Fn = beforeFn(this, cons);
-    // Fn.prototype = this.prototype;
-    // extend(Fn, this);
-    // return Fn.extend();
-  // }
-// , after: function(cons) {
-    // var Fn = afterFn(this, cons);
-    // Fn.prototype = this.prototype;
-    // extend(Fn, this);
-    // return Fn.extend();
-  // }
 };
 
 var prefix, IF, REPEAT, MODEL;
