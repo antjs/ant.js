@@ -3,11 +3,10 @@ var antData = new Firebase('https://ant.firebaseIO.com/');
 Ant = Ant.extend({
   parse: function(commentsObj) {
     commentsObj = commentsObj || {};
-    var ids = Object.keys(commentsObj);
     var comments = [];
-    for(var i = 0, l = ids.length; i < l; i++) {
-      var comment = commentsObj[ids[i]];
-      comment.id = ids[i];
+    for(var id in commentsObj) {
+      var comment = commentsObj[id];
+      comment.id = id;
       comments.push(comment);
     }
     return {comments: comments};
@@ -30,16 +29,8 @@ var ant = new Ant($('#container')[0], {
       antData.child($(e.target.parentNode).data('id')).remove();
     }
   , 'click .edit': function(e) {
-      var id = $(e.target.parentNode).data('id')
-        , comment
-        ;
-      for(var i = 0, l = this.data.comments.length; i < l; i++) {
-        if(this.data.comments[i].id === id){
-          comment = this.data.comments[i];
-          break;
-        }
-      }
-      this.set('newComment', comment);
+      var index = $(e.target.parentNode).data('a-index');
+      this.set('newComment', this.data.comments[index]);
     }
   , 'click .edit-cancel': function(){
       this.set('newComment', {});
