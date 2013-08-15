@@ -26,9 +26,6 @@ var ant = new Ant($('#container')[0], {
         this.set('newComment');
       }
     }
-  , 'click #login': function() {
-      auth.login('github')
-    }
   , 'click .close': function(e) {
       antData.child($(e.target.parentNode).data('id')).remove();
     }
@@ -46,6 +43,10 @@ var ant = new Ant($('#container')[0], {
     }
   , 'click .edit-cancel': function(){
       this.set('newComment', {});
+    }
+    
+  , 'render': function(){
+      document.body.className = 'loaded';
     }
   , 'update': function(e, info){
       var that = this;
@@ -70,20 +71,6 @@ antData.on('child_added', function(snapshot) {
     ant.data.comments.push(comment);
   }else{
     ant.set('comments', [comment]);
-  }
-});
-
-var auth = new FirebaseSimpleLogin(antData, function(error, user) {
-  if (error) {
-    // an error occurred while attempting login
-    console.log(error);
-  } else if (user) {
-    // user authenticated with Firebase
-    console.log('User ID: ' + user.id + ', Provider: ' + user.provider);
-    ant.set('user', user);
-  } else {
-    ant.set('user');
-    // user is logged out
   }
 });
 

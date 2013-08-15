@@ -236,39 +236,6 @@ function setPrefix(newPrefix) {
 }
 
 setPrefix('a-');
-
-//# 视图模板
-
-//用法示例
-// ----
-//
-//
-// ```html
-// <div id="ant">
-//   <h1>{{title}}</h1>
-//   <ul>
-//     <li title="{{phone.description}}" z-repeat="phones">{{name}} -- {{price}}</li>
-//   </ul>
-//   <span>共有 {{phones.length}} 部手机</span>
-// </div>
-// ```
-//  
-// **JavaScript 部分**
-//
-// ```js
-// var html = $('#ant')[0]
-//   , data = {
-//       title: "你的手机"
-//     , phones: [
-//         {name: 'Galaxy S', price: '$149.00', description: 'SAMSAUNG'}
-//       , {name: 'Nexus S', price: '$149.00', description: 'Google'}
-//       ]
-//     }
-//   , ant = new Ant(html, {data: data})
-//   ;
-// // 更新数据后只需调用 `update` 即可自动更新 html
-// data.phones.push({name: 'HTC One', price: '$149.00', description: 'HTC'});
-// ```
   
   /**
    * # Ant
@@ -658,19 +625,11 @@ setPrefix('a-');
     
     if(!flag){
       for(var i = 0, l = el.attributes.length; i < l; i++){
-        if(isToken(el.attributes[i].nodeName)){
-          //TODO 属性名称?
-        }else{
-          vm.$$updateVM(el.attributes[i], el);
-        }
+        vm.$$updateVM(el.attributes[i], el);
       }
       for(var child = el.firstChild; child; ){
         next = child.nextSibling;
-        if(child.nodeType === 3){
-          vm.$$updateVM(child, child.parentNode);
-        }else{
-          travelEl(child, vm);
-        }
+        travelEl(child, vm);
         child = next;
       }
     }
@@ -785,7 +744,7 @@ setPrefix('a-');
     
     //用节点中的模板占位符来更新 vm
   , $$updateVM: function(node, el) {
-      if(isToken(node.nodeValue)){
+      if(isToken(node.nodeValue) || isToken(node.nodeName)){
         this.$$addWatcher(node, el);
       }
     }
@@ -896,6 +855,7 @@ setPrefix('a-');
   
   //字符串中是否包含模板占位符标记
   function isToken(str) {
+    tokenReg.lastIndex = 0;
     return str && tokenReg.test(str);
   }
   
@@ -915,6 +875,9 @@ setPrefix('a-');
       nodeName = node.nodeName;
       if(nodeName.indexOf(prefix) === 0){
         nodeName = node.nodeName.slice(prefix.length);
+      }
+      if(isToken(nodeName)){
+        text = nodeName;
       }
     }else{
       console.error('我们需要一个文本节点或者属性节点');
@@ -950,7 +913,7 @@ setPrefix('a-');
     , textMap: textMap
     , node: node
     , type: type
-    , refNodeName: nodeName
+    , attr: nodeName
     , el: el
     }
   }
@@ -1012,21 +975,26 @@ setPrefix('a-');
   function updateDom(newVal, token, tokenMap) {
     var pos = token.position
       , node = tokenMap.node
+      , el = tokenMap.el
+      , type = tokenMap.type
       , textMap = tokenMap.textMap
-      , refName = tokenMap.refNodeName
+      , attrName = tokenMap.attr
+      , isAttrName = isToken(node.nodeName)
+      , val
       ;
     if(newVal + '' !== textMap[pos] + '') {
       
       //模板内容被外部程序修改
-      if(node.nodeValue !== textMap.join('') && token.escape) {
+      if((isAttrName ? attrName : node.nodeValue) !== textMap.join('') && token.escape) {
         //什么都不做?
         console.warn('没有更新内容. 因为模板内容已被其他程序修改!');
         return;
       }
 
       textMap[pos] = newVal && (newVal + '');
+      val = textMap.join('');
       
-      if(!token.escape && tokenMap.type === 'text') {
+      if(!token.escape && type === 'text') {
         //没有转义的 HTML 代码
         var div = doc.createElement('div')
           , nodes
@@ -1034,7 +1002,7 @@ setPrefix('a-');
         
         token.unescapeNodes = token.unescapeNodes || [];
         
-        div.innerHTML = textMap.join('');
+        div.innerHTML = val;
         nodes = div.childNodes;
         
         token.unescapeNodes.forEach(function(_node) {
@@ -1050,13 +1018,23 @@ setPrefix('a-');
         
         node.nodeValue = '';
       }else{
-        node.nodeValue = textMap.join('');
-        if(refName && tokenMap.type === 'attr'){
-          if(refName === 'style' && tokenMap.el.style.setAttribute){
-            //for IE6, IE 7
-            tokenMap.el.style.setAttribute('cssText', node.nodeValue);
+        if(!isAttrName){
+          node.nodeValue = val;
+        }
+        if(type !== 'text'){
+          if(isAttrName){
+            attrName && el.removeAttribute(attrName);
+            try{
+              el.setAttribute(val, node.nodeValue);
+            }catch(e){}
+            tokenMap.attr = val;
           }else{
-            tokenMap.el.setAttribute(tokenMap.refNodeName, node.nodeValue);
+            if(attrName === 'style' && el.style.setAttribute){
+              //for IE6, IE 7
+              el.style.setAttribute('cssText', val);
+            }else{
+              el.setAttribute(attrName, val);
+            }
           }
         }
       }

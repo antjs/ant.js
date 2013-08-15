@@ -2,14 +2,30 @@
 <html lang="zh-CN">
 <head>
 	<meta charset="UTF-8">
-	<title>Ant.js</title>
+	<title>Ant.js noBackend</title>
   <link rel="stylesheet" type="text/css" href="css/bootstrap.css" media="all" />
   <link rel="stylesheet" type="text/css" href="css/default.min.css" media="all" />
+  <style>
+    .container{
+      display:none;
+    }
+    .loaded .loading{
+      display: none;
+    }
+    .loaded .container{
+      display:block;
+    }
+  </style>
 </head>
 <body>
+<h2 class=loading>数据加载中...</h2>
 <div id="container" class='container'>
-  <span a-if=user>{{user.username}}</span>
-  <a href='javascript:;' id=login a-if='^user'>login with github</a>
+  <div class='jumbotron'>
+    <h1>Ant.js noBackend</h1>
+    <p>
+      使用前端 MVW (Model - View - Whatever) 框架, 前台代码处理复杂的业务逻辑变得简单. 后台的作用可以仅限于提供服务, 认证及各类服务.
+    </p>
+  </div>
   <ul class='list-group'>
   	<li class='list-group-item' a-repeat=comments data-id={{id}}>
        <span class="label label-default edit">编辑</span>
@@ -17,11 +33,11 @@
   		<div>{{{comment}}}</div>
   	</li>
   </ul>
-  <div>{{{newComment.comment}}}</div>
   <input type="hidden" a-model='newComment.id' />
-  <textarea class='form-control' type="text" a-model=newComment.commentMarked></textarea>
+  <textarea placeholder='在此输入 markdown 评论' class='form-control' type="text" a-model=newComment.commentMarked></textarea>
   <a id="comment" class='btn btn-primary btn-lg'>提交</a>
   <a a-if='newComment.id' class='btn btn-default edit-cancel'>取消修改</a>
+  <div>{{{newComment.comment}}}</div>
 </div>
 </body>
 <script type="text/javascript" src="../../third-part/jquery.min.js"></script>
