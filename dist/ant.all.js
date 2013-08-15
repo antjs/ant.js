@@ -259,8 +259,6 @@ setPrefix('a-');
     el = tplParse(tpl, opts.el);
     tpl = el.tpl;
     el = el.el;
-    
-    data = this.parse(data, opts);
         
     //属性
     //----
@@ -879,9 +877,6 @@ setPrefix('a-');
       if(isToken(nodeName)){
         text = nodeName;
       }
-    }else{
-      console.error('我们需要一个文本节点或者属性节点');
-      return;
     }
     
     tokenReg.lastIndex = 0;
@@ -987,7 +982,7 @@ setPrefix('a-');
       //模板内容被外部程序修改
       if((isAttrName ? attrName : node.nodeValue) !== textMap.join('') && token.escape) {
         //什么都不做?
-        console.warn('没有更新内容. 因为模板内容已被其他程序修改!');
+        console.warn('模板内容被修改!');
         return;
       }
 
@@ -1089,7 +1084,7 @@ setPrefix('a-');
         ;
       if(that.type === Generator.TYPE_REPEAT){
         if(data && !Array.isArray(data)){
-          console.warn(JSON.stringify(data) + ' 应该是一个数组');
+          console.warn('需要一个数组');
           return;
         }
         that.empty();
