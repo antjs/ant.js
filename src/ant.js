@@ -416,7 +416,7 @@ setPrefix('a-');
       
       info = extend({}, this.partials[info.name], info);
       
-      var els, vm
+      var els, _els, vm
         , name = info.name
         , node = info.node
         , pn = node && node.parentNode
@@ -429,14 +429,18 @@ setPrefix('a-');
         vm = this.vm.$$getChild(info.path);
         if(info.escape && !isObject(partial)){
           els = [doc.createTextNode(partial)];
-          pn && pn.insertBefore(els[0], info.node);
+          pn && pn.insertBefore(els[0], node);
           travelEl(els[0], vm);
         }else{
-          els = tplParse(partial, 'div').el.childNodes;
-          travelEls(els, vm);
-          for(var i = 0, l = els.length; i < l; i++){
-            pn && pn.insertBefore(els[0], info.node);
+          _els = tplParse(partial, 'div').el.childNodes;
+          els = [];
+          for(var i = 0, l = _els.length; i < l; i++){
+            els.push(_els[i]);
           }
+          for(var i = 0, l = els.length; i < l; i++){
+            pn && pn.insertBefore(els[i], node);
+          }
+          travelEls(els, vm);
         }
         this.isRendered && vm.$$render(deepGet(info.path, this.data));
         // if(name){
@@ -982,7 +986,7 @@ setPrefix('a-');
   
   //处理动态节点(z-repeat, z-if)
   function Generator(el, vm, relativeVm, type){
-    //文档参照节点. 延迟节点在插入 DOM 的时候需要一个参照点, 是其后面相邻的节点或者父节点
+    //文档参照节点. 
     var relateEl = doc.createTextNode('')
       , attr = type === Generator.TYPE_IF ? IF : REPEAT
       ;

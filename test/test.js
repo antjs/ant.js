@@ -85,7 +85,10 @@ describe('实例接口', function(){
 describe('模板语法', function() {
   describe('子模板', function() {
     var prefix = '下面有个子节点: ', postfix = ' !'
-      , getTpl = function(partial){partial = partial || '{{> content}}'; return '<h1>父模板</h1><p>' + prefix + partial + postfix + '</p>' }
+      , getTpl = function(unescape){
+          var partial = unescape ? '{{{>content}}}' : '{{> content}}';
+          return '<h1>父模板</h1><p>' + prefix + partial + postfix + '</p>';
+        }
       , content = '-- <span>这里是子节点, 里面可以包含变量标签: </span>{{title}} --'
       , ant
       ;
@@ -103,7 +106,7 @@ describe('模板语法', function() {
     
     it('字符串非转义子模板, {{{>partial}}}', function() {
       
-      ant = new Ant(getTpl('{{{> content}}}'), {
+      ant = new Ant(getTpl(true), {
         data: {
           title: '标题'
         }
@@ -128,6 +131,25 @@ describe('模板语法', function() {
       expect($(ant.el).children('p').children('div')[0]).to.be(content);
       expect(content.innerHTML.toLowerCase()).to.be(html.replace('{{title}}', ant.data.title))
     });
+    
+    it('子模板根元素带有 repeat 属性', function() {
+      var content = '<span>{{title}}</span><span class=repeat a-repeat=list>{{.}}</span>'
+        , ant = new Ant(getTpl(true), {
+            data: {
+              title: 'Ant'
+            , list: ['1', '2']
+            }
+          , partials: {
+              content: content
+            }
+          })
+        ;
+      var $partial = $(ant.el).children('p')
+      expect($partial.children('.repeat').length).to.be(ant.data.list.length);
+      $partial.children('.repeat').each(function(i, span){
+        expect(this.innerHTML).to.be(ant.data.list[i])
+      });
+    })
     
     it('异常情况: 有子模板标记, 没有子模板数据', function() {
       var ant = new Ant(getTpl(), {
