@@ -535,6 +535,8 @@ setPrefix('a-');
     
   }
   
+  var isIE = !!document.attachEvent;
+  
   //双向绑定
   function view2Model(el, keyPath, vm) {
     keyPath = keyPath.trim();
@@ -567,11 +569,11 @@ setPrefix('a-');
           case 'checkbox':
             value = attr = 'checked';
             //IE6, IE7 下监听 propertychange 会挂?
-            if(el.attachEvent) { ev += ' click'; }
+            if(isIE) { ev += ' click'; }
           break;
           case 'radio':
             attr = 'checked';
-            if(el.attachEvent) { ev += ' click'; }
+            if(isIE) { ev += ' click'; }
             watcher = function() {
               el.checked = el.value === vm.$$getData(keyPath);
             };
@@ -583,7 +585,7 @@ setPrefix('a-');
                 ev += ' input';
               }
               //IE 下的 input 事件替代
-              if(el.attachEvent) {
+              if(isIE) {
                 ev += ' keyup propertychange cut';
               }
             }
@@ -919,7 +921,7 @@ setPrefix('a-');
         if(type !== 'text'){
           if(isAttrNameTpl){
             if(attrName){
-              (attrName in el) ? (el[attrName] = void(0)) : el.removeAttribute(attrName);
+              el.removeAttribute(attrName)
             }
             val && setAttr(el, val, node.nodeValue);
             tokenMap.attr = val;
@@ -934,7 +936,7 @@ setPrefix('a-');
   //IE 浏览器很多属性通过 `setAttribute` 设置后无效
   function setAttr(el, attr, val){
     try{
-      if((attr in el) && el.attachEvent){
+      if((attr in el) && isIE){
         if(attr === 'style' && el.style.setAttribute){
           el.style.setAttribute('cssText', val);
         }else{
