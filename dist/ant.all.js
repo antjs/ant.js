@@ -54,30 +54,7 @@ if (!Array.prototype.indexOf) {
     return -1;
   };
 }
-
-if (!Function.prototype.bind) {
-  Function.prototype.bind = function (oThis) {
-    if (typeof this !== "function") {
-      // closest thing possible to the ECMAScript 5 internal IsCallable function
-      throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
-    }
-
-    var aArgs = Array.prototype.slice.call(arguments, 1), 
-        fToBind = this, 
-        fNOP = function () {},
-        fBound = function () {
-          return fToBind.apply(this instanceof fNOP && oThis
-                                 ? this
-                                 : oThis,
-                               aArgs.concat(Array.prototype.slice.call(arguments)));
-        };
-
-    fNOP.prototype = this.prototype;
-    fBound.prototype = new fNOP();
-
-    return fBound;
-  };
-};/***
+;/***
  *          .o.                       .           o8o          
  *         .888.                    .o8           `"'          
  *        .8"888.     ooo. .oo.   .o888oo        oooo  .oooo.o 
@@ -110,15 +87,8 @@ if (!Function.prototype.bind) {
 
 doc = doc || document;
 
-//自定义事件原型对象
-//所有需要自定义事件的对象都可以 extend 该对象: `extend(obj, Event)`
 var Event = {
-  /**
-   * 监听自定义事件.
-   * @param {String} name 事件名.
-   * @param {Function} handler 事件处理函数.
-   * @param {Object} [context] 监听的对象, 默认为 `this` 对象.
-   */
+  //监听自定义事件.
   on: function(name, handler, context) {
     var ctx = context || this
       ;
@@ -129,12 +99,7 @@ var Event = {
     ctx._handlers[name].push({handler: handler, context: context, ctx: ctx});
     return this;
   },
-  /**
-   * 移除监听事件.
-   * @param {String} name 事件名.
-   * @param {Function} [handler] 事件处理函数. 如果处理函数为空, 将移除所有处理函数.
-   * @param {Object} [context]
-   */
+  //移除监听事件.
   off: function(name, handler, context) {
     var ctx = context || this
       , handlers = ctx._handlers
@@ -154,13 +119,8 @@ var Event = {
     }
     return this;
   },
-  /**
-   * 触发自定义事件. 
-   * 
-   * 该方法没有提供静态化的 context 参数. 需要静态化使用, 应该: `Event.trigger.call(context, name, data)`
-   * @param {String} name 事件名.
-   * @param {AnyType} [data] 传给处理函数的数据
-   */
+  //触发自定义事件. 
+  //该方法没有提供静态化的 context 参数. 如要静态化使用, 应该: `Event.trigger.call(context, name, data)`
   trigger: function(name, data) {
     var that = this
       , args = [].slice.call(arguments, 1)
@@ -182,6 +142,7 @@ function extend(obj) {
   obj = obj || {};
   for(var i = 1; i < length; i++) {
     if((opts = arguments[i]) !== null) {
+      //数组不使用 `for in`?
       for(var key in opts) {
         src = obj[key];
         copy = opts[key];
@@ -263,13 +224,12 @@ setPrefix('a-');
     //属性
     //----
     
-    
     /**
-     * ### ant.template
+     * ### ant.tpl
      * 模板字符串
      * @type {String}
      */
-    this.template = tpl;
+    this.tpl = tpl;
     
     /**
      * ### ant.el
@@ -369,7 +329,7 @@ setPrefix('a-');
      * @return {TemplateObject} 一个新 `Ant` 实例
      */
   , clone: function(opts) {
-      return new this.constructor(this.template, extend(this.options, opts));
+      return new this.constructor(this.tpl, extend(this.options, opts));
     }
     
   , get: function(key) {
@@ -487,9 +447,6 @@ setPrefix('a-');
           travelEls(els, vm);
         }
         this.isRendered && vm.$$render(deepGet(info.path, this.data));
-        // if(name){
-          // this.partials[name].els = els;
-        // }
       }
     }
     /**
@@ -712,8 +669,8 @@ setPrefix('a-');
     cur.$$watchers.push(watcher);
     
     ev.split(/\s+/g).forEach(function(e){
-      detachEvent(el, e, handler);
-      attachEvent(el, e, handler);
+      removeEvent(el, e, handler);
+      addEvent(el, e, handler);
     });
     
     el.removeAttribute(MODEL);
@@ -740,14 +697,13 @@ setPrefix('a-');
   , $$data: null
   , $$keyPath: null
     
-    //用节点中的模板占位符来更新 vm
   , $$updateVM: function(node, el) {
       if(isToken(node.nodeValue) || isToken(node.nodeName)){
         this.$$addWatcher(node, el);
       }
     }
   
-  //获取当前 vm 的 path 上的子 vm, 不存在的话将新建一个.
+  //获取子 vm, 不存在的话将新建一个.
   , $$getChild: function(path) {
       var key, vm
         , cur = this
@@ -974,13 +930,13 @@ setPrefix('a-');
       , type = tokenMap.type
       , textMap = tokenMap.textMap
       , attrName = tokenMap.attr
-      , isAttrName = isToken(node.nodeName)
+      , isAttrNameTpl = isToken(node.nodeName)
       , val
       ;
     if(newVal + '' !== textMap[pos] + '') {
       
       //模板内容被外部程序修改
-      if((isAttrName ? attrName : node.nodeValue) !== textMap.join('') && token.escape) {
+      if((isAttrNameTpl ? attrName : node.nodeValue) !== textMap.join('') && token.escape) {
         //什么都不做?
         console.warn('模板内容被修改!');
         return;
@@ -1013,27 +969,37 @@ setPrefix('a-');
         
         node.nodeValue = '';
       }else{
-        if(!isAttrName){
+        if(!isAttrNameTpl){
           node.nodeValue = val;
         }
         if(type !== 'text'){
-          if(isAttrName){
-            attrName && el.removeAttribute(attrName);
-            try{
-              el.setAttribute(val, node.nodeValue);
-            }catch(e){}
+          if(isAttrNameTpl){
+            if(attrName){
+              (attrName in el) ? (el[attrName] = void(0)) : el.removeAttribute(attrName);
+            }
+            val && setAttr(el, val, node.nodeValue);
             tokenMap.attr = val;
           }else{
-            if(attrName === 'style' && el.style.setAttribute){
-              //for IE6, IE 7
-              el.style.setAttribute('cssText', val);
-            }else{
-              el.setAttribute(attrName, val);
-            }
+            setAttr(el, attrName, val);
           }
         }
       }
     }
+  }
+  
+  //IE 浏览器很多属性通过 `setAttribute` 设置后无效
+  function setAttr(el, attr, val){
+    try{
+      if((attr in el) && el.attachEvent){
+        if(attr === 'style' && el.style.setAttribute){
+          el.style.setAttribute('cssText', val);
+        }else{
+          el[attr] = typeof el[attr] === 'boolean' ? true : val;
+        }
+      }else{
+        el.setAttribute(attr, val);
+      }
+    }catch(e){}
   }
   
   //处理动态节点(z-repeat, z-if)
@@ -1226,7 +1192,7 @@ setPrefix('a-');
     return cur;
   }
   
-  function attachEvent(el, event, handler) {
+  function addEvent(el, event, handler) {
     if(el.addEventListener) {
       el.addEventListener(event, handler, false);
     }else{
@@ -1234,7 +1200,7 @@ setPrefix('a-');
     }
   }
   
-  function detachEvent(el, event, handler) {
+  function removeEvent(el, event, handler) {
     if(el.removeEventListener) {
       el.removeEventListener(event, handler);
     }else{
@@ -1244,7 +1210,32 @@ setPrefix('a-');
   
   return Ant;
 });
-;/**
+;
+if (!Function.prototype.bind) {
+  Function.prototype.bind = function (oThis) {
+    if (typeof this !== "function") {
+      // closest thing possible to the ECMAScript 5 internal IsCallable function
+      throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
+    }
+
+    var aArgs = Array.prototype.slice.call(arguments, 1), 
+        fToBind = this, 
+        fNOP = function () {},
+        fBound = function () {
+          return fToBind.apply(this instanceof fNOP && oThis
+                                 ? this
+                                 : oThis,
+                               aArgs.concat(Array.prototype.slice.call(arguments)));
+        };
+
+    fNOP.prototype = this.prototype;
+    fBound.prototype = new fNOP();
+
+    return fBound;
+  };
+}
+
+/**
  * 让 Ant.js 支持事件委托. 
  */
 (function(window, $, undefined){
