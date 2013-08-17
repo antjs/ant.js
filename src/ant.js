@@ -185,7 +185,7 @@ setPrefix('a-');
     /**
      * ### ant.data
      * 绑定模板的数据.
-     * @type {Object} 只能是合法的 JSON 对象, 根对象本身不应该是数组.
+     * @type {Object} 数据对象, 不应该是数组.
      */
     this.data = data;
     /**
@@ -197,7 +197,7 @@ setPrefix('a-');
     
     /**
      * ### ant.isLazy
-     * 是否使用的是延时的 model -> view 同步方式.
+     * 是否使用的是延时的 view -> model 同步方式.
      * @type {Boolean}
      */
     this.isLazy = !!opts.lazy;
@@ -535,7 +535,7 @@ setPrefix('a-');
     
   }
   
-  var isIE = !!document.attachEvent;
+  var isIE = !!doc.attachEvent;
   
   //双向绑定
   function view2Model(el, keyPath, vm) {
@@ -933,7 +933,8 @@ setPrefix('a-');
     }
   }
   
-  //IE 浏览器很多属性通过 `setAttribute` 设置后无效
+  //IE 浏览器很多属性通过 `setAttribute` 设置后无效. 
+  //这些通过 `el[attr] = value` 设置的属性却能够通过 `removeAttribute` 清除.
   function setAttr(el, attr, val){
     try{
       if((attr in el) && isIE){
