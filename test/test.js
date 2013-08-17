@@ -1,9 +1,6 @@
 describe('接口可用性', function() {
-  it('全局变量 window.Ant', function() {
-    expect(window.Ant).to.be.a('function');
-  });
-  
-  it('接口完备性', function() {
+  it('Ant 基本接口', function() {
+    expect(Ant).to.be.a('function');
     expect(Ant.extend).to.be.a('function');
     expect(Ant.prototype.on).to.be.a('function');
     expect(Ant.prototype.render).to.be.a('function');
