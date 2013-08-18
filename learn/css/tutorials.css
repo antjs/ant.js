@@ -1,0 +1,82 @@
+.container{
+  display: none;
+}
+
+.CodeMirror{
+  height: 100%;
+}
+
+.header{
+  overflow:hidden;
+}
+
+.header h1, .header h2, .header .pager{
+  float: left;
+}
+
+.panel .pager{
+  margin: 0;
+  float: left;
+}
+
+.panel-heading{
+  overflow: hidden;
+  padding: 5px 15px;
+}
+
+#reset, .btn.exe{
+  float: right;
+}
+
+.codes .panel{
+  padding-left: 0;
+  padding-bottom: 0;
+}
+.codes .panel-heading{
+  margin-left: 0;
+  margin-bottom: 0;
+}
+
+.html  .code, .javascript .code{
+  height: 180px;
+}
+.console .code{
+  height: 100px;
+}
+
+.board{
+  height: 400px;
+  overflow: auto;
+}
+#notes{
+  margin-bottom: 1em;
+}
+.output{
+  height: 240px;
+  overflow: auto;
+}
+
+.write-mode-box{
+  float: right;
+}
+
+.write-mode #output{
+  white-space: pre-wrap;
+}
+
+.isfixed{
+  float: right;
+}
+
+.notsupport{
+  display:none;
+}
+
+.markdowneditor{
+  color: #E0E0E0;
+  background-color: #151515;
+}
+
+.introjs-helperNumberLayer{
+  line-height: 10px;
+}

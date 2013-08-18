@@ -1,0 +1,13 @@
+safe: true
+lsi: false
+pygments: true
+markdown: rdiscount
+exclude: ['node_modules', 'test', 'CNAME', 'README.md', 'package.json', 'Gruntfile.js']
+
+projectName: Ant.js
+projectUrl: https://github.com/ant.js/ant.js
+author: antjs
+description: 轻量 MDV
+
+# Google Analytics
+google_analytics_tracking_id: "UA-12642431-6"
