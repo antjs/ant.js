@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-	<title>ant.js by Justan</title>
+	<title>Ant.js - 轻量级 MDV</title>
   
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/pygment_trac.css" />
@@ -15,7 +15,7 @@
 <body>
 	<div class="wrapper">
   <header id="nav">
-    <h4><a href="http://antjs.org">Ant.js</a></h4>
+    <h4><a href="http://antjs.org">Ant.js <span class="version">(1.2.4)</span></a></h4>
     <ul class="sections">
       <li>» <a href="https://github.com/antjs/ant.js">Github 上的 ant.js</a></li>
       <li>» <a href="learn">学习 ant.js</a></li>
@@ -23,7 +23,7 @@
     <ul class="sections"><h4><a href="#%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</a></h4><ul><li><a href="#%E5%8F%98%E9%87%8F%E5%8D%A0%E4%BD%8D%E7%AC%A6">变量占位符</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%B1%9E%E6%80%A7">条件属性</a></li><li><a href="#%E5%BE%AA%E7%8E%AF%E5%B1%9E%E6%80%A7">循环属性</a></li><li><a href="#%E5%8F%8C%E5%90%91%E7%BB%91%E5%AE%9A%E5%B1%9E%E6%80%A7">双向绑定属性</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F">条件变量</a></li><li><a href="#%E9%9D%9E%E8%BD%AC%E4%B9%89%20html">非转义 HTML</a></li><li><a href="#%E5%AD%90%E6%A8%A1%E6%9D%BF">子模板</a></li></ul><h4><a href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</a></h4><ul><li><a href="#new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</a></li><li><a href="#ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</a></li></ul><h4><a href="#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95%3A">实例方法:</a></h4><ul><li><a href="#.get(keypath)">.get(keypath)</a></li><li><a href="#.set(keypath%5B%2C%20val%2C%20opts%5D)">.set(keypath[, val, opts])</a></li><li><a href="#.render(%5Bdata%5D)">.render([data])</a></li><li><a href="#.update(%5Bkeypath%2C%20data%2C%20isextend%5D)">.update([keyPath, data, isExtend])</a></li><li><a href="#.clone(%5Bopts%5D)">.clone([opts])</a></li><li><a href="#.parse(data%5B%2C%20opts%5D)">.parse(data[, opts])</a></li><li><a href="#.fetch(opts)">.fetch(opts)</a></li><li><a href="#.on(eventname%2C%20callback)">.on(eventName, callback)</a></li><li><a href="#.off(eventname%5B%2C%20callback%5D)">.off(eventName[, callback])</a></li><li><a href="#.trigger(eventname%5B%2C%20extraparameters%20%5D)">.trigger(eventName[, extraParameters ])</a></li><li><a href="#.init(tpl%5B%2C%20options%5D)">.init(tpl[, options])</a></li><li><a href="#.setpartial(info)">.setPartial(info)</a></li></ul><h4><a href="#%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7%3A%20">实例属性: </a></h4><ul><li><a href="#.el">.el</a></li><li><a href="#.template">.template</a></li><li><a href="#.data">.data</a></li><li><a href="#.options">.options</a></li><li><a href="#.isrendered">.isRendered</a></li></ul></ul>
   </header>
   <section id="content">
-    <h1>Ant.js</h1>
+    <h1>Ant.js <span class="version">(1.2.4)</span></h1>
     <h2 id="%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</h2>
 <p>  Ant 的模板语法参考了 <a href="http://mustache.github.io/mustache.5.html">mustache</a> 和 <a href="http://www.polymer-project.org/platform/template.html">polymer</a>, 但是又有起自己的特点. Ant 模板可以是 DOM 对象, 也可以是一段 HTML 字符串. 模板 DOM 对象的根节点不应该包含 <code>a-if</code> 和 <code>a-repeat</code> 属性.</p>
 <p>  一个典型的 ant 模板:</p>

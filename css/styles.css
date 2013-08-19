@@ -97,6 +97,11 @@ a {
   color: #369;
 }
 
+.version{
+  font-size: 0.6em;
+  font-weight: normal;
+}
+
 #nav {
   position: fixed;
   top: 0;
@@ -354,15 +359,7 @@ a {
     width: 100%;
   }
   #nav {
-    width: 100%;
-    margin-top: 10px;
-    float: none;
-  }
-  #nav .sections,
-  #nav .header,
-  #nav .extra {
-    padding-left: 30px;
-    padding-right: 30px;
+    display:none;
   }
   #content {
     -webkit-border-radius: 0;
