@@ -1,7 +1,7 @@
 {
   "name": "ant.js",
   "version": "0.1.0",
-  "description": "ant.js",
+  "description": "轻量级 MDV",
   "main": "src/ant.js",
   "directories": {
     "example": "examples"
@@ -17,7 +17,7 @@
     "template",
     "data-binding"
   ],
-  "author": "justan",
+  "author": "Justan <ckr189@gmail.com>",
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
