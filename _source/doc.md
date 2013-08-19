@@ -1,9 +1,18 @@
+Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其具有数据模型驱动界面视图(MDV)的能力. 
+
+兼容性和依赖
+----
+
+- Ant.js 可以在 IE6+ 的浏览器中使用, 其核心部分不需要任何依赖. 委托事件扩展部分需要 jQuery.
+- 借助 [jsdom][3], ant.js 也可以在 node.js 中作为 HTML 的模板引擎. 
 
 
 模板语法
 ----
   
-  Ant 的模板语法参考了 [mustache][1] 和 [polymer][2], 但是又有起自己的特点. Ant 模板可以是 DOM 对象, 也可以是一段 HTML 字符串. 模板 DOM 对象的根节点不应该包含 `a-if` 和 `a-repeat` 属性.
+  类似 [mustache][1] 和 [polymer][2] 的弱逻辑模板, ant.js 的模板只使用少数的几种规则.
+
+  Ant 模板可以是 DOM 对象, 也可以是一段 HTML 字符串. 模板 DOM 对象的根节点不应该包含 `a-if` 和 `a-repeat` 属性.
   
   一个典型的 ant 模板:
   
@@ -33,7 +42,7 @@
 
   `a-if="val"`
 
-  有 `a-if` 属性的节点会根据 `a-if` 属性的值对应的数据来决定该节点是否存在于 DOM 书中.
+  有 `a-if` 属性的节点会根据 `a-if` 属性的值对应的数据来决定该节点是否存在于 DOM 树中.
   
   如模板: 
   
@@ -94,11 +103,11 @@
 
 ### 双向绑定属性
 
-  `a-model="val"`
-  
-  对于大部分表单控件, 加上 `a-model` 属性就表示该表单控件的值与某条数据想绑定了. 
+  `a-model="val"` 
   
   而所谓的双向绑定, 即是在数据和表单值中任何一个发生了变化, 都会将该变化自动更新到另一层中.
+  
+  在表单控件元素中加上 `a-model` 属性就表示该表单控件与某条数据相绑定了.
   
   对于表单元素的绑定值, 目前分为 4 种情况: 
   
@@ -420,8 +429,20 @@ ant.set({newObj: {}, title: 'Matrix'})//完全替换原有 'ant.data'. ant.data 
   `Boolean`
 
   该参数标示模板与数据的绑定状态. 初始化没有传入 data 时, 该值为 false, 传入了 data 或者手动调用 `render` 方法后其值为 true.
-  
+ 
+
+使用示例
+----
+
+[Github 代码库中](https://github.com/antjs/ant.js/tree/master/examples) 列举一些使用示例. 
+
+而下面列举了一些在线示例: 
+
+- [ant.js 使用教程](http://antjs.org/learn/)
+- [noBackend 的实时评论系统](http://antjs.org/examples/backbase/)
+ 
   
 [0]: http://documentcloud.github.io/backbone/#View-delegateEvents
 [1]: http://mustache.github.io/mustache.5.html
 [2]: http://www.polymer-project.org/platform/template.html
+[3]: https://github.com/tmpvar/jsdom
