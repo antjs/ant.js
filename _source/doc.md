@@ -347,14 +347,6 @@ ant.set({newObj: {}, title: 'Matrix'})//完全替换原有 'ant.data'. ant.data 
   - **opts** `Object`
     
     扩展参数.
-
-### .parse(data[, opts])
-
-  数据预处理. 原始的数据往往需要经过修饰才适合展示在界面中. 该方法就是用来完成数据的适配工作. 
-  
-### .fetch(opts)
-
-  通过调用 `ZUI.ajax(opts)` 来同步服务器的数据.
   
 ### .on(eventName, callback)
 
