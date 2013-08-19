@@ -17,7 +17,7 @@
     "template",
     "data-binding"
   ],
-  "author": "Justan",
+  "author": "Justan <ckr189@gmail.com>",
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
