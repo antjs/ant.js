@@ -5,7 +5,7 @@ var fs = require('fs')
   ;
 
 var layout = fs.readFileSync(__dirname + '/_layouts/default.html', 'utf8')
-  , md = fs.readFileSync(__dirname + '/docs/api.md', 'utf8')
+  , md = fs.readFileSync(__dirname + '/_source/doc.md', 'utf8')
   , site = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8'))
   , ant =  new Ant(layout, {data: {site: site}})
   , doctype = '<!DOCTYPE HTML>'
