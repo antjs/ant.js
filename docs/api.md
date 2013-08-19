@@ -1,12 +1,162 @@
----
-layout: default
----
 
-Ant.js
+
+模板语法
 ----
+  
+  Ant 的模板语法参考了 [mustache][1] 和 [polymer][2], 但是又有起自己的特点. Ant 模板可以是 DOM 对象, 也可以是一段 HTML 字符串. 模板 DOM 对象的根节点不应该包含 `a-if` 和 `a-repeat` 属性.
+  
+  一个典型的 ant 模板:
+  
+```html
+<section id="main">
+  <input a-model='completedAll' type="checkbox" a-if="todos.length" />
+  <ul id="todo-list">
+    <li a-repeat="todos" a-if="show" class="{{completed: completed}}">
+      <div class="view">
+        <input type="checkbox" class="toggle" a-model="completed" />
+        <label>{{{title}}}</label>
+        <button class="destroy"></button>
+      </div>
+      <input type="text" a-model="title" class="edit"/>
+    </li>
+  </ul>
+</section>
+```
+  
+### 变量占位符
 
-Ant.js 为 HTML 提供了一种轻量简便的数据绑定方式.
+  `{{name}}`
 
+  两组大括号表示普通变量. 变量占位符只能位于文本节点和属性节点当中, 属性节点包括属性名和属性值. 深度变量用点表示法表示, 如: `{{todos.length}}`
+  
+### 条件属性
+
+  `a-if="val"`
+
+  有 `a-if` 属性的节点会根据 `a-if` 属性的值对应的数据来决定该节点是否存在于 DOM 书中.
+  
+  如模板: 
+  
+```
+<ul a-if="todos.length"><ul>
+```
+
+  对应数据 `{todos: []}`, 由于 `todos` 数组的长度为零, 所以该 list 将不会出现在 DOM 树中.
+  
+  __如果不是__. `^` 标示符和条件属性配合使用时, 值的 true false 与 DOM 的显示与否刚好相反. 
+  
+  如:
+  
+```
+<div a-if="^todos.length">对不起! 没有数据</div>
+```
+
+  对应数据 `{todos: []}`, 当 `todos` 数组的长度为零时该节点将会显示.
+  
+  
+### 循环属性
+
+  `a-repeat="list"`
+
+  `a-repeat` 属性表示元素将根据对应数组的长度而重复. 并且该元素及其子元素的变量应用作用域将会切换到, 数组数据当中. 想使用数组之外的父辈变量, 直接使用其变量名即可.
+  
+  每个重复节点生成的时候会被添加一个名为 `data-a-index` 的 HTML 属性, 其值是元素在数组中的索引.
+  
+  如对于模板:
+  
+```html
+<ul>
+  <li a-repeat="todos">
+    {{title}}
+  <li>
+</ul>
+```
+    
+  其对应的数据为:
+  
+```javascript
+{
+  todos: [
+    {title: '买早餐'}
+  , {title: '吃早餐'}
+  ]
+}
+```
+  
+  最终将会渲染成:
+
+```html
+<ul>
+  <li data-a-index='0'>买早餐</li>
+  <li data-a-index='1'>吃早餐</li>
+</ul>
+```
+
+### 双向绑定属性
+
+  `a-model="val"`
+  
+  对于大部分表单控件, 加上 `a-model` 属性就表示该表单控件的值与某条数据想绑定了. 
+  
+  而所谓的双向绑定, 即是在数据和表单值中任何一个发生了变化, 都会将该变化自动更新到另一层中.
+  
+  对于表单元素的绑定值, 目前分为 4 种情况: 
+  
+  1. 对于普通的文本输入框如 `input:text`, `textarea` 等, 与 `a-model` 绑定的只是其 `value` 属性.
+  
+  2. 复选框 `<input type='checkbox' a-model='somekey' />`. 与 `a-model` 绑定的是其选中状态. 即: 当用户选中时, 'somekey' 对应的值将会被设置成 `true`, 反之为 `false`.
+  
+  3. 单选框 
+  
+    ```html
+    <input type=radio value=red, a-model=color />
+    <input type=radio value=blue, a-model=color />
+    ```
+  
+  单选框往往是一组出现的, 同一组单选框应该有同一个 `a-model`, 与 `a-model` 绑定的是当前选中单选框的 `value` 值. 如: 用户选中 `value=red` 的单选框时, `color` 的值将设成 `red`.
+  
+  4. 下拉框
+  
+    ```html
+    <select a-model='select'>
+      <option value='option1'>option1</option>
+      <option value='option2'>option2</option>
+    </select>
+    <select a-model='selects' multiple='true'>
+      <option value='option1'>option1</option>
+      <option value='option2'>option2</option>
+    </select>
+    ```
+    
+    select 控件分为单选和多选. 单选下拉列表绑定的数据是其选中 option 元素的 value 值.
+    
+    多选的下拉框, 其绑定的数据是包含所有选中 option 元素 value 值的数组.
+    
+### 条件变量
+  
+  `{{val: str}}`
+
+  条件变量可以根据数据中某个值得真假来决定 DOM 中是否出现另一个字符. 
+  
+  比如对于`{{val: str}}`标记, 如果数据中, `val` 为真的话, 该段标记将显示成 `str` 字符, 如果 `val` 为假, 该段标记则表示一个空字符串.
+  
+  类似于 `a-if` 属性, `^` 标记表示反向. `{{^val: str}}`
+  
+### 非转义 HTML
+
+  `{{{unescapeHTML}}}`
+  
+  三组大括号 `{{{unescapeHTML}}}` 表示里边的数据不会被转义, 就是说如果数据中包含 HTML 标签, 则会被当做 DOM 节点解析出来.
+   
+### 子模板
+
+  `{{> partial}}`
+  
+  占位符 `{{> partialName}}` 表示该处将插入子模板 partialName 中的内容. partialName 与 `ant.optioins.partials` 中的值对应. 
+  
+  当子模板内容是字符串时, `{{{>partialName}}}`将不转义该字符串. 如果字符串中包含 HTML 标签, 将解析成 DOM 节点. 子模板是一个 DOM 节点时, 则将忽略非转义选项.
+  
+  
 
 构造函数 Ant
 ---
@@ -37,7 +187,7 @@ Ant.js 为 HTML 提供了一种轻量简便的数据绑定方式.
     
     HTML 代码: 
     
-    ```HTML
+    ```html
     <div id=template>
       <h1>标题</h1>
       {{> content}}
@@ -150,23 +300,24 @@ Ant.js 为 HTML 提供了一种轻量简便的数据绑定方式.
         
     
   如, 对于已有数据的示例:
-  ```
-  ant.data = {
-    title: 'Be cool'
-  , author: {
-      name: 'Dylan'
-    }
-  };
-  ```
+  
+```javascript
+ant.data = {
+  title: 'Be cool'
+, author: {
+    name: 'Dylan'
+  }
+};
+```
   
   对其进行 `set` :
   
-  ```
-  ant.set('author', {age: 1});//替换 'author' 的值. ant.data 为: {title: 'Be cool', author: {age: 1}}
-  ant.set({author: {name: 'Ant', age: 2}});//扩展整个数据对象. ant.data 为: {title: 'Be cool', author: {name: 'Ant', age: 2}}
-  ant.set('author', {country: 'CN'}, true)//扩展 'author'. ant.data 的值: {title: 'Be cool', author: {name: 'Ant', age: 2, contry: 'CN'}}
-  ant.set({newObj: {}, title: 'Matrix'})//完全替换原有 'ant.data'. ant.data 的值为: {newObj: {}, title: 'Matrix'}
-  ```
+```
+ant.set('author', {age: 1});//替换 'author' 的值. ant.data 为: {title: 'Be cool', author: {age: 1}}
+ant.set({author: {name: 'Ant', age: 2}});//扩展整个数据对象. ant.data 为: {title: 'Be cool', author: {name: 'Ant', age: 2}}
+ant.set('author', {country: 'CN'}, true)//扩展 'author'. ant.data 的值: {title: 'Be cool', author: {name: 'Ant', age: 2, contry: 'CN'}}
+ant.set({newObj: {}, title: 'Matrix'})//完全替换原有 'ant.data'. ant.data 的值为: {newObj: {}, title: 'Matrix'}
+```
 
 ### .render([data])
 
@@ -269,164 +420,8 @@ Ant.js 为 HTML 提供了一种轻量简便的数据绑定方式.
   `Boolean`
 
   该参数标示模板与数据的绑定状态. 初始化没有传入 data 时, 该值为 false, 传入了 data 或者手动调用 `render` 方法后其值为 true.
-
-
-模板语法
-----
-  
-  Ant 的模板语法借鉴了 [mustache][1], 但是又有较大的区别. Ant 模板可以是 DOM 对象, 也可以是一段 HTML 字符串, 但是必须能够解析成正常的 DOM 对象. 模板 DOM 对象的根节点不应该包含 `a-if` 和 `a-repeat` 属性, 因为包含这两个属性的元素是可变的.
-  
-  一个典型的 ant 模板:
-  
-```html
-<section id="main">
-  <input a-model='completedAll' type="checkbox" a-if="todos.length" />
-  <ul id="todo-list">
-    <li a-repeat="todos" a-if="show" class="{{completed: completed}}">
-      <div class="view">
-        <input type="checkbox" class="toggle" a-model="completed" />
-        <label>{{{title}}}</label>
-        <button class="destroy"></button>
-      </div>
-      <input type="text" a-model="title" class="edit"/>
-    </li>
-  </ul>
-</section>
-```
-  
-### 变量占位符
-
-  `{{name}}`
-
-  两组大括号表示普通变量. 变量占位符只能位于文本节点和属性节点当中. 深度变量用点表示法表示, 如: `{{todos.length}}`
-  
-### 条件属性
-
-  `a-if="val"`
-
-  有 `a-if` 属性的节点会根据 `a-if` 属性的值对应的数据来决定该节点是否存在于 DOM 书中.
-  
-  如模板: 
-  
-  ```
-  <ul a-if="todos.length"><ul>
-  ```
-
-  对应数据 `{todos: []}`, 由于 `todos` 数组的长度为零, 所以该 list 将不会出现在 DOM 树中.
-  
-  __如果不是__. `^` 标示符和条件属性配合使用时, 值的 true false 与 DOM 的显示与否刚好相反. 
-  
-  如:
-  
-  ```
-  <div a-if="^todos.length">对不起! 没有数据</div>
-  ```
-
-  对应数据 `{todos: []}`, 当 `todos` 数组的长度为零时该节点将会显示.
-  
-  
-### 循环属性
-
-  `a-repeat="list"`
-
-  `a-repeat` 属性表示元素将根据对应数组的长度而重复. 并且该元素及其子元素的变量应用作用域将会切换到, 数组数据当中. 想使用数组之外的父辈变量, 直接使用其变量名即可.
-  
-  每个重复节点生成的时候会被添加一个名为 `data-a-index` 的 HTML 属性, 其值是元素在数组中的索引.
-  
-  如对于模板:
-  
-```html
-<ul>
-  <li a-repeat="todos">
-    {{title}}
-  <li>
-</ul>
-```
-    
-  其对应的数据为:
-  
-```javascript
-{
-  todos: [
-    {title: '买早餐'}
-  , {title: '吃早餐'}
-  ]
-}
-```
-  
-  最终将会渲染成:
-
-```html
-<ul>
-  <li data-a-index='0'>买早餐</li>
-  <li data-a-index='1'>吃早餐</li>
-</ul>
-```
-
-### 双向绑定属性
-
-  `a-model="val"`
-  
-  对于大部分表单控件, 加上 `a-model` 属性就表示该表单控件的值与某条数据想绑定了. 
-  
-  而所谓的双向绑定, 即是在数据和表单值中任何一个发生了变化, 都会将该变化自动更新到另一层中.
-  
-  对于表单元素的绑定值, 目前分为 4 种情况: 
-  
-  1. 对于普通的文本输入框如 `input:text`, `textarea` 等, 与 `a-model` 绑定的只是其 `value` 属性.
-  
-  2. 复选框 `<input type='checkbox' a-model='somekey' />`. 与 `a-model` 绑定的是其选中状态. 即: 当用户选中时, 'somekey' 对应的值将会被设置成 `true`, 反之为 `false`.
-  
-  3. 单选框 
-  
-  ```html
-  <input type=radio value=red, a-model=color />
-  <input type=radio value=blue, a-model=color />
-  ```
-  
-  单选框往往是一组出现的, 同一组单选框应该有同一个 `a-model`, 与 `a-model` 绑定的是当前选中单选框的 `value` 值. 如: 用户选中 `value=red` 的单选框时, `color` 的值将设成 `red`.
-  
-  4. 下拉框
-  
-    ```html
-    <select a-model='select'>
-      <option value='option1'>option1</option>
-      <option value='option2'>option2</option>
-    </select>
-    <select a-model='selects' multiple='true'>
-      <option value='option1'>option1</option>
-      <option value='option2'>option2</option>
-    </select>
-    ```
-    
-    select 控件分为单选和多选. 单选下拉列表绑定的数据是其选中 option 元素的 value 值.
-    
-    多选的下拉框, 其绑定的数据是包含所有选中 option 元素 value 值的数组.
-    
-### 条件变量
-  
-  `{{val: str}}`
-
-  条件变量可以根据数据中某个值得真假来决定 DOM 中是否出现另一个字符. 
-  
-  比如对于`{{val: str}}`标记, 如果数据中, `val` 为真的话, 该段标记将显示成 `str` 字符, 如果 `val` 为假, 该段标记则表示一个空字符串.
-  
-  类似于 `a-if` 属性, `^` 标记表示反向. `{{^val: str}}`
-  
-### 非转义 HTML
-
-  `{{{unescapeHTML}}}`
-  
-  三组大括号 `{{{unescapeHTML}}}` 表示里边的数据不会被转义, 就是说如果数据中包含 HTML 标签, 则会被当做 DOM 节点解析出来.
-   
-### 子模板
-
-  `{{> partial}}`
-  
-  占位符 `{{> partialName}}` 表示该处将插入子模板 partialName 中的内容. partialName 与 `ant.optioins.partials` 中的值对应. 
-  
-  当子模板内容是字符串时, `{{{>partialName}}}`将不转义该字符串. 如果字符串中包含 HTML 标签, 将解析成 DOM 节点. 子模板是一个 DOM 节点时, 则将忽略非转义选项.
   
   
 [0]: http://documentcloud.github.io/backbone/#View-delegateEvents
 [1]: http://mustache.github.io/mustache.5.html
+[2]: http://www.polymer-project.org/platform/template.html

@@ -1,7 +1,7 @@
 {
   "name": "ant.js",
   "version": "1.2.4",
-  "description": "ant.js",
+  "description": "轻量级 MDV",
   "main": "src/ant.js",
   "directories": {
     "example": "examples"
@@ -17,7 +17,7 @@
     "template",
     "data-binding"
   ],
-  "author": "justan",
+  "author": "Justan",
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
@@ -29,6 +29,7 @@
     "grunt": "~0.4.1",
     "mocha": "~1.12.0",
     "expect.js": "~0.2.0",
-    "grunt-mocha": "~0.4.1"
+    "grunt-mocha": "~0.4.1",
+    "pygmentize-bundled": "~1.2.0"
   }
 }
