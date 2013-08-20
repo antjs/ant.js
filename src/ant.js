@@ -13,7 +13,7 @@
 
 
 (function(window, Ant) {
-  if(typeof module === 'object' && module){
+  if(typeof module === 'object' && module && !window.document){
     var jsdom = require('jsdom')
       , doc = jsdom.jsdom()
       ;
