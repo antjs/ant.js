@@ -398,7 +398,7 @@ ant.set({newObj: {}, title: 'Matrix'})//完全替换原有 'ant.data'. ant.data 
 
   所有的 Ant 实例对象都有一个 `el` 属性来表示该模板的 DOM 对象. 该对象是与构造函数接收的一个参数相关联的: 如果构造函数接收了一个 DOM 对象, 那 `el` 属性就是指代它; 如果传入构造器的是 HTML 字符串, 那么 `el` 就是有该字符串生成的 DOM 对象.
   
-### .template
+### .tpl
 
   `String`
 
