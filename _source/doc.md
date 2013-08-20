@@ -46,17 +46,17 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
   
   如模板: 
   
-```
+```html
 <ul a-if="todos.length"><ul>
 ```
 
-  对应数据 `{todos: []}`, 由于 `todos` 数组的长度为零, 所以该 list 将不会出现在 DOM 树中.
+  对应数据 `{todos: []}`, 由于 `todos` 数组的长度为零, 所以该 `ul` 将不会出现在 DOM 树中.
   
-  __如果不是__. `^` 标示符和条件属性配合使用时, 值的 true false 与 DOM 的显示与否刚好相反. 
+  __如果不是__: `^` 标示符和条件属性配合使用时, 值的 true false 与 DOM 的显示与否刚好相反. 
   
   如:
   
-```
+```html
 <div a-if="^todos.length">对不起! 没有数据</div>
 ```
 
@@ -67,7 +67,7 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
 
   `a-repeat="list"`
 
-  `a-repeat` 属性表示元素将根据对应数组的长度而重复. 并且该元素及其子元素的变量应用作用域将会切换到, 数组数据当中. 想使用数组之外的父辈变量, 直接使用其变量名即可.
+  带有 `a-repeat` 属性的元素将根据对应数组的长度而重复. 并且该元素及其子元素的变量占位符的作用域将会切换到数组数据当中. 类似 mustache, 如果想使用数组之外的父辈变量, 直接使用其变量名即可.
   
   每个重复节点生成的时候会被添加一个名为 `data-a-index` 的 HTML 属性, 其值是元素在数组中的索引.
   
@@ -111,7 +111,7 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
   
   对于表单元素的绑定值, 目前分为 4 种情况: 
   
-  1. 对于普通的文本输入框如 `input:text`, `textarea` 等, 与 `a-model` 绑定的只是其 `value` 属性.
+  1. 对于普通的文本输入框如 `input:text`, `textarea` 等, 与 `a-model` 绑定的是其 `value` 属性.
   
   2. 复选框 `<input type='checkbox' a-model='somekey' />`. 与 `a-model` 绑定的是其选中状态. 即: 当用户选中时, 'somekey' 对应的值将会被设置成 `true`, 反之为 `false`.
   
@@ -165,6 +165,7 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
   
   当子模板内容是字符串时, `{{{>partialName}}}`将不转义该字符串. 如果字符串中包含 HTML 标签, 将解析成 DOM 节点. 子模板是一个 DOM 节点时, 则将忽略非转义选项.
   
+  子模板可以通过 `ant.setPartial` 方法延时添加.
   
 
 构造函数 Ant
@@ -178,7 +179,7 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
 
 - **template** `String | HTMLElement`
 
-  模板必须是 DOM 对象或者是可以转换成合法 DOM 对象的 HTML 字符串. 如果是一个 DOM 对象, 则该元素不应包含 `a-repeat` 或 `a-if` 属性.
+  模板必须是 DOM 对象或者是一段字符串. 如果是一个 DOM 对象, 则该元素不应包含 `a-repeat` 或 `a-if` 属性.
   
 - **options** `Object`
   
@@ -186,11 +187,11 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
 
   + **options.data** `Object`   
   
-    与模板对应的数据对象. Data 如果缺省, 可以在稍后用 `ant.render(data)` 延时传入.
+    与模板绑定的数据对象. Data 如果缺省, 可以在稍后用 `ant.render(data)` 传入.
     
   + **options.partials** `Object`
   
-    子模板集合. 一个子模板可以字符串或 DOM 对象.
+    子模板集合. 一个子模板同样可以是字符串或 DOM 对象. 并且没有 `a-repeat` 和 `a-if` 属性的限制.
     
     如: 
     
@@ -213,7 +214,7 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
   
   + **options.lazy** `Boolean` 
   
-    默认值是 false. 表单元素与数据双向绑定时, 该参数决定了用户更改表单元素的值时更新到数据层的时机. False 时, 用户在 `input textarea` 中输入时会立即更新到数据层, 监听的是元素的 `input` 事件. True 时, 用户的输入只有在表单元素丢失焦点是才会更新到数据层, 即监听的是 `change` 事件.
+    默认值为 false. 表单元素与数据双向绑定时, 该参数决定了用户更改表单元素的值时更新到数据层的时机. 值为 `false` 时, 用户在 `input textarea` 中输入时会立即更新到数据层, 监听的是元素的 `input` 事件. 为 `true` 时, 用户的输入只有在表单元素丢失焦点是才会更新到数据层, 即监听的是 `change` 事件.
     
   + **options.el** `String|Object`
   
@@ -264,7 +265,7 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
 
   - **keypath** `String`
   
-    _Keypath_ 表示数据在集合中的键值路径, 可用下标标示法和点标示法.
+    参数 _keypath_ 表示数据在集合中的键值路径, 可用下标标示法或点标示法.
 
   如:
   ```javascript
@@ -295,7 +296,7 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
     
     + **opts.silence** `Boolean`
     
-      默认情况下, 设置一个新值会立即更新模板, 并会触发 `update` 事件. 该值为 `true` 的时候, 将不会更新模板, 只会安静的更改 `ant.data` 中对应的值.
+      默认情况下, 设置一个新值会立即更新模板, 并会触发 `update` 事件. 该值为 `true` 的时候, 将不会更新模板, 只会安静的更改 `ant.data` 中的值.
       
     + **opts.isExtend** `Boolean`
     
@@ -312,9 +313,9 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
   
 ```javascript
 ant.data = {
-  title: 'Be cool'
-, author: {
-    name: 'Dylan'
+  title: 'Ballad Of A Thin Man'
+, artist: {
+    name: 'Bob Dylan'
   }
 };
 ```
@@ -322,10 +323,10 @@ ant.data = {
   对其进行 `set` :
   
 ```
-ant.set('author', {age: 1});//替换 'author' 的值. ant.data 为: {title: 'Be cool', author: {age: 1}}
-ant.set({author: {name: 'Ant', age: 2}});//扩展整个数据对象. ant.data 为: {title: 'Be cool', author: {name: 'Ant', age: 2}}
-ant.set('author', {country: 'CN'}, true)//扩展 'author'. ant.data 的值: {title: 'Be cool', author: {name: 'Ant', age: 2, contry: 'CN'}}
-ant.set({newObj: {}, title: 'Matrix'})//完全替换原有 'ant.data'. ant.data 的值为: {newObj: {}, title: 'Matrix'}
+ant.set('artist', {age: 24});//替换 'artist' 的值. ant.data 为: {title: 'Ballad Of A Thin Man', artist: {age: 24}}
+ant.set({artist: {name: 'Bob Dylan', age: 25}});//扩展整个数据对象. ant.data 为: {title: 'Ballad Of A Thin Man', artist: {name: 'Bob Dylan', age: 25}}
+ant.set('artist', {country: 'USA'}, true)//扩展 'artist'. ant.data 的值: {title: 'Ballad Of A Thin Man', artist: {name: 'Bob Dylan', age: 25, contry: 'USA'}}
+ant.set({newObj: {}, title: 'Matrix'}, false)//完全替换原有 'ant.data'. ant.data 的值为: {newObj: {}, title: 'Matrix'}
 ```
 
 ### .render([data])
@@ -364,7 +365,7 @@ ant.set({newObj: {}, title: 'Matrix'})//完全替换原有 'ant.data'. ant.data 
   
 ### .trigger(eventName[, extraParameters ])
 
-  手动触发事件.
+  触发自定义事件.
 
   - **eventName** `String` 事件名.
   
@@ -396,19 +397,19 @@ ant.set({newObj: {}, title: 'Matrix'})//完全替换原有 'ant.data'. ant.data 
 
   `HTMLELement`
 
-  所有的 Ant 实例对象都有一个 `el` 属性来表示该模板的 DOM 对象. 该对象是与构造函数接收的一个参数相关联的: 如果构造函数接收了一个 DOM 对象, 那 `el` 属性就是指代它; 如果传入构造器的是 HTML 字符串, 那么 `el` 就是有该字符串生成的 DOM 对象.
+  所有的 Ant 实例对象都有一个 `el` 属性来表示该模板的 DOM 对象. 
   
 ### .tpl
 
   `String`
 
-  `.el` 对象对应的原始模板字符串
+  `.el` 对象对应的 HTML 字符串.
   
 ### .data
 
   `Object`
 
-  模板对象绑定的数据.
+  与模板绑定的数据.
   
 ### .options
 
@@ -425,7 +426,7 @@ ant.set({newObj: {}, title: 'Matrix'})//完全替换原有 'ant.data'. ant.data 
  
 事件委托
 ----
-事件委托是作为 ant.js 的一个插件而存在. 其提供了类似 [Backbone][0] 的事件回调编写方式. 借助于 jQuery 强大的自定义事件系统, ant.js 的自定义事件也将跟随 DOM 树向上冒泡. 
+事件委托是作为 ant.js 的一个扩展而存在. 其提供了类似 [Backbone][0] 的事件回调编写方式. 借助于 jQuery 强大的自定义事件系统, ant.js 的自定义事件也将跟随 DOM 树向上冒泡. 
 
 ```javascript
 var ant = new Ant(element, {
