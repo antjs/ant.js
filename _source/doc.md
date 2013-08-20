@@ -422,6 +422,25 @@ ant.set({newObj: {}, title: 'Matrix'})//完全替换原有 'ant.data'. ant.data 
 
   该参数标示模板与数据的绑定状态. 初始化没有传入 data 时, 该值为 false, 传入了 data 或者手动调用 `render` 方法后其值为 true.
  
+ 
+事件委托
+----
+事件委托是作为 ant.js 的一个插件而存在. 其提供了类似 [Backbone][0] 的事件回调编写方式. 借助于 jQuery 强大的自定义事件系统, ant.js 的自定义事件也将跟随 DOM 树向上冒泡. 
+
+```javascript
+var ant = new Ant(element, {
+  data: data
+, events: {
+    'click button': function(e) {
+      //做些什么
+    }
+  , 'change input': function(e){}
+  , 'click': function(e){}
+  , 'render': function() {}
+  }
+});
+```
+ 
 
 使用示例
 ----
