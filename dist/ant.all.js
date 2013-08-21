@@ -68,24 +68,22 @@ if (!Array.prototype.indexOf) {
  */               
 
 
-(function(window, Ant) {
-  if(typeof module === 'object' && module && !window.document){
-    var jsdom = require('jsdom')
-      , doc = jsdom.jsdom()
-      ;
+(function(Ant) {
+  var root = this;
+  if(typeof module === 'object' && module){
+    var doc = root.document || require('jsdom').jsdom();
     module.exports = Ant(doc);//NodeJs
   }else{
+    Ant = Ant(root.document);
     if(typeof define === 'function'){
       define(function() {
-        return Ant();
+        return Ant;
       });
     }
-    window.Ant = Ant();
+    root.Ant = Ant;
   }
-})(this, function(doc) {
-'use strict';
-
-doc = doc || document;
+})(function(doc) {
+"use strict";
 
 var Event = {
   //监听自定义事件.
