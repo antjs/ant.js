@@ -397,7 +397,7 @@ setPrefix('a-');
         }
       }
       checkObj(this.data, this);
-      changed && (isObject(key) ? this.update(key, isExtend) : this.update(key, val, isExtend));
+      changed && (!opt.silence) && (isObject(key) ? this.update(key, isExtend) : this.update(key, val, isExtend));
       return this;
     }
     /**

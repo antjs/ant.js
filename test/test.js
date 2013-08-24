@@ -31,7 +31,8 @@ describe('实例接口', function(){
   });
   
   describe('ant.set', function() {
-    var val0 = 'ant', path0 = 'person';
+    var ant = new Ant(tpl)
+      , val0 = 'ant', path0 = 'person';
     it('基本 ant.set(name, val)', function() {
       ant.set(path0, val0);
       expect(ant.get(path0)).to.be(val0);
@@ -82,6 +83,22 @@ describe('实例接口', function(){
       expect(ant.data.only).to.be(1);
     });
     
+    it('ant.set, opt.silence', function(done) {
+      var handler = function(data) {
+        if(data.silence){
+          throw new Error('不应触发 update 事件');
+        }else{
+          done();
+        }
+      };
+      ant.on('update', handler);
+      ant.set('silence', true, {silence: true});
+      expect(ant.data.silence).to.be(true);
+      ant.set('silence', false);
+      expect(ant.data.silence).to.be(false);
+      ant.off('update', handler);
+    });
+    
     it('ant.isRendered. 调用 ant.render 前', function() {
       expect(ant.isRendered).to.be(false);
     });
@@ -98,7 +115,7 @@ describe('实例接口', function(){
     });
     it('ant.isRendered. 调用 ant.render 后', function() {
       expect(ant.isRendered).to.be(true);
-    })
+    });
     
   });
   
