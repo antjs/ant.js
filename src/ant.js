@@ -253,6 +253,7 @@ setPrefix('a-');
       if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
       callRender(vm, data, isExtend);
       this.trigger('update', attrs);
+      return this;
     }
     /**
      * ### ant.render
@@ -263,6 +264,7 @@ setPrefix('a-');
       callRender(this.vm, this.data, false);
       this.isRendered = true;
       this.trigger('render');
+      return this;
     }
     /**
      * ### ant.clone
@@ -336,6 +338,7 @@ setPrefix('a-');
       }
       checkObj(this.data, this);
       changed && (isObject(key) ? this.update(key, isExtend) : this.update(key, val, isExtend));
+      return this;
     }
     /**
      * ### ant.setPartial
@@ -381,6 +384,7 @@ setPrefix('a-');
         }
         this.isRendered && vm.$$render(deepGet(info.path, this.data));
       }
+      return this;
     }
     /**
      * 数据预处理.
