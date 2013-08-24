@@ -1,10 +1,16 @@
 describe('接口可用性', function() {
   it('Ant 基本接口', function() {
+    var ant = new Ant('');
     expect(Ant).to.be.a('function');
     expect(Ant.extend).to.be.a('function');
-    expect(Ant.prototype.on).to.be.a('function');
-    expect(Ant.prototype.render).to.be.a('function');
-    expect(Ant.prototype.set).to.be.a('function');
+    expect(ant.on).to.be.a('function');
+    expect(ant.off).to.be.a('function');
+    expect(ant.trigger).to.be.a('function');
+    expect(ant.render).to.be.a('function');
+    expect(ant.update).to.be.a('function');
+    expect(ant.set).to.be.a('function');
+    expect(ant.get).to.be.a('function');
+    expect(ant.clone).to.be.a('function');
   });
 });
 
@@ -80,10 +86,15 @@ describe('实例接口', function(){
       expect(ant.isRendered).to.be(false);
     });
     it('ant.data 是绑定数据的一个拷贝', function() {
-      var data = {abc: 234}
+      var arr = [1, 2]
+        , data = {abc: 234, arr1: arr, arr2: arr}
+        ;
       ant.render(data);
       expect(ant.data).not.to.be(data);
       expect(JSON.stringify(ant.data)).to.be(JSON.stringify(data));
+      expect(ant.data.arr1).not.to.be(arr);
+      expect(ant.data.arr2).not.to.be(arr);
+      expect(ant.data.arr1).not.to.be(ant.data.arr2);
     });
     it('ant.isRendered. 调用 ant.render 后', function() {
       expect(ant.isRendered).to.be(true);

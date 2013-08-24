@@ -210,6 +210,10 @@ setPrefix('a-');
     
     buildViewModel(this);
     
+    //这里需要合并可能存在的 this.data
+    //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
+    data = extend(this.data, data);
+    
     if(opts.data){
       this.render(data);
     }
