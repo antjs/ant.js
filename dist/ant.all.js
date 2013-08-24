@@ -218,7 +218,7 @@ setPrefix('a-');
     el = tplParse(tpl, opts.el);
     tpl = el.tpl;
     el = el.el;
-        
+    
     //属性
     //----
     
@@ -241,7 +241,7 @@ setPrefix('a-');
      * 绑定模板的数据.
      * @type {Object} 数据对象, 不应该是数组.
      */
-    this.data = data;
+    this.data = {};
     /**
      * ### ant.isRendered
      * 该模板是否已经绑定数据
@@ -267,8 +267,7 @@ setPrefix('a-');
     buildViewModel(this);
     
     if(opts.data){
-      checkObj(data, this);
-      this.render();
+      this.render(data);
     }
     this.init.apply(this, arguments);
   }
@@ -287,9 +286,9 @@ setPrefix('a-');
      * @param {Object} data 要更新的数据. 增量数据或全新的数据.
      * @param {String} [keyPath] 需要更新的数据路径.
      * @param {AnyType|Object} [data] 需要更新的数据. 省略的话将使用现有的数据.
-     * @param {Boolean} [isExtend] 界面更新类型. 默认为 true
+     * @param {Boolean} [isExtend] 界面更新类型.
               为 true 时, 是扩展式更新, 原有的数据不变
-              为 false 时, 是替换时更新, 不在 data 中的变量, 将在 DOM 中被清空.
+              为 false 时, 为替换更新, 不在 data 中的变量, 将在 DOM 中被清空.
      */
     update: function(keyPath, data, isExtend) {
       var attrs, vm = this.vm;
@@ -297,6 +296,7 @@ setPrefix('a-');
         isExtend = data;
         attrs = data = keyPath;
       }else if(typeof keyPath === 'string'){
+        keyPath = parseKeyPath(keyPath).join('.');
         if(isUndefined(data)){
           data = this.get(keyPath);
         }
@@ -316,7 +316,7 @@ setPrefix('a-');
      */
   , render: function(data) {
       this.set(data, {isExtend: false, silence: true});
-      callRender(this.vm, data || this.data, false);
+      callRender(this.vm, this.data, false);
       this.isRendered = true;
       this.trigger('render');
     }
@@ -350,24 +350,15 @@ setPrefix('a-');
       if(!key){ return this; }
       
       if(isObject(key)){
+        changed = true;
         opt = val;
         opt = opt || {};
         if(opt.isExtend !== false){
-          //深度检测, 精确的 diff?
-          for(var attr in key){
-            if(this.data[attr] !== key[attr]){
-              changed = true;
-              break;
-            }
-          }
-          if(changed){
-            isExtend = true;
-            extend(this.data, key);
-          }
+          isExtend = true;
+          extend(this.data, key);
         }else{
-          changed = this.data !== key;
           isExtend = false;
-          this.data = key;
+          this.data = extend({}, key);
         }
       }else{
         opt = opt || {};
@@ -391,7 +382,7 @@ setPrefix('a-');
               parent = this.data;
               path = key;
             }
-            parent[path] = val;
+            parent[path] = isObject(val) ? extend(Array.isArray(val) ? [] : {}, val) : val;
             isExtend = false;
           }else{
             extend(this.data, deepSet(key, val, {}));

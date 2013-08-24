@@ -40,7 +40,7 @@ describe('实例接口', function(){
     var path2 = 'path1.to', val2 = {};
     it('set 一个对象 ant.set(path, obj)', function() {
       ant.set(path2, val2);
-      expect(ant.get(path2)).to.be(val2);
+      expect(JSON.stringify(ant.get(path2))).to.be(JSON.stringify(val2));
     });
     
     var path3 = 'person.name', val3 = 'Ant';
@@ -74,7 +74,21 @@ describe('实例接口', function(){
       expect(ant.data.person).to.be();
       expect(ant.data.path).to.be();
       expect(ant.data.only).to.be(1);
+    });
+    
+    it('ant.isRendered. 调用 ant.render 前', function() {
+      expect(ant.isRendered).to.be(false);
+    });
+    it('ant.data 是绑定数据的一个拷贝', function() {
+      var data = {abc: 234}
+      ant.render(data);
+      expect(ant.data).not.to.be(data);
+      expect(JSON.stringify(ant.data)).to.be(JSON.stringify(data));
+    });
+    it('ant.isRendered. 调用 ant.render 后', function() {
+      expect(ant.isRendered).to.be(true);
     })
+    
   });
   
 });
