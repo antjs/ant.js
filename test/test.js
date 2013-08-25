@@ -122,6 +122,30 @@ describe('实例接口', function(){
 });
 
 describe('模板语法', function() {
+  describe('a-repeat 属性', function() {
+    var tpl = '<li a-repeat=list>{{.}}</li>'
+      , data = {list: ['ant', 'bee']}
+      , ant = new Ant(tpl, {data: data});
+      ;
+    
+    function check(els, arr, prefix, postfix) {
+      prefix = prefix || '';
+      postfix = postfix || '';
+      expect(els.length).to.be(arr.length);
+      for(var i = 0, l = arr.length; i < l; i++){
+        expect(els[i].innerHTML).to.be(prefix + arr[i] + postfix);
+      }
+    }
+    
+    it('基本列表', function() {
+      check(ant.el.getElementsByTagName('li'), data.list);
+    });
+    
+    it('arr.push', function() {
+      ant.data.list.push('cicada');
+      check(ant.el.getElementsByTagName('li'), ant.data.list);
+    })
+  });
   describe('子模板', function() {
     var prefix = '下面有个子节点: ', postfix = ' !'
       , getTpl = function(unescape){

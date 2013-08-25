@@ -396,7 +396,6 @@ setPrefix('a-');
           }
         }
       }
-      checkObj(this.data, this);
       changed && (!opt.silence) && (isObject(key) ? this.update(key, isExtend) : this.update(key, val, isExtend));
       return this;
     }
@@ -457,55 +456,6 @@ setPrefix('a-');
   , init: noop
   });
   
-  function checkObj(obj, ant){
-    check(obj);
-    function check(obj) {
-      var val;
-      
-      for(var key in obj) {
-        val = obj[key];
-        if(typeof val === 'object' && key !== '__ant__'){
-          if(Array.isArray(val)) {
-            val.__ant__ = ant;
-            arrayWrap(val, ant);
-          }
-          check(val);
-        }
-      }
-    }
-  }
-  
-  function arrayWrap(array) {
-    for(var method in arrayMethods) {
-      array[method] = arrayMethods[method];
-    }
-  }
-  
-  //TODO
-  var arrayMethods = {
-    splice: afterFn([].splice, function() {
-      this.__ant__.update(null, null, 0);
-    })
-  , push: afterFn([].push, function() {
-      this.__ant__.update(null, null, 0);
-    })
-  , pop: afterFn([].pop, function() {
-      this.__ant__.update(null, null, 0);
-    })
-  , sort: afterFn([].sort, function() {
-      this.__ant__.update(null, null, 0);
-    })
-  , reverse: afterFn([].reverse, function(){
-      this.__ant__.update(null, null, 0);
-    })
-  , unshift: afterFn([].unshift, function() {
-      this.__ant__.update(null, null, 0);
-    })
-  , shift: afterFn([].shift, function() {
-      this.__ant__.update(null, null, 0);
-    })
-  };
-  
   function tplParse(tpl, target) {
     var el;
     if(isObject(tpl)){
@@ -565,11 +515,11 @@ setPrefix('a-');
     
   
     if(r){
-      vm.$$getChild(r).$$addGenerator(el, vm, Generator.TYPE_REPEAT);
+      vm.$$getChild(r).$$repeater = new Generator(el, vm.$$getChild(r), vm, Generator.TYPE_REPEAT);
       flag = true;
     }else if(i){
       i = i.replace(invertedReg, '');
-      vm.$$getChild(i).$$addGenerator(el, vm, Generator.TYPE_IF);
+      vm.$$getChild(i).$$conditioner = new Generator(el, vm.$$getChild(r), vm, Generator.TYPE_IF);
       flag = true;
     }else if(m){
       view2Model(el, m, vm);
@@ -597,7 +547,7 @@ setPrefix('a-');
       , cur = vm.$$getChild(keyPath)
       , ev = 'change'
       , attr, value = attr = 'value'
-      , isSetDefaut = isUndefined(ant.get(cur.$$keyPath))//界面的初始值不会覆盖 model 的初始值
+      , isSetDefaut = isUndefined(ant.get(cur.$$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
       , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
       , watcher = function() {
           //执行这里的时候, 很可能 render 还未执行. vm.$$getData(keyPath) 未定义, 不能返回新设置的值
@@ -611,7 +561,7 @@ setPrefix('a-');
           var val = el[value];
           
           val.replace && (val = val.replace(crlf, '\n'));
-          ant.set(cur.$$keyPath, val);
+          ant.set(cur.$$getKeyPath(), val);
         }
       ;
     
@@ -652,7 +602,7 @@ setPrefix('a-');
             for(var i = 0, l = el.options.length; i < l; i++){
               if(el.options[i].selected){ vals.push(el.options[i].value) }
             }
-            ant.set(cur.$$keyPath, vals);
+            ant.set(cur.$$getKeyPath(), vals);
           };
           watcher = function(){
             var vals = vm.$$getData(keyPath);
@@ -680,9 +630,8 @@ setPrefix('a-');
     }
   }
   
-  
   function ViewModel() {
-    this.$$keyPath = '';
+    this.$$path = '';
     this.$$watchers = [];
   }
   
@@ -691,10 +640,11 @@ setPrefix('a-');
     $$watchers: null
   , $$root: null
   , $$parent: null
-  , $$generators: null
+  , $$conditioner: null
+  , $$repeater: null
   , $$ant: null
   , $$data: null
-  , $$keyPath: null
+  , $$path: null
     
   , $$updateVM: function(node, el) {
       if(isToken(node.nodeValue) || isToken(node.nodeName)){
@@ -708,7 +658,8 @@ setPrefix('a-');
         , cur = this
         , keyChain
         ;
-      
+        
+      path = path + '';
       if(path){
         keyChain = path.split(/(?!^)\.(?!$)/);
         for(var i = 0, l = keyChain.length; i < l; i++){
@@ -718,7 +669,7 @@ setPrefix('a-');
             vm = new ViewModel();
             vm.$$parent = cur;
             vm.$$root = cur.$$root || cur;
-            vm.$$keyPath = cur.$$keyPath + (cur.$$keyPath && '.') + key;
+            vm.$$path = key;
             cur[key] = vm;
           }
           
@@ -726,6 +677,20 @@ setPrefix('a-');
         }
       }
       return cur;
+    }
+    
+  , $$getKeyPath: function() {
+      var keyPath = this.$$path
+        , cur = this
+        ;
+      while(cur = cur.$$parent){
+        if(cur.$$path){
+          keyPath = cur.$$path + '.' + keyPath;
+        }else{
+          break;
+        }
+      }
+      return keyPath;
     }
     
   , $$addWatcher: function(node, el) {
@@ -749,12 +714,6 @@ setPrefix('a-');
         });
       }
     }
-  , $$addGenerator: function(el, relativeScope, type) {
-      this.$$generators = this.$$generators || [];
-      var generator = new Generator(el, this, relativeScope, type);
-      this.$$generators.push(generator);
-      return generator;
-    }
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
   , $$getData: function(key, isStrict) {
@@ -768,8 +727,7 @@ setPrefix('a-');
   , $$render: function (data, isExtend) {
       var vm = this
         , childVM
-        , gens = this.$$generators
-        , map
+        , map, repeater = this.$$repeater
         ;
       
       if(isExtend){
@@ -780,11 +738,20 @@ setPrefix('a-');
         map = this;
       }
       
-      if(gens){
-        for(var i = 0, l = gens.length; i < l; i++){
-          if(gens[i].type === Generator.TYPE_IF || gens[i].state === 0 || !isExtend){
-            gens[i].generate();
-          }
+      if(Array.isArray(data)){
+        data.__ant__ = vm;
+        if(data.push !== arrayMethods.push){
+          extend(data, arrayMethods);
+        }
+      }
+      
+      if(this.$$conditioner){
+        this.$$conditioner.generate();
+      }
+      
+      if(repeater){
+        if(repeater.state === 0 || !isExtend){
+          repeater.generate();
         }
       }
       
@@ -916,7 +883,7 @@ setPrefix('a-');
       , content: opts && opts.partials && opts.partials[pName]
       , node: node
       , escape: token.escape
-      , path: vm.$$keyPath
+      , path: vm.$$getKeyPath()
       });
       return false;
     }
@@ -1002,6 +969,45 @@ setPrefix('a-');
     }catch(e){}
   }
   
+  
+  function getRepeater(vmArray){
+    return vmArray.__ant__.$$repeater
+  }
+  var arrayMethods = {
+    splice: afterFn([].splice, function() {
+      var repeater = getRepeater(this);
+      repeater.splice.apply(repeater, arguments);
+    })
+  , push: afterFn([].push, function(/*item1, item2, ...*/) {
+      var arr = [].slice.call(arguments)
+        , repeater = getRepeater(this);
+        ;
+      arr.unshift(this.length - arr.length, 0);
+      repeater.splice.apply(repeater, arr);
+    })
+  , pop: afterFn([].pop, function() {
+      var repeater = getRepeater(this);
+      repeater.splice.call(repeater, this.length - 1, 1);
+    })
+  , shift: afterFn([].shift, function() {
+      var repeater = getRepeater(this);
+      repeater.splice.call(repeater, 0, 1);
+    })
+  , unshift: afterFn([].unshift, function() {
+      var arr = [].slice.call(arguments)
+        , repeater = getRepeater(this);
+        ;
+      arr.unshift(0, 0);
+      repeater.splice.apply(repeater, arr);
+    })
+  , sort: afterFn([].sort, function(fn) {
+      getRepeater(this).sort(fn);
+    })
+  , reverse: afterFn([].reverse, function(){
+      getRepeater(this).reverse();
+    })
+  };
+  
   //处理动态节点(z-repeat, z-if)
   function Generator(el, vm, relativeVm, type){
     //文档参照节点. 
@@ -1025,7 +1031,7 @@ setPrefix('a-');
     
     this.relateEl = relateEl;
     
-    this.instances = [];
+    this.els = [];
     
     this.state = this.STATE_READY;
     el.parentNode.insertBefore(relateEl, el);
@@ -1053,19 +1059,7 @@ setPrefix('a-');
           console.warn('需要一个数组');
           return;
         }
-        that.empty();
-        data && data.forEach(function(data, i) {
-          var el = that.el.cloneNode(true)
-            , vm = that.vm.$$getChild(i + '')
-            ;
-          
-          el.setAttribute('data-' + prefix + 'index', i);
-          frag.appendChild(el);
-          travelEl(el, vm);
-          vm.$$render(data);
-          
-          that.instances.push(el);
-        });
+        data && this.splice.apply(this, [0, data.length].concat(data));
       }else{
         if(invertedReg.test(this.path)){ data = !data; }
         if(data) {
@@ -1078,24 +1072,87 @@ setPrefix('a-');
           }
         }
         that.lastIfState = data;
+        that.relateEl.parentNode.insertBefore(frag, that.relateEl);
       }
       
-      that.relateEl.parentNode.insertBefore(frag, that.relateEl);
-          
       that.state = this.STATE_GENEND;
     }
-  , splice: function() {
-      //TODO 数组的精确控制
-    }
-  , empty: function() {
-      var that = this;
-      this.instances.forEach(function(el, i) {
-        if(el.parentNode && el.parentNode.nodeType !== 11){
-          el.parentNode.removeChild(el);
+    //精确控制 DOM 列表
+  , splice: function(index, n/*, items...*/) {
+      var els = this.els
+        , args = [].slice.call(arguments)
+        , items = args.slice(2), m = items.length
+        , newEls = []
+        , frag = doc.createDocumentFragment()
+        , pn = this.relateEl.parentNode
+        , el, vm
+        ;
+      
+      if(isUndefined(n)){
+        args[1] = n = els.length - index;
+      }
+      
+      for(var i = index, l = els.length; i < l; i++){
+        if(i < index + n){
+          //删除
+          pn.removeChild(els[i]);
+        }else{
+          if(m || n){
+            els[i].setAttribute('data-' + prefix + 'index', i - n + m);
+            vm = this.vm[i - n + m] = this.vm[i];
+            vm.$$path = i - n + m;
+          }else{
+            break;
+          }
         }
-        delete that.vm[i];
-      });
-      this.instances = [];
+      }
+      
+      //新增
+      for(var j = 0; j < m; j++){
+        el = this.el.cloneNode(true);
+        delete this.vm[index + j];
+        vm = this.vm.$$getChild(index + j)
+        el.setAttribute('data-' + prefix + 'index', index + j);
+        frag.appendChild(el);
+        travelEl(el, vm);
+        vm.$$render(items[j]);
+        newEls.push(el);
+      }
+      if(newEls.length){
+        pn.insertBefore(frag, els[index + n] || this.relateEl);
+      }
+      
+      //清理
+      for(var k = l - n + m; k < l; k++){
+        delete this.vm[k];
+      }
+      
+      args = args.slice(0, 2).concat(newEls);
+      els.splice.apply(els, args);
+      ;
+    }
+  , reverse: function() {
+      var vms = this.vm, vm
+        , el = this.relateEl
+        , frag = doc.createDocumentFragment()
+        ;
+      for(var i = 0, l = this.els.length; i < l; i++){
+        if(i < 1/2){
+          vm = vms[i];
+          vms[i] = vms[l - i - 1];
+          vms[i].$$path = i;
+          vm.$$path = l - i - 1;
+          vms[l - i - 1] = vm;
+        }
+        this.els[i].setAttribute('data-' + prefix + 'index', l - i - 1);
+        frag.appendChild(this.els[l - i - 1]);
+      }
+      el.parentNode.insertBefore(frag, el);
+      this.els.reverse();
+    }
+  , sort: function(fn){
+      //TODO 进行精确高还原的排序?
+      this.generate()
     }
   }
   
