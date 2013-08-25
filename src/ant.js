@@ -1003,7 +1003,7 @@ setPrefix('a-');
           console.warn('需要一个数组');
           return;
         }
-        data && this.splice.apply(this, [0, data.length].concat(data));
+        data && this.splice.apply(this, [0, this.els.length].concat(data));
       }else{
         if(invertedReg.test(this.path)){ data = !data; }
         if(data) {
@@ -1042,7 +1042,7 @@ setPrefix('a-');
           pn.removeChild(els[i]);
         }else{
           if(m || n){
-            els[i].setAttribute('data-' + prefix + 'index', i - n + m);
+            els[i][prefix + 'index'] = i - n + m;
             vm = this.vm[i - n + m] = this.vm[i];
             vm.$$path = i - n + m;
           }else{
@@ -1056,7 +1056,7 @@ setPrefix('a-');
         el = this.el.cloneNode(true);
         delete this.vm[index + j];
         vm = this.vm.$$getChild(index + j)
-        el.setAttribute('data-' + prefix + 'index', index + j);
+        el[prefix + 'index'] = index + j;
         frag.appendChild(el);
         travelEl(el, vm);
         vm.$$render(items[j]);
@@ -1088,7 +1088,7 @@ setPrefix('a-');
           vm.$$path = l - i - 1;
           vms[l - i - 1] = vm;
         }
-        this.els[i].setAttribute('data-' + prefix + 'index', l - i - 1);
+        this.els[i][prefix + 'index'] = l - i - 1;
         frag.appendChild(this.els[l - i - 1]);
       }
       el.parentNode.insertBefore(frag, el);
