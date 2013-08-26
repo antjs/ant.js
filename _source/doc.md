@@ -422,7 +422,14 @@ ant.set({newObj: {}, title: 'Matrix'}, false)//完全替换原有 'ant.data'. an
   `Boolean`
 
   该参数标示模板与数据的绑定状态. 初始化没有传入 data 时, 该值为 false, 传入了 data 或者手动调用 `render` 方法后其值为 true.
- 
+
+  
+操作数组
+----
+Ant.js 使用 `ant.set` 方法来改变普通对象的值并触发界面更新. 对于数组同样也可以使用 `set` 方法. 比如有数据 `{list: [{name: 'Ant'}, {name: 'Bee'}]}`, 可以使用 `ant.set('list[0].name', 'Cicada')` 来改变数组数据的值并更新界面. 
+
+更好的操作数组的方法是使用数组的自带方法, 比如更改修改数据就使用 `splice` 方法. Ant.js 封装了常用的数组操作方法, 调用这些方法的时候会自动更新 DOM 界面. 这些方法包括: `push`, `pop`, `unshift`, `shift`, `splice`, `reverse`, `sort`.
+
  
 事件委托
 ----
