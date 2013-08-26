@@ -29,6 +29,7 @@
 })(function(doc) {
 "use strict";
 
+
 var Event = {
   //监听自定义事件.
   on: function(name, handler, context) {
@@ -459,11 +460,11 @@ setPrefix('a-');
     
   
     if(r){
-      vm.$$getChild(r).$$repeater = new Generator(el, vm.$$getChild(r), vm, Generator.TYPE_REPEAT);
+      vm.$$getChild(r).$$addGenerator(el, vm, Generator.TYPE_REPEAT);
       flag = true;
     }else if(i){
       i = i.replace(invertedReg, '');
-      vm.$$getChild(i).$$conditioner = new Generator(el, vm.$$getChild(r), vm, Generator.TYPE_IF);
+      vm.$$getChild(i).$$addGenerator(el, vm, Generator.TYPE_IF);
       flag = true;
     }else if(m){
       view2Model(el, m, vm);
@@ -577,6 +578,8 @@ setPrefix('a-');
   function ViewModel() {
     this.$$path = '';
     this.$$watchers = [];
+    this.$$conditioners = [];
+    this.$$repeaters = [];
   }
   
   ViewModel.prototype = {
@@ -584,8 +587,8 @@ setPrefix('a-');
     $$watchers: null
   , $$root: null
   , $$parent: null
-  , $$conditioner: null
-  , $$repeater: null
+  , $$conditioners: null
+  , $$repeaters: null
   , $$ant: null
   , $$data: null
   , $$path: null
@@ -658,6 +661,11 @@ setPrefix('a-');
         });
       }
     }
+  , $$addGenerator: function(el, relativeScope, type) {
+      var generator = new Generator(el, this, relativeScope, type);
+      (type === Generator.TYPE_IF ? this.$$conditioners : this.$$repeaters).push(generator);
+      return generator;
+    }
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
   , $$getData: function(key, isStrict) {
@@ -670,8 +678,7 @@ setPrefix('a-');
     }
   , $$render: function (data, isExtend) {
       var vm = this
-        , childVM
-        , map, repeater = this.$$repeater
+        , childVM, map
         ;
       
       if(isExtend){
@@ -689,15 +696,13 @@ setPrefix('a-');
         }
       }
       
-      if(this.$$conditioner){
-        this.$$conditioner.generate();
-      }
+      this.$$conditioners.forEach(function(cond){ cond.generate() });
       
-      if(repeater){
+      this.$$repeaters.forEach(function(repeater){
         if(repeater.state === 0 || !isExtend){
           repeater.generate();
         }
-      }
+      });
       
       for(var i = 0, l = this.$$watchers.length; i < l; i++){
         this.$$watchers[i].call(this);
@@ -914,41 +919,39 @@ setPrefix('a-');
   }
   
   
-  function getRepeater(vmArray){
-    return vmArray.__ant__.$$repeater
+  function callRepeater(vmArray, method, args){
+    var repeaters = vmArray.__ant__.$$repeaters;
+    for(var i = 0, l = repeaters.length; i < l; i++){
+      repeaters[i][method].apply(repeaters[i], args);
+    }
   }
   var arrayMethods = {
     splice: afterFn([].splice, function() {
-      var repeater = getRepeater(this);
-      repeater.splice.apply(repeater, arguments);
+      callRepeater(this, 'splice', arguments);
     })
   , push: afterFn([].push, function(/*item1, item2, ...*/) {
-      var arr = [].slice.call(arguments)
-        , repeater = getRepeater(this);
-        ;
+      var arr = [].slice.call(arguments);
       arr.unshift(this.length - arr.length, 0);
-      repeater.splice.apply(repeater, arr);
+      
+      callRepeater(this, 'splice', arr);
     })
   , pop: afterFn([].pop, function() {
-      var repeater = getRepeater(this);
-      repeater.splice.call(repeater, this.length - 1, 1);
+      callRepeater(this, 'splice', [this.length, 1]);
     })
   , shift: afterFn([].shift, function() {
-      var repeater = getRepeater(this);
-      repeater.splice.call(repeater, 0, 1);
+      callRepeater(this, 'splice', [0, 1]);
     })
   , unshift: afterFn([].unshift, function() {
-      var arr = [].slice.call(arguments)
-        , repeater = getRepeater(this);
-        ;
+      var arr = [].slice.call(arguments);
       arr.unshift(0, 0);
-      repeater.splice.apply(repeater, arr);
+      
+      callRepeater(this, 'splice', arr);
     })
   , sort: afterFn([].sort, function(fn) {
-      getRepeater(this).sort(fn);
+      callRepeater(this, 'sort');
     })
   , reverse: afterFn([].reverse, function(){
-      getRepeater(this).reverse();
+      callRepeater(this, 'reverse');
     })
   };
   
@@ -995,7 +998,6 @@ setPrefix('a-');
   , STATE_GENEND: 1
   , generate: function() {
       var that = this
-        , frag = doc.createDocumentFragment()
         , data = this.relativeVm.$$getData(this.path.replace(invertedReg, ''))
         ;
       if(that.type === Generator.TYPE_REPEAT){
@@ -1008,7 +1010,7 @@ setPrefix('a-');
         if(invertedReg.test(this.path)){ data = !data; }
         if(data) {
           if(!that.lastIfState) {
-            frag.appendChild(that.el);
+            that.relateEl.parentNode.insertBefore(that.el, that.relateEl);
           }
         }else{
           if(that.lastIfState) {
@@ -1016,7 +1018,6 @@ setPrefix('a-');
           }
         }
         that.lastIfState = data;
-        that.relateEl.parentNode.insertBefore(frag, that.relateEl);
       }
       
       that.state = this.STATE_GENEND;
@@ -1039,7 +1040,8 @@ setPrefix('a-');
       for(var i = index, l = els.length; i < l; i++){
         if(i < index + n){
           //删除
-          pn.removeChild(els[i]);
+          //对于拥有 if 属性并且不显示的节点, 其并不存在于 DOM 树中
+          try{ pn.removeChild(els[i]); }catch(e){}
         }else{
           if(m || n){
             els[i][prefix + 'index'] = i - n + m;
@@ -1060,6 +1062,7 @@ setPrefix('a-');
         frag.appendChild(el);
         travelEl(el, vm);
         vm.$$render(items[j]);
+        
         newEls.push(el);
       }
       if(newEls.length){
@@ -1073,7 +1076,10 @@ setPrefix('a-');
       
       args = args.slice(0, 2).concat(newEls);
       els.splice.apply(els, args);
-      ;
+      
+      if(n !== m){
+        this.vm.$$getChild('length').$$render(els.length);
+      }
     }
   , reverse: function() {
       var vms = this.vm, vm
