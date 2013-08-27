@@ -696,7 +696,9 @@ setPrefix('a-');
         }
       }
       
-      this.$$conditioners.forEach(function(cond){ cond.generate() });
+      this.$$conditioners.forEach(function(cond){
+        cond.generate();
+      });
       
       this.$$repeaters.forEach(function(repeater){
         if(repeater.state === 0 || !isExtend){
@@ -966,10 +968,6 @@ setPrefix('a-');
     
     el.removeAttribute(attr);
     
-    if(attr === IF){
-      //if 属性不用切换作用域
-      travelEl(el, relativeVm);
-    }
     
     this.el = el;
     this.vm = vm;
@@ -979,6 +977,11 @@ setPrefix('a-');
     this.relateEl = relateEl;
     
     this.els = [];
+    
+    if(attr === IF){
+      //if 属性不用切换作用域
+      travelEl(this.el, relativeVm);
+    }
     
     this.state = this.STATE_READY;
     el.parentNode.insertBefore(relateEl, el);
@@ -1056,8 +1059,9 @@ setPrefix('a-');
       //新增
       for(var j = 0; j < m; j++){
         el = this.el.cloneNode(true);
-        delete this.vm[index + j];
+        //delete this.vm[index + j];
         vm = this.vm.$$getChild(index + j)
+        clearWatchers(vm, els[j]);
         el[prefix + 'index'] = index + j;
         frag.appendChild(el);
         travelEl(el, vm);
@@ -1069,7 +1073,7 @@ setPrefix('a-');
         pn.insertBefore(frag, els[index + n] || this.relateEl);
       }
       
-      //清理
+      //需要缩短后多出的部分
       for(var k = l - n + m; k < l; k++){
         delete this.vm[k];
       }
@@ -1103,6 +1107,34 @@ setPrefix('a-');
   , sort: function(fn){
       //TODO 进行精确高还原的排序?
       this.generate()
+    }
+  }
+  
+  //清空 vm 中某个元素及其子元素的 watcher, reperter, conditioner
+  // TODO .$$watchers 的清除
+  function clearWatchers(vm, el){
+    var types = ['$$repeaters', '$$conditioners', '$$watchers']
+      , watchers, watcher
+      ;
+    
+    if(!el){ return }
+    
+    for(var i = 0, l = types.length; i < l; i++){
+      watchers = vm[types[i]];
+      for(var j = 0, n = watchers.length; j < n; j++){
+        watcher = watchers[j];
+        if(el.contains(watcher.el)){
+          watchers.splice(j, 1);
+          j--;
+          n--;
+        }
+      }
+    }
+    
+    for(var key in vm){
+      if(!(key in ViewModel.prototype)){
+        clearWatchers(vm[key], el);
+      }
     }
   }
   
@@ -1214,6 +1246,20 @@ setPrefix('a-');
       el.detachEvent('on' + event, handler);
     }
   }
+  
+  //节点是否在当前 document 中
+  // function inDocument(el) {
+    // if(doc.contains){
+      // return doc.contains(el)
+    // }else{
+      // while(el = el.parentNode){
+        // if(el === doc){
+          // return true;
+        // }
+      // }
+      // return false;
+    // }
+  // }
   
   return Ant;
 });

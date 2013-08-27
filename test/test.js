@@ -128,12 +128,16 @@ describe('模板语法', function() {
       , ant = new Ant(tpl, {data: data});
       ;
     
-    function check(els, arr, prefix, postfix) {
-      prefix = prefix || '';
-      postfix = postfix || '';
+    //检查列表长度及内容
+    function check(els, arr, opts) {
+      opts = opts || {};
+      var prefix = opts.prefix || ''
+        , postfix = postfix || ''
+        , key = opts.key
+        ;
       expect(els.length).to.be(arr.length);
       for(var i = 0, l = arr.length; i < l; i++){
-        expect(els[i].innerHTML).to.be(prefix + arr[i] + postfix);
+        expect(els[i].innerHTML).to.be(prefix + (key ? arr[i][key] : arr[i]) + postfix);
       }
     }
     
@@ -141,11 +145,104 @@ describe('模板语法', function() {
       check(ant.el.getElementsByTagName('li'), data.list);
     });
     
-    it('arr.push', function() {
-      ant.data.list.push('cicada');
-      check(ant.el.getElementsByTagName('li'), ant.data.list);
-    })
+    describe('数组方法', function() {
+      it('.push', function() {
+        var el = ant.el.getElementsByTagName('li')[0];
+        
+        ant.data.list.push('cicada');
+        check(ant.el.getElementsByTagName('li'), ant.data.list);
+        
+        //push 操作应该不影响原有的列表元素
+        expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+      });
+    });
+    
+    describe('一个数组对应多个 DOM 列表', function() {
+      var tpl = '<ul class="list0"><li a-repeat=list>{{.}}</li></ul><ul class="list1"><li a-repeat=list>{{.}}</li></ul>'
+        , ant = new Ant(tpl, {data: data})
+        ;
+       
+      function listCheck(key){
+        check(ant.el.getElementsByTagName('ul')[0].getElementsByTagName('li'), ant.data.list, {key: key});
+        check(ant.el.getElementsByTagName('ul')[1].getElementsByTagName('li'), ant.data.list, {key: key});
+      }
+       
+      it('基本渲染情况', function(){
+        listCheck();
+      });
+      
+      it('修改数组: .push', function() {
+        ant.data.list.push('cicada');
+        listCheck();
+      });
+      
+      it('修改数组: .set', function() {
+        ant.set('list[0]', 'ANT');
+        listCheck();
+      });
+      
+      it('替换数组', function(){
+        ant.set('list', data.list);
+      })
+    });
+    
+    
+    describe('同时拥有 repeat 和 if 属性', function() {
+      var data = {
+        list: [
+          {
+            name: 'ant'
+          , state: true
+          }
+        , {
+            name: 'bee'
+          , state: false
+          }
+        ]
+      };
+      var tpl = '<ul class="list0"><li a-repeat=list a-if=state>{{name}}</li></ul>';
+      var ant = new Ant(tpl, {data: data});
+      
+      document.body.appendChild(ant.el);
+      
+      function listCheck(){
+        var vlist = [];
+        ant.data.list.forEach(function(item){
+          item.state && vlist.push(item)
+        });
+        check(ant.el.getElementsByTagName('ul')[0].getElementsByTagName('li'), vlist, {key: 'name'});
+      }
+      
+      it('基本渲染情况', function() {
+        listCheck();
+      });
+      
+      it('修改数组: .push', function() {
+        ant.data.list.push({name: 'cicada', state: true});
+        listCheck();
+      });
+      
+      it('修改状态: true -> false', function() {
+        ant.set('list[0].state', false);
+        listCheck();
+      });
+      
+      it('修改状态: false -> true', function() {
+        ant.set('list[0].state', true);
+        listCheck();
+      });
+      
+      it('替换数组并更改状态', function(){
+        data.list[0].state = false;
+        data.list[1].state = true;
+        ant.set('list', data.list);
+        listCheck();
+      })
+      
+    });
   });
+  
+  
   describe('子模板', function() {
     var prefix = '下面有个子节点: ', postfix = ' !'
       , getTpl = function(unescape){
