@@ -117,6 +117,18 @@ describe('实例接口', function(){
       expect(ant.isRendered).to.be(true);
     });
     
+    it('包含数组内容.', function() {
+      var ant = new Ant('', {data: {}});
+      ant.set('list', []);
+      expect(ant.data.list.__ant__).to.be.ok();
+      ant.set('path.list', []);
+      expect(ant.data.path.list.__ant__).to.be.ok();
+      ant.set({'list1': []});
+      expect(ant.data.list1.__ant__).to.be.ok();
+      ant.set({path: {list1: []}});
+      expect(ant.data.path.list1.__ant__).to.be.ok();
+    });
+    
   });
   
 });
@@ -203,7 +215,7 @@ describe('模板语法', function() {
       var tpl = '<ul class="list0"><li a-repeat=list a-if=state>{{name}}</li></ul>';
       var ant = new Ant(tpl, {data: data});
       
-      document.body.appendChild(ant.el);
+      //document.body.appendChild(ant.el);
       
       function listCheck(){
         var vlist = [];
@@ -219,6 +231,10 @@ describe('模板语法', function() {
       
       it('修改数组: .push', function() {
         ant.data.list.push({name: 'cicada', state: true});
+        listCheck();
+      });
+      it('修改数组: .set', function() {
+        ant.set('list[0].name', 'Ant');
         listCheck();
       });
       

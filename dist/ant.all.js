@@ -68,6 +68,8 @@ if (!Array.prototype.indexOf) {
  */               
 
 
+
+
 (function(Ant) {
   var root = this;
   if(typeof module === 'object' && module){
@@ -145,7 +147,7 @@ function extend(obj) {
       for(var key in opts) {
         src = obj[key];
         copy = opts[key];
-        if(obj === copy || key === '__ant__'){ continue; }
+        if(obj === copy){ continue; }
         if(isPlainObject(copy) || Array.isArray(copy)){
           if(Array.isArray(copy)){
             clone = src && Array.isArray(src) ? src : [];
@@ -362,10 +364,10 @@ setPrefix('a-');
         opt = opt || {};
         if(opt.isExtend !== false){
           isExtend = true;
-          extend(this.data, key);
+          modelExtend(this.data, key, this.vm);
         }else{
           isExtend = false;
-          this.data = extend({}, key);
+          this.data = modelExtend({}, key, this.vm);
         }
       }else{
         opt = opt || {};
@@ -389,10 +391,10 @@ setPrefix('a-');
               parent = this.data;
               path = key;
             }
-            parent[path] = isObject(val) ? extend(Array.isArray(val) ? [] : {}, val) : val;
+            parent[path] = isObject(val) ? modelExtend(Array.isArray(val) ? [] : {}, val, this.vm.$$getChild(key, !Array.isArray(val))) : val;
             isExtend = false;
           }else{
-            extend(this.data, deepSet(key, val, {}));
+            modelExtend(this.data, deepSet(key, val, {}), this.vm);
             isExtend = true;
           }
         }
@@ -656,7 +658,7 @@ setPrefix('a-');
     }
   
   //获取子 vm, 不存在的话将新建一个.
-  , $$getChild: function(path) {
+  , $$getChild: function(path, strict) {
       var key, vm
         , cur = this
         , keyChain
@@ -669,6 +671,7 @@ setPrefix('a-');
           key = keyChain[i];
           
           if(!cur[key]){
+            if(strict){ return null; }
             vm = new ViewModel();
             vm.$$parent = cur;
             vm.$$root = cur.$$root || cur;
@@ -736,20 +739,13 @@ setPrefix('a-');
       var vm = this
         , childVM, map
         ;
-      
+        
       if(isExtend){
-        vm.$$data = isObject(vm.$$data) ? extend(vm.$$data, data) : data;
+        vm.$$data = isObject(vm.$$data) ? modelExtend(vm.$$data, data, this) : data;
         map = data;
       }else{
         vm.$$data = data;
         map = this;
-      }
-      
-      if(Array.isArray(data)){
-        data.__ant__ = vm;
-        if(data.push !== arrayMethods.push){
-          extend(data, arrayMethods);
-        }
       }
       
       this.$$conditioners.forEach(function(cond){
@@ -777,6 +773,64 @@ setPrefix('a-');
       }
     }
   };
+  
+  //清空 vm 中某个元素及其子元素的 watcher, reperter, conditioner
+  // TODO .$$watchers 的清除
+  function clearWatchers(vm, el){
+    var types = ['$$repeaters', '$$conditioners', '$$watchers']
+      , watchers, watcher
+      ;
+    
+    if(!el){ return }
+    
+    for(var i = 0, l = types.length; i < l; i++){
+      watchers = vm[types[i]];
+      for(var j = 0, n = watchers.length; j < n; j++){
+        watcher = watchers[j];
+        if(watcher.el && el.contains(watcher.el)){
+          watchers.splice(j, 1);
+          j--;
+          n--;
+        }
+      }
+    }
+    
+    for(var key in vm){
+      if(!(key in ViewModel.prototype)){
+        clearWatchers(vm[key], el);
+      }
+    }
+  }
+  
+  //data -> model
+  function modelExtend(model, data, vm){
+    var src, copy, clone;
+    for(var key in data){
+      src = model[key];
+      copy = data[key];
+      if(model === copy || key === '__ant__'){ continue; }
+      if(isPlainObject(copy) || Array.isArray(copy)){
+        if(Array.isArray(copy)){
+          clone = src && Array.isArray(src) ? src : [];
+        }else{
+          clone = src || {};
+        }
+        model[key] = modelExtend(clone, copy, vm && vm.$$getChild(key, !Array.isArray(clone)));
+      }else{
+        model[key] = copy;
+      }
+    }
+    
+    if(Array.isArray(model)){
+      if(vm){
+        model.__ant__ = vm;
+      }
+      if(model.push !== arrayMethods.push){
+        extend(model, arrayMethods)
+      }
+    }
+    return model;
+  }
   
   var tokenReg = /{{({([^{}\n]+)}|[^{}\n]+)}}/g;
   
@@ -982,6 +1036,7 @@ setPrefix('a-');
     for(var i = 0, l = repeaters.length; i < l; i++){
       repeaters[i][method].apply(repeaters[i], args);
     }
+    vmArray.__ant__.$$root.$$ant.trigger('update');
   }
   var arrayMethods = {
     splice: afterFn([].splice, function() {
@@ -1117,7 +1172,7 @@ setPrefix('a-');
         el = this.el.cloneNode(true);
         //delete this.vm[index + j];
         vm = this.vm.$$getChild(index + j)
-        clearWatchers(vm, els[j]);
+        clearWatchers(vm, els[index + j]);
         el[prefix + 'index'] = index + j;
         frag.appendChild(el);
         travelEl(el, vm);
@@ -1163,34 +1218,6 @@ setPrefix('a-');
   , sort: function(fn){
       //TODO 进行精确高还原的排序?
       this.generate()
-    }
-  }
-  
-  //清空 vm 中某个元素及其子元素的 watcher, reperter, conditioner
-  // TODO .$$watchers 的清除
-  function clearWatchers(vm, el){
-    var types = ['$$repeaters', '$$conditioners', '$$watchers']
-      , watchers, watcher
-      ;
-    
-    if(!el){ return }
-    
-    for(var i = 0, l = types.length; i < l; i++){
-      watchers = vm[types[i]];
-      for(var j = 0, n = watchers.length; j < n; j++){
-        watcher = watchers[j];
-        if(el.contains(watcher.el)){
-          watchers.splice(j, 1);
-          j--;
-          n--;
-        }
-      }
-    }
-    
-    for(var key in vm){
-      if(!(key in ViewModel.prototype)){
-        clearWatchers(vm[key], el);
-      }
     }
   }
   
