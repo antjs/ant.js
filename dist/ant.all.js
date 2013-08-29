@@ -499,33 +499,27 @@ setPrefix('a-');
     var r = el.getAttribute(REPEAT)
       , i = el.getAttribute(IF)
       , m = el.getAttribute(MODEL)
-      
-      , flag, next
       ;
     
-  
     if(r){
       vm.$$getChild(r).$$addGenerator(el, vm, Generator.TYPE_REPEAT);
-      flag = true;
+      return;
     }else if(i){
       i = i.replace(invertedReg, '');
       vm.$$getChild(i).$$addGenerator(el, vm, Generator.TYPE_IF);
-      flag = true;
+      return;
     }else if(m){
       view2Model(el, m, vm);
     }
     
-    if(!flag){
-      for(var i = 0, l = el.attributes.length; i < l; i++){
-        vm.$$updateVM(el.attributes[i], el);
-      }
-      for(var child = el.firstChild; child; ){
-        next = child.nextSibling;
-        travelEl(child, vm);
-        child = next;
-      }
+    for(var i = 0, l = el.attributes.length; i < l; i++){
+      vm.$$updateVM(el.attributes[i], el);
     }
-    
+    for(var child = el.firstChild, next; child; ){
+      next = child.nextSibling;
+      travelEl(child, vm);
+      child = next;
+    }
   }
   
   var isIE = !!doc.attachEvent;
@@ -628,7 +622,6 @@ setPrefix('a-');
   }
   
   ViewModel.prototype = {
-    //新加示例属性应该都要在 prototype 中定义一次, 以便于区分自带属性和数据属性
     $$watchers: null
   , $$root: null
   , $$parent: null
@@ -639,7 +632,22 @@ setPrefix('a-');
     
   , $$updateVM: function(node, el) {
       if(isToken(node.nodeValue) || isToken(node.nodeName)){
-        this.$$addWatcher(node, el);
+        var tokenMap = parseTokens(node, el)
+          , textMap = tokenMap.textMap
+          , that = this
+          ;
+        if(tokenMap.type === 'text' && textMap.length > 1){
+          textMap.forEach(function(text) {
+            var tn = doc.createTextNode(text);
+            el.insertBefore(tn, node);
+            that.$$updateVM(tn, el);
+          });
+          el.removeChild(node);
+        }else{
+          tokenMap.tokens.forEach(function(token){
+            that.$$addWatcher(token, tokenMap);
+          });
+        }
       }
     }
   
@@ -685,26 +693,8 @@ setPrefix('a-');
       return keyPath;
     }
     
-  , $$addWatcher: function(node, el) {
-      var tokenMap = parseTokens(node, el)
-        , tokens = tokenMap.tokens
-        , textMap = tokenMap.textMap
-        , that = this
-        ;
-      
-       //分割文本节点
-      if(tokenMap.type === 'text' && textMap.length > 1){
-        textMap.forEach(function(text) {
-          var tn = doc.createTextNode(text);
-          el.insertBefore(tn, node);
-          that.$$updateVM(tn, el);
-        });
-        el.removeChild(node);
-      }else{
-        tokens.forEach(function(token){
-          addBinding(tokenMap, that, token);
-        });
-      }
+  , $$addWatcher: function(token, tokenMap) {
+      addBinding(tokenMap, this, token);
     }
   , $$addGenerator: function(el, relativeScope, type) {
       var generator = new Generator(el, this, relativeScope, type);
@@ -878,7 +868,7 @@ setPrefix('a-');
       var newVal = isUndefined(val) ? vm.$$getData(token.path) : val;
       updateDom(newVal, token, tokenMap);
     };
-    watcher.el = tokenMap.e;
+    watcher.el = tokenMap.el;
     childVm.$$watchers.push(watcher);
   }
   
