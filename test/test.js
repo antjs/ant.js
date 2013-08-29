@@ -215,7 +215,7 @@ describe('模板语法', function() {
       var tpl = '<ul class="list0"><li a-repeat=list a-if=state>{{name}}</li></ul>';
       var ant = new Ant(tpl, {data: data});
       
-      //document.body.appendChild(ant.el);
+      document.body.appendChild(ant.el);
       
       function listCheck(){
         var vlist = [];
@@ -252,6 +252,8 @@ describe('模板语法', function() {
         data.list[0].state = false;
         data.list[1].state = true;
         ant.set('list', data.list);
+        listCheck();
+        ant.set('list[1].name', 'Bee')
         listCheck();
       })
       

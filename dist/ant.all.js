@@ -67,9 +67,7 @@ if (!Array.prototype.indexOf) {
  *                                            `Y888P           
  */               
 
-
-
-
+ 
 (function(Ant) {
   var root = this;
   if(typeof module === 'object' && module){
@@ -137,27 +135,14 @@ var Event = {
   }
 };
 
-//将多个对象的属性深度并入一个对象中
+//浅合并
 function extend(obj) {
-  var length = arguments.length, opts, src, copy, clone;
+  var length = arguments.length, opts, src, copy;
   obj = obj || {};
   for(var i = 1; i < length; i++) {
     if((opts = arguments[i]) !== null) {
-      //数组不使用 `for in`?
       for(var key in opts) {
-        src = obj[key];
-        copy = opts[key];
-        if(obj === copy){ continue; }
-        if(isPlainObject(copy) || Array.isArray(copy)){
-          if(Array.isArray(copy)){
-            clone = src && Array.isArray(src) ? src : [];
-          }else{
-            clone = src || {};
-          }
-          obj[key] = extend(clone, copy);
-        }else{
-          obj[key] = copy;
-        }
+        obj[key] = opts[key]
       }
     }
   }
@@ -271,7 +256,7 @@ setPrefix('a-');
     
     //这里需要合并可能存在的 this.data
     //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
-    data = extend(this.data, data);
+    data = modelExtend(this.data, data);
     
     if(opts.data){
       this.render(data);
@@ -336,7 +321,8 @@ setPrefix('a-');
      * @return {TemplateObject} 一个新 `Ant` 实例
      */
   , clone: function(opts) {
-      return new this.constructor(this.tpl, extend(this.options, opts));
+      var options = modelExtend({}, this.options);
+      return new this.constructor(this.tpl, modelExtend(this.options, opts));
     }
     
   , get: function(key) {
@@ -423,12 +409,13 @@ setPrefix('a-');
         , node = info.node
         , pn = node && node.parentNode
         , partial = info.content
+        , path = info.path || ''
         ;
       if(name){
         this.partials[name] = info;
       }
       if(partial) {
-        vm = this.vm.$$getChild(info.path);
+        vm = this.vm.$$getChild(path);
         if(info.escape && !isObject(partial)){
           els = [doc.createTextNode(partial)];
           pn && pn.insertBefore(els[0], node);
@@ -444,7 +431,7 @@ setPrefix('a-');
           }
           travelEls(els, vm);
         }
-        this.isRendered && vm.$$render(deepGet(info.path, this.data));
+        this.isRendered && vm.$$render(deepGet(path, this.data));
       }
       return this;
     }
@@ -552,9 +539,9 @@ setPrefix('a-');
       , attr, value = attr = 'value'
       , isSetDefaut = isUndefined(ant.get(cur.$$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
       , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
-      , watcher = function() {
+      , watcher = function(val) {
           //执行这里的时候, 很可能 render 还未执行. vm.$$getData(keyPath) 未定义, 不能返回新设置的值
-          var newVal = this.$$data || vm.$$getData(keyPath) || ''
+          var newVal = val || vm.$$getData(keyPath) || ''
             , val = el[attr]
             ;
           val && val.replace && (val = val.replace(crlf, '\n'));
@@ -648,7 +635,6 @@ setPrefix('a-');
   , $$conditioners: null
   , $$repeaters: null
   , $$ant: null
-  , $$data: null
   , $$path: null
     
   , $$updateVM: function(node, el) {
@@ -728,7 +714,7 @@ setPrefix('a-');
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
   , $$getData: function(key, isStrict) {
-      var curVal = deepGet(key, this.$$data);
+      var curVal = deepGet(key, this.$$root.$$ant.get(this.$$getKeyPath()));
       if(isStrict || !this.$$parent || !isUndefined(curVal)){
         return curVal;
       }else{
@@ -736,17 +722,7 @@ setPrefix('a-');
       }
     }
   , $$render: function (data, isExtend) {
-      var vm = this
-        , childVM, map
-        ;
-        
-      if(isExtend){
-        vm.$$data = isObject(vm.$$data) ? modelExtend(vm.$$data, data, this) : data;
-        map = data;
-      }else{
-        vm.$$data = data;
-        map = this;
-      }
+      var map = isExtend ? data : this;
       
       this.$$conditioners.forEach(function(cond){
         cond.generate();
@@ -759,15 +735,15 @@ setPrefix('a-');
       });
       
       for(var i = 0, l = this.$$watchers.length; i < l; i++){
-        this.$$watchers[i].call(this);
+        this.$$watchers[i].call(this, data);
       }
         
       if(isObject(map)){
         for(var path in map) {
-          if(vm.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
+          if(this.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
           //传入的数据键值不能和 vm 中的自带属性名相同.
           //所以不推荐使用 '$$' 作为 JSON 数据键值的开头.
-            this[path].$$render(!data || isUndefined(data[path]) ? '' : data[path], isExtend);
+            this[path].$$render(data ? data[path] : void(0), isExtend);
           }
         }
       }
@@ -775,7 +751,6 @@ setPrefix('a-');
   };
   
   //清空 vm 中某个元素及其子元素的 watcher, reperter, conditioner
-  // TODO .$$watchers 的清除
   function clearWatchers(vm, el){
     var types = ['$$repeaters', '$$conditioners', '$$watchers']
       , watchers, watcher
@@ -803,6 +778,7 @@ setPrefix('a-');
   }
   
   //data -> model
+  //深度合并对象
   function modelExtend(model, data, vm){
     var src, copy, clone;
     for(var key in data){
@@ -821,12 +797,12 @@ setPrefix('a-');
       }
     }
     
-    if(Array.isArray(model)){
-      if(vm){
+    if(vm){
+      if(Array.isArray(model)){
         model.__ant__ = vm;
-      }
-      if(model.push !== arrayMethods.push){
-        extend(model, arrayMethods)
+        if(model.push !== arrayMethods.push){
+          modelExtend(model, arrayMethods)
+        }
       }
     }
     return model;
@@ -898,11 +874,12 @@ setPrefix('a-');
   
   var addBinding = function (tokenMap, vm, token) {
     var childVm = token.path === '.' ? vm : vm.$$getChild(token.path);
-    
-    childVm.$$watchers.push(function() {
-      var newVal = token.path === '.' ? childVm.$$data : vm.$$getData(token.path);
+    var watcher = function(val) {
+      var newVal = isUndefined(val) ? vm.$$getData(token.path) : val;
       updateDom(newVal, token, tokenMap);
-    });
+    };
+    watcher.el = tokenMap.e;
+    childVm.$$watchers.push(watcher);
   }
   
   var invertedReg = /^\^/;
@@ -913,16 +890,19 @@ setPrefix('a-');
       , pair = tokenStr.split(':')
       ;
       
+    var watcher = function() {
+      var val = vm.$$getData(_path);
+      var newVal = (invertedReg.test(path) ? !val : val) ? value : '';
+      updateDom(newVal, token, tokenMap);
+    };
+      
     if(pair.length === 2){
       var path = pair[0].trim()
         , _path = path.replace(invertedReg, '')
         , value = pair[1].trim()
         ;
-      vm.$$getChild(_path).$$watchers.push(function() {
-        var val = vm.$$getData(_path);
-        var newVal = (invertedReg.test(path) ? !val : val) ? value : '';
-        updateDom(newVal, token, tokenMap);
-      });
+      watcher.el = tokenMap.e;
+      vm.$$getChild(_path).$$watchers.push(watcher);
       return false;
     }
   });
@@ -1034,13 +1014,13 @@ setPrefix('a-');
   function callRepeater(vmArray, method, args){
     var repeaters = vmArray.__ant__.$$repeaters;
     for(var i = 0, l = repeaters.length; i < l; i++){
-      repeaters[i][method].apply(repeaters[i], args);
+      repeaters[i][method](args, vmArray);
     }
     vmArray.__ant__.$$root.$$ant.trigger('update');
   }
   var arrayMethods = {
     splice: afterFn([].splice, function() {
-      callRepeater(this, 'splice', arguments);
+      callRepeater(this, 'splice', [].slice.call(arguments));
     })
   , push: afterFn([].push, function(/*item1, item2, ...*/) {
       var arr = [].slice.call(arguments);
@@ -1119,7 +1099,7 @@ setPrefix('a-');
           console.warn('需要一个数组');
           return;
         }
-        data && this.splice.apply(this, [0, this.els.length].concat(data));
+        data && this.splice([0, this.els.length].concat(data));
       }else{
         if(invertedReg.test(this.path)){ data = !data; }
         if(data) {
@@ -1137,10 +1117,13 @@ setPrefix('a-');
       that.state = this.STATE_GENEND;
     }
     //精确控制 DOM 列表
-  , splice: function(index, n/*, items...*/) {
+    //args: [index, n/*, items...*/]
+  , splice: function(args, arr) {
       var els = this.els
-        , args = [].slice.call(arguments)
-        , items = args.slice(2), m = items.length
+        , items = args.slice(2)
+        , index = args[0]
+        , n = args[1]
+        , m = items.length
         , newEls = []
         , frag = doc.createDocumentFragment()
         , pn = this.relateEl.parentNode
@@ -1179,12 +1162,15 @@ setPrefix('a-');
         vm.$$render(items[j]);
         
         newEls.push(el);
+        if(arr && isObject(arr[index + j])){
+          arr[index + j] = modelExtend(Array.isArray(arr[index + j]) ? []: {}, arr[index + j], vm);
+        }
       }
       if(newEls.length){
         pn.insertBefore(frag, els[index + n] || this.relateEl);
       }
       
-      //需要缩短后多出的部分
+      //需要清除缩短后多出的部分
       for(var k = l - n + m; k < l; k++){
         delete this.vm[k];
       }
