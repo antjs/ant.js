@@ -135,7 +135,6 @@ var Event = {
   }
 };
 
-//浅合并
 function extend(obj) {
   var length = arguments.length, opts, src, copy;
   obj = obj || {};
@@ -256,7 +255,7 @@ setPrefix('a-');
     
     //这里需要合并可能存在的 this.data
     //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
-    data = modelExtend(this.data, data);
+    data = extend(this.data, data);
     
     if(opts.data){
       this.render(data);
@@ -308,7 +307,7 @@ setPrefix('a-');
      * 渲染模板
      */
   , render: function(data) {
-      this.set(data, {isExtend: false, silence: true});
+      data && this.set(data, {isExtend: false, silence: true});
       callRender(this.vm, this.data, false);
       this.isRendered = true;
       this.trigger('render');
@@ -590,8 +589,10 @@ setPrefix('a-');
           };
           watcher = function(){
             var vals = vm.$$getData(keyPath);
-            for(var i = 0, l = el.options.length; i < l; i++){
-              el.options[i].selected = vals && vals.indexOf(el.options[i].value) !== -1;
+            if(vals && vals.length){
+              for(var i = 0, l = el.options.length; i < l; i++){
+                el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
+              }
             }
           };
         }
@@ -617,7 +618,6 @@ setPrefix('a-');
   function ViewModel() {
     this.$$path = '';
     this.$$watchers = [];
-    this.$$conditioners = [];
     this.$$repeaters = [];
   }
   
@@ -625,7 +625,6 @@ setPrefix('a-');
     $$watchers: null
   , $$root: null
   , $$parent: null
-  , $$conditioners: null
   , $$repeaters: null
   , $$ant: null
   , $$path: null
@@ -698,7 +697,7 @@ setPrefix('a-');
     }
   , $$addGenerator: function(el, relativeScope, type) {
       var generator = new Generator(el, this, relativeScope, type);
-      (type === Generator.TYPE_IF ? this.$$conditioners : this.$$repeaters).push(generator);
+      this.$$repeaters.push(generator);
       return generator;
     }
   
@@ -714,14 +713,8 @@ setPrefix('a-');
   , $$render: function (data, isExtend) {
       var map = isExtend ? data : this;
       
-      this.$$conditioners.forEach(function(cond){
-        cond.generate();
-      });
-      
       this.$$repeaters.forEach(function(repeater){
-        if(repeater.state === 0 || !isExtend){
-          repeater.generate();
-        }
+        repeater.generate(data, isExtend);
       });
       
       for(var i = 0, l = this.$$watchers.length; i < l; i++){
@@ -742,7 +735,7 @@ setPrefix('a-');
   
   //清空 vm 中某个元素及其子元素的 watcher, reperter, conditioner
   function clearWatchers(vm, el){
-    var types = ['$$repeaters', '$$conditioners', '$$watchers']
+    var types = ['$$repeaters', '$$watchers']
       , watchers, watcher
       ;
     
@@ -767,8 +760,8 @@ setPrefix('a-');
     }
   }
   
-  //data -> model
-  //深度合并对象
+  //data -> model -> viewModel
+  //深度合并对象.
   function modelExtend(model, data, vm){
     var src, copy, clone;
     for(var key in data){
@@ -781,7 +774,7 @@ setPrefix('a-');
         }else{
           clone = src || {};
         }
-        model[key] = modelExtend(clone, copy, vm && vm.$$getChild(key, !Array.isArray(clone)));
+        model[key] = modelExtend(clone, copy, vm && vm.$$getChild(key));
       }else{
         model[key] = copy;
       }
@@ -822,6 +815,7 @@ setPrefix('a-');
       nodeName = node.nodeName;
       if(nodeName.indexOf(prefix) === 0){
         nodeName = node.nodeName.slice(prefix.length);
+        el.removeAttribute(node.nodeName);
       }
       if(isToken(nodeName)){
         text = nodeName;
@@ -1004,7 +998,9 @@ setPrefix('a-');
   function callRepeater(vmArray, method, args){
     var repeaters = vmArray.__ant__.$$repeaters;
     for(var i = 0, l = repeaters.length; i < l; i++){
-      repeaters[i][method](args, vmArray);
+      if(repeaters[i].type === Generator.TYPE_REPEAT){
+        repeaters[i][method](args, vmArray);
+      }
     }
     vmArray.__ant__.$$root.$$ant.trigger('update');
   }
@@ -1080,7 +1076,7 @@ setPrefix('a-');
   Generator.prototype = {
     STATE_READY: 0
   , STATE_GENEND: 1
-  , generate: function() {
+  , generate: function(data, isExtend) {
       var that = this
         , data = this.relativeVm.$$getData(this.path.replace(invertedReg, ''))
         ;
@@ -1089,7 +1085,9 @@ setPrefix('a-');
           console.warn('需要一个数组');
           return;
         }
-        data && this.splice([0, this.els.length].concat(data));
+        if(this.state === 0 || !isExtend){
+          data && this.splice([0, this.els.length].concat(data));
+        }
       }else{
         if(invertedReg.test(this.path)){ data = !data; }
         if(data) {
@@ -1357,8 +1355,9 @@ if (!Function.prototype.bind) {
       handler = handler || function() {};
       var callback = handler.bind(this)
         , args = name.trim().split(/\s+/)
+        , ev = args.shift()
         ;
-      args.push(callback);
+      args = [ev, args.join(''), callback];
       $(this.el).on.apply($(this.el), args);
       //jQuery 的事件监听函数是用 guid 标定的. 这样 `controller.off(handler)` 就可以起作用了
       handler.guid = callback.guid;
