@@ -7,6 +7,20 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
 - 借助 [jsdom][3], ant.js 也可以在 node.js 中作为 HTML 的模板引擎. 
 
 
+下载和安装
+----
+
+  - [核心开发版](src/ant.js) (35kb)
+  - [核心压缩版](dist/ant.min.js) (5kb)
+
+  
+在 NodeJs 中可以使用 npm 直接安装:
+
+  ```
+  npm install ant.js
+  ```
+  
+  
 模板语法
 ----
   
