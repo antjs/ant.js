@@ -1,0 +1,113 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+  <title>Ant.js 使用教程</title>
+  <link rel="stylesheet" href="third-part/bootstrap.css">
+  <link rel="stylesheet" href="third-part/codemirror.css">
+  <link rel="stylesheet" href="third-part/base16-dark.css">
+  <link rel="stylesheet" href="third-part/introjs.min.css">
+  <link rel="stylesheet" href="third-part/highlight.default.min.css">
+  <link rel="stylesheet" href="css/tutorials.css">
+  <!--[if lt IE 8]>
+    <style>
+      .notsupport{
+        display: block;
+      }
+      #loading{
+        display: none;
+      }
+    </style>
+    <script>
+      window.notSupport = true;
+    </script>
+  <![endif]-->
+  <!--[if lt IE 9]>
+    <script type="text/javascript" src="third-part/respond.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+  <div id="loading"><h3>教程加载中<blink>....</blink></h3></div>
+  <div class="container {{writeMode: write-mode}}">
+    <div class=header>
+      <h1><a href='http://antjs.org'>Ant.js</a> 使用教程</h1>
+      <ul class="pager">
+        <li id='prev-chapter' title='上一章' class='{{^hasPrevChapter:disabled}}'><a href="javascript:;">&lt;</a></li>
+        <li>{{chapterIndex}} / {{tutorials.length}}</li>
+        <li id='next-chapter' title='下一章' class='{{^hasNextChapter:disabled}}'><a href="javascript:;">&gt;</a></li>
+      </ul>
+      <h2>{{chapter.title}}</h2>
+      <div class="write-mode-box" a-if=writeMode>
+        <button class="btn btn-primary" id="show">显示数据</button>
+        <button class="btn btn-primary" id="save">保存</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-lg-6">
+        <div class='panel board'>
+          <div class=panel-heading>
+            <ul class="pager">
+              <li id='prev-step' title='上一节' class='{{^hasPrevStep:disabled}}'><a href="javascript:;">&lt;</a></li>
+              <li>{{stepIndex}} / {{chapter.steps.length}}</li>
+              <li class='next-step {{^hasNextStep:disabled}}' title='下一节'><a href="javascript:;">&gt;</a></li>
+            </ul>
+            <button class="btn btn-default" id="reset">重置代码</button>
+          </div>
+          <div id="notes">{{{step.note}}}</div>
+          <div class="btn-group btn-group-justified"><a href="javascript:;" class="btn btn-default fixcode {{hasFixCode: disabled}}" title="懒人专用">补全本节代码</a><a href="javascript:;" class="btn btn-default next-step {{^hasNextStep:disabled}}">下一节</a></div>
+        </div>
+        <div a-if=writeMode>
+          <input type="text" placeholder="在此输入章节标题" class=form-control a-model=chapter.title>
+          <div class="checkbox isfixed"><label>markdown 编辑器<input type="checkbox" a-model=markdowneditor></label></div>
+          <textarea a-if=markdowneditor placeholder="在此输入 markdown 教程内容." a-model=step.noteMarked class='form-control markdowneditor'></textarea>
+          <textarea a-if='^markdowneditor' placeholder="在此输入教程内容, 支持 HTML." a-model=step.note class='form-control htmleditor'></textarea>
+          <textarea class=form-control placeholder='自此输入每节自动运行的代码' a-model=step.init></textarea>
+        </div>
+        <div class='panel output'>
+          <div class="panel-heading">内容预览:<div class="checkbox isfixed" a-if=writeMode><label>是否自动运行<input type="checkbox" a-model=step.autorun></label></div></div>
+          <div id="output"></div>
+        </div>
+      </div>
+      <div class="col-lg-6 codes">
+        <div class='html panel'>
+          <div class=panel-heading>
+            <div class="checkbox isfixed" a-if=writeMode><label>是否补全代码<input type="checkbox" a-model=isFixHTML></label></div>
+            <h4>HTML</h4>
+          </div>
+          <div class='code'><textarea id="template" a-model="step.html"></textarea></div>
+        </div>
+        <div class='javascript panel'>
+          <div class=panel-heading>
+            <button class="exe btn btn-default" title="Ctrl + Enter 快速执行">执行代码</button>
+            <div class="checkbox isfixed" a-if=writeMode><label>是否补全代码<input type="checkbox" a-model=isFixJavascript></label></div>
+            <h4>Javascript</h4>
+          </div>
+          <div class='code'><textarea id="javascript" a-model=step.javascript></textarea></div>
+        </div>
+        <div class='console panel'>
+          <div class=panel-heading>
+            <button class="exe btn btn-default" title="Ctrl + Enter 快速执行">执行控制台</button>
+            <div class="checkbox isfixed" a-if=writeMode><label>是否补全代码<input type="checkbox" a-model=isFixConsole></label></div>
+            <h4>JS 控制台</h4>
+          </div>
+          <div class='code'><textarea id="console" a-model=step.console></textarea></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <h3 class="notsupport">
+    Ant.js 支持 IE6+ 的浏览器. 不过请使用 IE8+ 浏览器观看本教程!
+  </h3>
+  <script type="text/javascript" src="third-part/jquery.min.js"></script>
+  <script src="third-part/codemirror.js"></script>
+  <script src="third-part/emmet.min.js"></script>
+  <script src="third-part/marked.js"></script>
+  <script src="third-part/highlight.min.js"></script>
+  <script src="third-part/xml.js"></script>
+  <script src="third-part/javascript.js"></script>
+  <script src="third-part/intro.min.js"></script>
+  <script src="../dist/ant.all.min.js"></script>
+  <script type="text/javascript" src="js/tutorials.js"></script>
+</body>
+</html>

@@ -187,7 +187,7 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
 
   + **options.data** `Object`   
   
-    与模板绑定的数据对象的一个拷贝. Data 如果缺省, 可以在稍后用 `ant.render(data)` 传入.
+    与模板绑定的数据对象. Data 如果缺省, 可以在稍后用 `ant.render(data)` 传入.
     
   + **options.partials** `Object`
   
@@ -409,7 +409,7 @@ ant.set({newObj: {}, title: 'Matrix'}, false)//完全替换原有 'ant.data'. an
 
   `Object`
 
-  与模板绑定的数据.
+  与模板绑定的数据. 需要注意的是该属性是 `options.data` 数据的一个拷贝.
   
 ### .options
 

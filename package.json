@@ -29,6 +29,7 @@
     "grunt": "~0.4.1",
     "mocha": "~1.12.0",
     "expect.js": "~0.2.0",
-    "grunt-mocha": "~0.4.1"
+    "grunt-mocha": "~0.4.1",
+    "pygmentize-bundled": "~1.2.0"
   }
 }
