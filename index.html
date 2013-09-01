@@ -3,20 +3,19 @@
 <head>
 	<meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-	<title>Ant.js - 轻量级 HTML 增强框架</title>
+	<title>Ant.js - 轻量级 HTML 增强</title>
   
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/pygment_trac.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <!--[if lt IE 9]>
   <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-  <script src="src/ant-es5-shim.js"></script>
   <![endif]-->
 </head>
 <body>
 	<div class="wrapper">
   <header id="nav">
-    <h4><a href="http://antjs.org">Ant.js <span class="version">(0.1.0)</span></a></h4>
+    <h4><a href="http://antjs.org">Ant.js <span class="version">(0.1.1)</span></a></h4>
     <ul class="sections">
       <li>» <a href="https://github.com/antjs/ant.js">Github 上的 ant.js</a></li>
       <li>» <a href="learn">学习 ant.js</a></li>
@@ -24,8 +23,8 @@
     <ul class="sections"><h4><a href="#%E5%85%BC%E5%AE%B9%E6%80%A7%E5%92%8C%E4%BE%9D%E8%B5%96">兼容性和依赖</a></h4><h4><a href="#%E4%B8%8B%E8%BD%BD%E5%92%8C%E5%AE%89%E8%A3%85">下载和安装</a></h4><h4><a href="#%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</a></h4><ul><li><a href="#%E5%8F%98%E9%87%8F%E5%8D%A0%E4%BD%8D%E7%AC%A6">变量占位符</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%B1%9E%E6%80%A7">条件属性</a></li><li><a href="#%E5%BE%AA%E7%8E%AF%E5%B1%9E%E6%80%A7">循环属性</a></li><li><a href="#%E5%8F%8C%E5%90%91%E7%BB%91%E5%AE%9A%E5%B1%9E%E6%80%A7">双向绑定属性</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F">条件变量</a></li><li><a href="#%E9%9D%9E%E8%BD%AC%E4%B9%89%20html">非转义 HTML</a></li><li><a href="#%E5%AD%90%E6%A8%A1%E6%9D%BF">子模板</a></li></ul><h4><a href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</a></h4><ul><li><a href="#new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</a></li><li><a href="#ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</a></li></ul><h4><a href="#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95%3A">实例方法:</a></h4><ul><li><a href="#.get(keypath)">.get(keypath)</a></li><li><a href="#.set(keypath%5B%2C%20val%2C%20opts%5D)">.set(keypath[, val, opts])</a></li><li><a href="#.render(%5Bdata%5D)">.render([data])</a></li><li><a href="#.update(%5Bkeypath%2C%20data%2C%20isextend%5D)">.update([keyPath, data, isExtend])</a></li><li><a href="#.clone(%5Bopts%5D)">.clone([opts])</a></li><li><a href="#.on(eventname%2C%20callback)">.on(eventName, callback)</a></li><li><a href="#.off(eventname%5B%2C%20callback%5D)">.off(eventName[, callback])</a></li><li><a href="#.trigger(eventname%5B%2C%20extraparameters%20%5D)">.trigger(eventName[, extraParameters ])</a></li><li><a href="#.init(tpl%5B%2C%20options%5D)">.init(tpl[, options])</a></li><li><a href="#.setpartial(info)">.setPartial(info)</a></li></ul><h4><a href="#%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7%3A%20">实例属性: </a></h4><ul><li><a href="#.el">.el</a></li><li><a href="#.tpl">.tpl</a></li><li><a href="#.data">.data</a></li><li><a href="#.options">.options</a></li><li><a href="#.isrendered">.isRendered</a></li></ul><h4><a href="#%E6%93%8D%E4%BD%9C%E6%95%B0%E7%BB%84">操作数组</a></h4><h4><a href="#%E4%BA%8B%E4%BB%B6%E5%A7%94%E6%89%98">事件委托</a></h4><h4><a href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B">使用示例</a></h4><h4><a href="#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97">更新日志</a></h4></ul>
   </header>
   <section id="content">
-    <h1>Ant.js <span class="version">(0.1.0)</span></h1>
-    <p>Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其具有数据驱动界面的能力. </p>
+    <h1>Ant.js <span class="version">(0.1.1)</span></h1>
+    <p>Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具有数据驱动界面的能力. </p>
 <h2 id="%E5%85%BC%E5%AE%B9%E6%80%A7%E5%92%8C%E4%BE%9D%E8%B5%96">兼容性和依赖</h2>
 <ul>
 <li>Ant.js 可以在 IE6+ 的浏览器中使用, 其核心部分不需要任何依赖. 委托事件扩展部分需要 jQuery.</li>
@@ -33,10 +32,10 @@
 </ul>
 <h2 id="%E4%B8%8B%E8%BD%BD%E5%92%8C%E5%AE%89%E8%A3%85">下载和安装</h2>
 <ul>
-<li><a href="src/ant.js">核心开发版</a> (35kb)</li>
-<li><a href="dist/ant.min.js">核心压缩版</a> (5kb)</li>
+<li><a href="dist/ant.js">核心开发版</a> (36kb)</li>
+<li><a href="dist/ant.min.js">核心压缩版</a> (6kb Packed and gziped)</li>
 </ul>
-<p><strong>在 NodeJs 中可以使用 npm 直接安装: </strong></p>
+<p>在 NodeJs 中可以使用 npm 直接安装:</p>
 <pre><code><div class="highlight"><pre>  <span class="nx">npm</span> <span class="nx">install</span> <span class="nx">ant</span><span class="p">.</span><span class="nx">js</span>
 </pre></div>
 </code></pre>

@@ -1,4 +1,4 @@
-Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其具有数据驱动界面的能力. 
+Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具有数据驱动界面的能力. 
 
 兼容性和依赖
 ----
@@ -10,8 +10,8 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
 下载和安装
 ----
 
-  - [核心开发版](src/ant.js) (35kb)
-  - [核心压缩版](dist/ant.min.js) (5kb)
+  - [核心开发版](dist/ant.js) (36kb)
+  - [核心压缩版](dist/ant.min.js) (6kb Packed and gziped)
 
   
 在 NodeJs 中可以使用 npm 直接安装:

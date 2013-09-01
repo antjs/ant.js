@@ -1,7 +1,7 @@
 {
   "name": "ant.js",
-  "version": "0.1.0",
-  "description": "轻量级 MDV",
+  "version": "0.1.1",
+  "description": "轻量级 HTML 增强",
   "main": "src/ant.js",
   "directories": {
     "example": "examples"
