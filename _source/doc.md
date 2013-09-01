@@ -86,8 +86,8 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
 ```javascript
 {
   todos: [
-    {title: '买早餐'}
-  , {title: '吃早餐'}
+    {title: '下片'}
+  , {title: '看片'}
   ]
 }
 ```
@@ -96,8 +96,8 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
 
 ```html
 <ul>
-  <li>买早餐</li>
-  <li>吃早餐</li>
+  <li>下片</li>
+  <li>看片</li>
 </ul>
 ```
 
@@ -111,11 +111,9 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
   
   对于表单元素的绑定值, 目前分为 4 种情况: 
   
-  1. 对于普通的文本输入框如 `input:text`, `textarea` 等, 与 `a-model` 绑定的是其 `value` 属性.
+  1. 复选框 `<input type='checkbox' a-model='somekey' />`. 与 `a-model` 绑定的是其选中状态. 即: 当用户选中时, 'somekey' 对应的值将会被设置成 `true`, 反之为 `false`.
   
-  2. 复选框 `<input type='checkbox' a-model='somekey' />`. 与 `a-model` 绑定的是其选中状态. 即: 当用户选中时, 'somekey' 对应的值将会被设置成 `true`, 反之为 `false`.
-  
-  3. 单选框 
+  2. 单选框 
   
     ```html
     <input type=radio value=red, a-model=color />
@@ -124,7 +122,7 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
   
   单选框往往是一组出现的, 同一组单选框应该有同一个 `a-model`, 与 `a-model` 绑定的是当前选中单选框的 `value` 值. 如: 用户选中 `value=red` 的单选框时, `color` 的值将设成 `red`.
   
-  4. 下拉框
+  3. 下拉框
   
     ```html
     <select a-model='select'>
@@ -140,6 +138,8 @@ Ant.js 可以为前端 Web 应用提供一个绑定数据的模板系统, 使其
     select 控件分为单选和多选. 单选下拉列表绑定的数据是其选中 option 元素的 value 值.
     
     多选的下拉框, 其绑定的数据是包含所有选中 option 元素 value 值的数组.
+    
+  4. 对于其他类型的表单元素, 如文本输入框 `input[type=text]`, `textarea` 等, 与 `a-model` 绑定的是其 `value` 属性.
     
 ### 条件变量
   
@@ -339,7 +339,7 @@ ant.set({newObj: {}, title: 'Matrix'}, false)//完全替换原有 'ant.data'. an
 
   直接用数据更新局部或者全部模板, 并且不更新数据层. 触发 `update` 事件.
   
-  参数同 `set` 方法.
+  参数请参考 `set` 方法.
   
 ### .clone([opts])
 
@@ -383,7 +383,7 @@ ant.set({newObj: {}, title: 'Matrix'}, false)//完全替换原有 'ant.data'. an
   
   该方法对于添加延时加载的子模板非常有用.
   
-  - **info.content** `String|HTMLElement` 子模板内容
+  - **info.content** `String|HTMLElement|AntObject` 子模板内容
   - **[info.name]** `String` 子模板标示符. 对应模板中 `{{>partialName}}`. 没有预定义子模板, 该项可省略.
   - **[info.node]** `HTMLElement` 子模板的目标节点. 对于预定义好的子模板, 该项可省略.
   - **[info.escape]** `Boolean` 是否转义字符串子模板
@@ -428,7 +428,7 @@ ant.set({newObj: {}, title: 'Matrix'}, false)//完全替换原有 'ant.data'. an
 ----
 Ant.js 使用 `ant.set` 方法来改变普通对象的值并触发界面更新. 对于数组同样也可以使用 `set` 方法. 比如有数据 `{list: [{name: 'Ant'}, {name: 'Bee'}]}`, 可以使用 `ant.set('list[0].name', 'Cicada')` 来改变数组数据的值并更新界面. 
 
-更好的操作数组的方法是使用数组的自带方法, 比如更改修改数据就使用 `splice` 方法. Ant.js 封装了常用的数组操作方法, 调用这些方法的时候会自动更新 DOM 界面. 这些方法包括: `push`, `pop`, `unshift`, `shift`, `splice`, `reverse`, `sort`.
+更好的操作数组的方法是使用数组的自带方法: `push`, `pop`, `unshift`, `shift`, `splice`, `reverse`, `sort`. Ant.js 封装了这些的数组操作方法, 调用这些方法的时候会自动更新 DOM 界面.
 
  
 事件委托
