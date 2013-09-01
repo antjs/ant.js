@@ -58,14 +58,16 @@
       </div>
   </div>
 <script type="text/javascript">
-
-  var ant = new Ant(document.getElementById('template'), {
+var ant;
+//一些浏览器会刷新后会记住之前表单的内容. IE 浏览器会在 HTML 加载之后, onload 之前的某个时候为这些表单元素加上记住的内容.
+document.body.onload = function(){
+  ant = new Ant(document.getElementById('template'), {
     data: {test:2, select2: ['cicada', 'bee']}
   , partials: {
       partial: '<em>{{text}}</em><pre>{{textarea}}</pre>'
     }
   });
-  ;
+}
 </script>
 </body>
 </html>

@@ -114,14 +114,14 @@ var Class = {
   }
 };
 
-var prefix, IF, REPEAT, MODEL;
+var prefix, antAttr = {};
 
 function setPrefix(newPrefix) {
   if(newPrefix){
     prefix = newPrefix;
-    IF = prefix + 'if';
-    REPEAT = prefix + 'repeat';
-    MODEL = prefix + 'model';
+    antAttr.IF = prefix + 'if';
+    antAttr.REPEAT = prefix + 'repeat';
+    antAttr.MODEL = prefix + 'model';
   }
 }
 
@@ -285,7 +285,7 @@ setPrefix('a-');
   , set: function(key, val, opt) {
       var changed, isExtend, parent, keys, path;
       
-      if(!key){ return this; }
+      if(isUndefined(key)){ return this; }
       
       if(isObject(key)){
         changed = true;
@@ -317,8 +317,13 @@ setPrefix('a-');
                 deepSet(keys.join('.'), parent = {toString: function() { return oldParent; }}, this.data);
               }
             }else{
-              parent = this.data;
-              path = key;
+              if(key){
+                parent = this.data;
+                path = key;
+              }else{
+                parent = this;
+                path = 'data';
+              }
             }
             parent[path] = isObject(val) ? modelExtend(Array.isArray(val) ? [] : {}, val, this.vm.$$getChild(key, !Array.isArray(val))) : val;
             isExtend = false;
@@ -359,21 +364,25 @@ setPrefix('a-');
       }
       if(partial) {
         vm = this.vm.$$getChild(path);
-        if(info.escape && !isObject(partial)){
-          els = [doc.createTextNode(partial)];
-          pn && pn.insertBefore(els[0], node);
-          travelEl(els[0], vm);
+        
+        if(partial instanceof Ant){
+          els = [partial.el];
         }else{
-          _els = tplParse(partial, 'div').el.childNodes;
-          els = [];
-          for(var i = 0, l = _els.length; i < l; i++){
-            els.push(_els[i]);
+          if(info.escape && !isObject(partial)){
+            els = [doc.createTextNode(partial)];
+          }else{
+              _els = tplParse(partial, 'div').el.childNodes;
+              els = [];
+              for(var i = 0, l = _els.length; i < l; i++){
+                els.push(_els[i]);
+              }
           }
-          for(var i = 0, l = els.length; i < l; i++){
-            pn && pn.insertBefore(els[i], node);
-          }
-          travelEls(els, vm);
         }
+        for(var i = 0, l = els.length; i < l; i++){
+          pn && pn.insertBefore(els[i], node);
+        }
+        
+        travelEls(els, vm);
         this.isRendered && vm.$$render(deepGet(path, this.data));
       }
       return this;
@@ -439,29 +448,39 @@ setPrefix('a-');
       vm.$$updateVM(el, el.parentNode);
       return;
     }
-    var r = el.getAttribute(REPEAT)
-      , i = el.getAttribute(IF)
-      , m = el.getAttribute(MODEL)
-      ;
     
-    if(r){
-      vm.$$getChild(r).$$addGenerator(el, vm, Generator.TYPE_REPEAT);
+    if(checkAttr(el, vm)){
       return;
-    }else if(i){
-      i = i.replace(invertedReg, '');
-      vm.$$getChild(i).$$addGenerator(el, vm, Generator.TYPE_IF);
-      return;
-    }else if(m){
-      view2Model(el, m, vm);
     }
     
-    for(var i = 0, l = el.attributes.length; i < l; i++){
-      vm.$$updateVM(el.attributes[i], el);
-    }
     for(var child = el.firstChild, next; child; ){
       next = child.nextSibling;
       travelEl(child, vm);
       child = next;
+    }
+  }
+  
+  function checkAttr(el, vm) {
+    var repeatAttr = el.getAttributeNode(antAttr.REPEAT)
+      , ifAttr = el.getAttributeNode(antAttr.IF)
+      , modelAttr = el.getAttributeNode(antAttr.MODEL)
+      ;
+    
+    if(repeatAttr || ifAttr){
+      vm.$$addBinding({
+        name: (repeatAttr || ifAttr).nodeName
+      , path: (repeatAttr || ifAttr).nodeValue
+      , el: el
+      });
+      return true;
+    }
+    
+    if(modelAttr){
+      view2Model(el, modelAttr.value, vm);
+    }
+    
+    for(var i = 0, l = el.attributes.length; i < l; i++){
+      vm.$$updateVM(el.attributes[i], el);
     }
   }
   
@@ -551,7 +570,7 @@ setPrefix('a-');
       addEvent(el, e, handler);
     });
     
-    el.removeAttribute(MODEL);
+    el.removeAttribute(antAttr.MODEL);
     
     //根据表单元素的初始化默认值设置对应 model 的值
     if(el[value] && isSetDefaut){
@@ -572,6 +591,7 @@ setPrefix('a-');
   , $$repeaters: null
   , $$ant: null
   , $$path: null
+  , $$links: null
     
   , $$updateVM: function(node, el) {
       if(isToken(node.nodeValue) || isToken(node.nodeName)){
@@ -588,7 +608,7 @@ setPrefix('a-');
           el.removeChild(node);
         }else{
           tokenMap.tokens.forEach(function(token){
-            that.$$addWatcher(token, tokenMap);
+            that.$$addBinding(token, tokenMap);
           });
         }
       }
@@ -636,13 +656,22 @@ setPrefix('a-');
       return keyPath;
     }
     
-  , $$addWatcher: function(token, tokenMap) {
-      addBinding(tokenMap, this, token);
-    }
-  , $$addGenerator: function(el, relativeScope, type) {
-      var generator = new Generator(el, this, relativeScope, type);
-      this.$$repeaters.push(generator);
-      return generator;
+  , $$addBinding: function(info, tokenMap) {
+      var path = info.path, el = info.el, name = info.name
+        , vm
+        ;
+      
+      switch(name){
+        case antAttr.IF:
+          path = path.replace(invertedReg, '');
+        case antAttr.REPEAT:
+          vm = this.$$getChild(path);
+          vm.$$repeaters.push(new Generator(el, vm, this, name));
+          break;
+        default:
+          addBinding(tokenMap, this, info);
+          break;
+      }
     }
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
@@ -664,7 +693,7 @@ setPrefix('a-');
       for(var i = 0, l = this.$$watchers.length; i < l; i++){
         this.$$watchers[i].call(this, data);
       }
-        
+      
       if(isObject(map)){
         for(var path in map) {
           if(this.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
@@ -749,14 +778,13 @@ setPrefix('a-');
       , textMap = []
       , start = 0
       , text = node.nodeValue
-      , nodeName
+      , nodeName = node.nodeName
       ;
     
     if(node.nodeType === 3){//文本节点
       type = 'text';
     }else if(node.nodeType === 2){//属性节点
       type = 'attr';
-      nodeName = node.nodeName;
       if(nodeName.indexOf(prefix) === 0){
         nodeName = node.nodeName.slice(prefix.length);
         el.removeAttribute(node.nodeName);
@@ -778,6 +806,9 @@ setPrefix('a-');
         //key.value
       , path: (val[2] || val[1]).trim()
       , position: textMap.length
+      , el: el
+      , node: node
+      , name: nodeName
       });
       
       //一个引用类型(数组)作为节点对象的文本图, 这样当某一个引用改变了一个值后, 其他引用取得的值都会同时更新
@@ -829,7 +860,7 @@ setPrefix('a-');
         , _path = path.replace(invertedReg, '')
         , value = pair[1].trim()
         ;
-      watcher.el = tokenMap.e;
+      watcher.el = tokenMap.el;
       vm.$$getChild(_path).$$watchers.push(watcher);
       return false;
     }
@@ -942,7 +973,7 @@ setPrefix('a-');
   function callRepeater(vmArray, method, args){
     var repeaters = vmArray.__ant__.$$repeaters;
     for(var i = 0, l = repeaters.length; i < l; i++){
-      if(repeaters[i].type === Generator.TYPE_REPEAT){
+      if(repeaters[i].type === antAttr.REPEAT){
         repeaters[i][method](args, vmArray);
       }
     }
@@ -982,12 +1013,11 @@ setPrefix('a-');
   function Generator(el, vm, relativeVm, type){
     //文档参照节点. 
     var relateEl = doc.createTextNode('')
-      , attr = type === Generator.TYPE_IF ? IF : REPEAT
       ;
       
-    this.path = el.getAttribute(attr);
+    this.path = el.getAttribute(type);
     
-    el.removeAttribute(attr);
+    el.removeAttribute(type);
     
     
     this.el = el;
@@ -999,7 +1029,7 @@ setPrefix('a-');
     
     this.els = [];
     
-    if(attr === IF){
+    if(type === antAttr.IF){
       //if 属性不用切换作用域
       travelEl(this.el, relativeVm);
     }
@@ -1010,10 +1040,8 @@ setPrefix('a-');
   }
   
   extend(Generator, {
-    TYPE_REPEAT: 'repeat'
-  , TYPE_IF: 'if'
-  , isGenTempl: function(el) {
-      return el && el.hasAttributes && el.hasAttributes(REPEAT) || el.hasAttributes(IF);
+    isGenTempl: function(el) {
+      return el && el.hasAttributes && el.hasAttributes(antAttr.REPEAT) || el.hasAttributes(antAttr.IF);
     }
   });
   
@@ -1024,7 +1052,7 @@ setPrefix('a-');
       var that = this
         , data = this.relativeVm.$$getData(this.path.replace(invertedReg, ''))
         ;
-      if(that.type === Generator.TYPE_REPEAT){
+      if(that.type === antAttr.REPEAT){
         if(data && !Array.isArray(data)){
           console.warn('需要一个数组');
           return;
@@ -1197,23 +1225,25 @@ setPrefix('a-');
     return keyPath.replace(bra, '').split(keyPathReg);
   }
   function deepSet(keyStr, value, obj) {
-    var chain = parseKeyPath(keyStr)
-      , cur = obj
-      ;
-      
-    chain.forEach(function(key, i) {
-      if(i === chain.length - 1){
-        cur[key] = value;
-      }else{
-        if(cur && cur.hasOwnProperty(key)){
-          cur = cur[key];
+    if(keyStr){
+      var chain = parseKeyPath(keyStr)
+        , cur = obj
+        ;
+      chain.forEach(function(key, i) {
+        if(i === chain.length - 1){
+          cur[key] = value;
         }else{
-          cur[key] = {};
-          cur = cur[key];
+          if(cur && cur.hasOwnProperty(key)){
+            cur = cur[key];
+          }else{
+            cur[key] = {};
+            cur = cur[key];
+          }
         }
-      }
-    });
-    
+      });
+    }else{
+      extend(obj, value);
+    }
     return obj;
   }
   function deepGet(keyStr, obj) {

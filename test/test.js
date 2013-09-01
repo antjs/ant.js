@@ -310,6 +310,30 @@ describe('模板语法', function() {
       expect(content.innerHTML.toLowerCase()).to.be(html.replace('{{title}}', ant.data.title))
     });
     
+    it('Ant 子模板', function() {
+      var Child = Ant.extend({
+        getTitle: function() {
+          return this.data.title;
+        }
+      });
+      var tpl = '<span>{{title}}</span><pre>这里是子节点</pre>';
+      var child = new Child(tpl);
+      
+      ant = new Ant(getTpl(), {
+        data: {
+          title: '标题'
+        }
+      , partials: {
+          content: child
+        }
+      });
+      
+      $('body').append(ant.el);
+      
+      expect($(ant.el).children('p').children('div')[0]).to.be(child.el);
+      expect(child.el.innerHTML.toLowerCase()).to.be(tpl.replace('{{title}}', ant.data.title));
+    });
+    
     it('子模板根元素带有 repeat 属性', function() {
       var content = '<span>{{title}}</span><span class=repeat a-repeat=list>{{.}}</span>'
         , ant = new Ant(getTpl(true), {
