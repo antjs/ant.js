@@ -215,8 +215,6 @@ describe('模板语法', function() {
       var tpl = '<ul class="list0"><li a-repeat=list a-if=state>{{name}}</li></ul>';
       var ant = new Ant(tpl, {data: data});
       
-      document.body.appendChild(ant.el);
-      
       function listCheck(){
         var vlist = [];
         ant.data.list.forEach(function(item){
@@ -328,7 +326,7 @@ describe('模板语法', function() {
         }
       });
       
-      $('body').append(ant.el);
+      //$('body').append(ant.el);
       
       expect($(ant.el).children('p').children('div')[0]).to.be(child.el);
       expect(child.el.innerHTML.toLowerCase()).to.be(tpl.replace('{{title}}', ant.data.title));
@@ -372,4 +370,25 @@ describe('模板语法', function() {
       expect($(ant.el).children('p').text()).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
     })
   });
-})
+  
+  describe('"a-" 前缀属性', function() {
+    var tpl = '<span data-test="{{test}}" a-style="width:{{width}}px" a-class="{{className}}"></span>'
+    it('带有 "a-" 前缀的非 ant 功能属性在渲染后, 将会被转成正常属性', function() {
+      var ant = new Ant(tpl, {
+            data: {
+              test: '测试'
+            , width: 10
+            , className: 'sun'
+            }
+          })
+        , $el = $(ant.el).children()
+        ;
+      
+      expect($el[0].attributes.length).to.be(3);
+      expect($el.attr('data-test')).to.be(ant.data.test);
+      expect($el.css('width')).to.be(ant.data.width + 'px');
+      expect($el.attr('class')).to.be(ant.data.className);
+    })
+  });
+
+});

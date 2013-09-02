@@ -1,7 +1,7 @@
 {
   "name": "ant.js",
-  "version": "0.1.1",
-  "description": "轻量级 HTML 增强",
+  "version": "0.1.2",
+  "description": "轻量级 HTML 数据驱动框架",
   "main": "src/ant.js",
   "directories": {
     "example": "examples"
@@ -15,7 +15,8 @@
   },
   "keywords": [
     "template",
-    "data-binding"
+    "data-binding",
+    "MVW", "MVC", "MVVM", "MDV"
   ],
   "author": "Justan <ckr189@gmail.com>",
   "license": "MIT",

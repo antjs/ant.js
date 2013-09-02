@@ -464,6 +464,7 @@ setPrefix('a-');
     var repeatAttr = el.getAttributeNode(antAttr.REPEAT)
       , ifAttr = el.getAttributeNode(antAttr.IF)
       , modelAttr = el.getAttributeNode(antAttr.MODEL)
+      , attr
       ;
     
     if(repeatAttr || ifAttr){
@@ -480,7 +481,13 @@ setPrefix('a-');
     }
     
     for(var i = 0, l = el.attributes.length; i < l; i++){
-      vm.$$updateVM(el.attributes[i], el);
+      attr = el.attributes[i];
+      vm.$$updateVM(attr, el);
+      if(attr.nodeName.indexOf(prefix) === 0){
+        el.removeAttribute(attr.nodeName);
+        i--;
+        l--;
+      }
     }
   }
   
@@ -787,7 +794,6 @@ setPrefix('a-');
       type = 'attr';
       if(nodeName.indexOf(prefix) === 0){
         nodeName = node.nodeName.slice(prefix.length);
-        el.removeAttribute(node.nodeName);
       }
       if(isToken(nodeName)){
         text = nodeName;
