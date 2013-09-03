@@ -553,7 +553,7 @@ setPrefix('a-');
   function view2Model(el, keyPath, vm) {
     keyPath = keyPath.trim();
     var ant = vm.$$root.$$ant
-      , cur = vm.$$getChild(keyPath)
+      , cur = keyPath === '.' ? vm : vm.$$getChild(keyPath)
       , ev = 'change'
       , attr, value = attr = 'value'
       , isSetDefaut = isUndefined(ant.get(cur.$$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
@@ -1143,8 +1143,8 @@ setPrefix('a-');
   , splice: function(args, arr) {
       var els = this.els
         , items = args.slice(2)
-        , index = args[0]
-        , n = args[1]
+        , index = args[0] * 1
+        , n = args[1] * 1
         , m = items.length
         , newEls = []
         , frag = doc.createDocumentFragment()
