@@ -8,50 +8,63 @@
   <![endif]-->
   <script type="text/javascript" src="../src/ant.js"></script>
   <style>
-    label, .radio-box{
-      display:inline-block;
-      margin: 0 1em 1em;
-    }
-    .radio-box label{
-      display: inline;
+    fieldset{
+      margin:1em;
+      padding: 1em;
     }
   </style>
 </head>
 <body>
 	<div id=template>
+    <h1>Ant.js 的双向绑定: </h1>
     <form name=form0 action="test" method=get>
-    	<label>文本框: <input {{password}} type="text" a-model=text /> </label>
-    	<label>密码框: <input {{checkbox:disabled}} type="password" a-model=password /> </label>
-    	<label>复选框: <input type="checkbox" name=cb a-model=checkbox /></label>
-    	<div class='radio-box'>单选框: 
-        <label>red: <input type="radio" a-model=radio value=red name=rd /></label>
-        <label>blue: <input type="radio" checked a-model=radio value=blue name=rd /></label>
-        <label>green: <input type="radio" a-model=radio value=green name=rd /></label>
-      </div>
-      <label>文本域: <textarea name=ta a-model=textarea>&lth1&gtunescape&lt/h1&gt</textarea></label>
-      <label>下拉列表1: <select a-model=select1>
-      		<option value="ant">ant</option>
-      		<option selected value="bear">bear</option>
-        </select></label>
-      <label>下拉列表2: <select name=select2 multiple a-model=select2>
-      		<option value="ant">ant</option>
-      		<option value="bee">bee</option>
-      		<option value="cicada">cicada</option>
-      		<option value="dragonfly">dragonfly</option>
-        </select></label>
-      <label>下拉列表3: <select name=select3 a-model=select3>
-      		<option a-repeat=select2 value="{{.}}">{{.}}</option>
-        </select></label>
+      <fieldset>
+        <legend>普通文本框: </legend>
+        <label>文本框: <input {{password}} type="text" a-model=text /> </label>
+        <label>密码框: <input {{checkbox:disabled}} type="password" a-model=password /> </label>
+        <label>多行文本: <textarea name=ta a-model=textarea>&lth1&gtunescape&lt/h1&gt</textarea></label>
+      </fieldset>
+      
+      <fieldset>
+        <legend>HTML5 表单元素(请使用 chrome): </legend>
+        <label>范围: <input type="range" min=0 max=100 a-model=range /> </label>
+        <label>取色: <input type="color" value="#ffffaa" a-model=color /> </label>
+        <label>日期: <input type="date" value="2013-09-03" a-model=date /> </label>
+      </fieldset>
+      
+      <fieldset>
+        <legend>单选 / 复选 / 下拉: </legend>
+        <label>复选框: <input type="checkbox" name=cb a-model=checkbox /></label>
+        <div class='radio-box'>单选框: 
+          <label>red: <input type="radio" a-model=radio value=red name=rd /></label>
+          <label>blue: <input type="radio" checked a-model=radio value=blue name=rd /></label>
+          <label>green: <input type="radio" a-model=radio value=green name=rd /></label>
+        </div>
+        <label>下拉列表1: <select a-model=select1>
+            <option value="ant">ant</option>
+            <option selected value="bear">bear</option>
+          </select></label>
+        <label>下拉列表2: <select name=select2 multiple a-model=select2>
+            <option value="ant">ant</option>
+            <option value="bee">bee</option>
+            <option value="cicada">cicada</option>
+            <option value="dragonfly">dragonfly</option>
+          </select></label>
+        <label>下拉列表3: <select name=select3 a-model=select3>
+            <option a-repeat=select2 value="{{.}}">{{.}}</option>
+          </select></label>
+      </fieldset>
     </form>
       <ul>
       	<li>文本框的值是: {{text}}</li>
       	<li>密码框的值是: {{password}}</li>
       	<li>复选框的值是: {{checkbox}}</li>
       	<li>单选框的值是: <span a-style="color:{{radio}}">{{radio}}</span></li>
-      	<li>文本域的值是: {{{textarea}}}</li>
+      	<li>多行文本框的内容: {{{textarea}}}</li>
       	<li>下拉框1的值是: {{select1}}</li>
       	<li>下拉框2的值是: {{select2}}</li>
       	<li a-if=select3>下拉框3的值是: {{select3}}</li>
+        <li a-style="background-color: {{color}}; width: {{range}}%">范围框/取色框/日期框: <span>{{range}} / {{color}} / {{date}}</span></li>
       </ul>
       <div>
         局部模板: {{> partial}}<!-- {{{> partial}}} --> !

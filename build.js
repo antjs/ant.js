@@ -4,7 +4,7 @@ var fs = require('fs')
   , pygmentize = require('pygmentize-bundled')
   ;
 
-var layout = fs.readFileSync(__dirname + '/_layouts/default.html', 'utf8')
+var layout = fs.readFileSync(__dirname + '/docs/_layouts/default.html', 'utf8')
   , doc = fs.readFileSync(__dirname + '/docs/doc.md', 'utf8')
   , log = fs.readFileSync(__dirname + '/CHANGELOG.md', 'utf8')
   , site = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8'))
@@ -26,9 +26,9 @@ marked.Parser.parse = function(tokens, opt) {
         nav += '<ul>'
       }
       if(token.depth < lastDepth){
-        nav += '</ul>'
+        nav += '</ul></li>'
       }
-      nav += (token.depth === 2 ? '<h4><a href="#' + encodeURIComponent(token.text.toLowerCase()) + '">' + token.text + '</a></h4>' : '<li><a href="#' + encodeURIComponent(token.text.toLowerCase()) + '">' + token.text + '</a></li>');
+      nav += (token.depth === 2 ? '<li><h4><a href="#' + encodeURIComponent(token.text.toLowerCase()) + '">' + token.text + '</a></h4>' : '<li><a href="#' + encodeURIComponent(token.text.toLowerCase()) + '">' + token.text + '</a></li>');
       
       lastDepth = token.depth;
     }
