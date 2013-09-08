@@ -20,35 +20,36 @@
     <button class=sort>排序</button>
     <button class=reverse>翻转</button>
     <ul>
-      <li a-repeat=province>{{.}} <button class='edit' title="编辑">编辑</button><button class='del' title="删除">删除</button></li>
+      <li a-repeat=list>{{.}} <button class='edit' title="编辑">编辑</button><button class='del' title="删除">删除</button></li>
     </ul>
     <form onsubmit='return false;'><label><input type="text" a-model='cur'></label><input type="submit" value="{{index:确定修改}}{{^index:添加}}"><button a-if=index class='cancel-edit'>取消编辑</button</form>
   </div>
 <script type="text/javascript">
 var ant = new Ant(document.getElementById('template'), {
-  data: {province:["广东省", "北京市", "上海市", "湖北省", "重庆市", "浙江省"]}
+  data: {list:["广东省", "北京市", "上海市", "湖北省", "重庆市", "浙江省"]}
 , events: {
     'click .del': function(e) {
-      this.data.province.splice(e.target.parentNode['a-index'], 1);
+      this.data.list.splice(e.target.parentNode['a-index'], 1);
     }
   , 'click .sort': function() {
-      this.data.province.sort()
+      this.data.list.sort()
     }
   , 'click .reverse': function() {
-      this.data.province.reverse()
+      this.data.list.reverse()
     }
   , 'click .edit': function(e) {
       var index = e.target.parentNode['a-index'];
-      this.set({'index': index + '', cur: this.data.province[index]});
+      this.set({'index': index + '', cur: this.data.list[index]});
+      $('input:text').select();
     }
   , 'click .cancel-edit': function() {
       this.set('index');
     }
   , 'submit': function() {
       if(this.data.index){
-        this.data.province.splice(this.data.index, 1, this.data.cur);
+        this.data.list.splice(this.data.index, 1, this.data.cur);
       }else{
-        this.data.province.push(this.data.cur)
+        this.data.list.push(this.data.cur)
       }
     }
   }

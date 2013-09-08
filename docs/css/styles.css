@@ -91,7 +91,10 @@ body {
   background: #f4f6ec;
 }
 body, button, input, select, textarea {
-    font:500 0.875em/1.8 Microsoft Yahei, Hiragino Sans GB, WenQuanYi Micro Hei, sans-serif;
+    font:500 0.875em/1.8 Georgia,"Times New Roman",Times,"Songti SC","SimSun",serif;
+}
+h1, h2, h3, h4{
+  font-family: Microsoft Yahei, Hiragino Sans GB, WenQuanYi Micro Hei, sans-serif;
 }
 a {
   color: #369;

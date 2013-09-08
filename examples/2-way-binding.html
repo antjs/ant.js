@@ -22,7 +22,7 @@
         <legend>普通文本框: </legend>
         <label>文本框: <input {{password}} type="text" a-model=text /> </label>
         <label>密码框: <input {{checkbox:disabled}} type="password" a-model=password /> </label>
-        <label>多行文本: <textarea name=ta a-model=textarea>&lth1&gtunescape&lt/h1&gt</textarea></label>
+        <label>多行文本: <textarea name=ta a-model=textarea>&ltem&gtwho is your daddy&lt/em&gt</textarea></label>
       </fieldset>
       
       <fieldset>
@@ -56,28 +56,26 @@
       </fieldset>
     </form>
       <ul>
-      	<li>文本框的值是: {{text}}</li>
-      	<li>密码框的值是: {{password}}</li>
-      	<li>复选框的值是: {{checkbox}}</li>
-      	<li>单选框的值是: <span a-style="color:{{radio}}">{{radio}}</span></li>
-      	<li>多行文本框的内容: {{{textarea}}}</li>
-      	<li>下拉框1的值是: {{select1}}</li>
-      	<li>下拉框2的值是: {{select2}}</li>
-      	<li a-if=select3>下拉框3的值是: {{select3}}</li>
+      	<li>文本框: {{text}}</li>
+      	<li>密码框: {{password}}</li>
+      	<li>复选框: {{checkbox}}</li>
+      	<li>单选框: <span a-style="color:{{radio}}">{{radio}}</span></li>
+      	<li>多行文本框: {{{textarea}}}</li>
+      	<li>下拉框1: {{select1}}</li>
+      	<li>下拉框2: {{select2}}</li>
+      	<li a-if=select3>下拉框3: {{select3}}</li>
         <li a-style="background-color: {{color}}; width: {{range}}%">范围框/取色框/日期框: <span>{{range}} / {{color}} / {{date}}</span></li>
+        <li>子模板: {{> partial}}<!-- {{{> partial}}} --> !</li>
       </ul>
-      <div>
-        局部模板: {{> partial}}<!-- {{{> partial}}} --> !
-      </div>
   </div>
 <script type="text/javascript">
 var ant;
-//一些浏览器会刷新后会记住之前表单的内容. IE 浏览器会在 HTML 加载之后, onload 之前的某个时候为这些表单元素加上记住的内容.
+//一浏览器会刷新后会记住之前表单的内容. IE 浏览器会在 HTML 加载之后, onload 之前的某个时候为这些表单元素加上记住的内容.
 document.body.onload = function(){
   ant = new Ant(document.getElementById('template'), {
     data: {test:2, select2: ['cicada', 'bee']}
   , partials: {
-      partial: '<em>{{text}}</em><pre>{{textarea}}</pre>'
+      partial: '这里是子模板. {{textarea}}'
     }
   });
 }

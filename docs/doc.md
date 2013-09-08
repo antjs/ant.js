@@ -467,12 +467,10 @@ var ant = new Ant(element, {
 使用示例
 ----
 
-[Github 代码库中](https://github.com/antjs/ant.js/tree/master/examples) 列举一些使用示例. 
+[Github 代码库中](https://github.com/antjs/ant.js/tree/master/examples) 提供了一些使用示例. 
 
-而下面列举了一些在线示例: 
-
-- [ant.js 使用教程](http://antjs.org/learn/)
-- [noBackend 的实时评论系统](http://antjs.org/examples/backbase/)
+- [使用 ant.js 编写的 ant.js 使用教程](learn/)
+- [noBackend 的实时评论系统](examples/backbase/)
  
   
 [0]: http://documentcloud.github.io/backbone/#View-delegateEvents
