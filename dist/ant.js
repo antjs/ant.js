@@ -260,6 +260,7 @@ setPrefix('a-');
     if(opts.data){
       this.render(data);
     }
+    this.trigger('init');
     this.init.apply(this, arguments);
   }
   
@@ -1165,7 +1166,7 @@ setPrefix('a-');
           if(m || n){
             els[i][prefix + 'index'] = i - n + m;
             vm = this.vm[i - n + m] = this.vm[i];
-            vm.$$path = i - n + m;
+            vm.$$path = i - n + m + '';
           }else{
             break;
           }
@@ -1213,8 +1214,8 @@ setPrefix('a-');
         if(i < 1/2){
           vm = vms[i];
           vms[i] = vms[l - i - 1];
-          vms[i].$$path = i;
-          vm.$$path = l - i - 1;
+          vms[i].$$path = i + '';
+          vm.$$path = l - i - 1 + '';
           vms[l - i - 1] = vm;
         }
         this.els[i][prefix + 'index'] = l - i - 1;

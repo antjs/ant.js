@@ -204,6 +204,7 @@ setPrefix('a-');
     if(opts.data){
       this.render(data);
     }
+    this.trigger('init');
     this.init.apply(this, arguments);
   }
   
