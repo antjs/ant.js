@@ -601,12 +601,14 @@ setPrefix('a-');
   , $$path: null
   , $$links: null
     
+    //根据 DOM 节点中的占位符及 ant 属性来更新 viewmodel
   , $$updateVM: function(node, el) {
       if(isToken(node.nodeValue) || isToken(node.nodeName)){
         var tokenMap = parseTokens(node, el)
           , textMap = tokenMap.textMap
           , that = this
           ;
+        //如果绑定内容是在文本中, 则将其分割成单独的文本节点
         if(tokenMap.type === 'text' && textMap.length > 1){
           textMap.forEach(function(text) {
             var tn = doc.createTextNode(text);
@@ -1108,6 +1110,7 @@ setPrefix('a-');
           try{ pn.removeChild(els[i]); }catch(e){}
         }else{
           if(m || n){
+            //维护索引
             els[i][prefix + 'index'] = i - n + m;
             vm = this.vm[i - n + m] = this.vm[i];
             vm.$$path = i - n + m + '';
