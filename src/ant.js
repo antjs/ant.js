@@ -122,6 +122,7 @@ function setPrefix(newPrefix) {
     antAttr.IF = prefix + 'if';
     antAttr.REPEAT = prefix + 'repeat';
     antAttr.MODEL = prefix + 'model';
+    Ant.PREFIX = prefix;
   }
 }
 
@@ -195,7 +196,9 @@ setPrefix('a-');
       this.on(event, events[event]);
     }
     
+    this.trigger('beforeInit');
     buildViewModel(this);
+    this.trigger('build');
     
     //这里需要合并可能存在的 this.data
     //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
@@ -204,8 +207,8 @@ setPrefix('a-');
     if(opts.data){
       this.render(data);
     }
-    this.trigger('init');
     this.init.apply(this, arguments);
+    this.trigger('afterInit');
   }
   
   extend(Ant, Class, {
@@ -520,6 +523,9 @@ setPrefix('a-');
       ;
     
     switch(el.tagName) {
+      default:
+        value = attr = 'innerHTML';
+        ev += ' blur';
       case 'INPUT':
       case 'TEXTAREA':
         switch(el.type) {
@@ -898,6 +904,7 @@ setPrefix('a-');
     }
   });
   
+  
   function updateDom(newVal, token, tokenMap) {
     var pos = token.position
       , node = tokenMap.node
@@ -979,6 +986,7 @@ setPrefix('a-');
   }
   
   
+  //---
   function callRepeater(vmArray, method, args){
     var repeaters = vmArray.__ant__.$$repeaters;
     for(var i = 0, l = repeaters.length; i < l; i++){

@@ -54,6 +54,10 @@
             <option a-repeat=select2 value="{{.}}">{{.}}</option>
           </select></label>
       </fieldset>
+      <fieldset>
+        <legend>可编辑 HTML: </legend>
+        <div a-model='edit' contenteditable><em>任意一个可编辑标签</em></div>
+      </fieldset>
     </form>
       <ul>
       	<li>文本框: {{text}}</li>
@@ -66,6 +70,7 @@
       	<li a-if=select3>下拉框3: {{select3}}</li>
         <li a-style="background-color: {{color}}; width: {{range}}%">范围框/取色框/日期框: <span>{{range}} / {{color}} / {{date}}</span></li>
         <li>子模板: {{> partial}}<!-- {{{> partial}}} --> !</li>
+        <li>可编辑文本: {{edit}}</li>
       </ul>
   </div>
 <script type="text/javascript">
@@ -77,6 +82,7 @@ document.body.onload = function(){
   , partials: {
       partial: '这里是子模板. {{textarea}}'
     }
+  , lazy: false
   });
 }
 </script>
