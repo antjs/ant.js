@@ -50,10 +50,9 @@ var Event = {
       
     if(name && handlers[name]){
       if('function' === typeof handler){
-        for(var i = 0; i < handlers[name].length; i++) {
+        for(var i = handlers[name].length - 1; i >=0; i--) {
           if(handlers[name][i].handler === handler){
             handlers[name].splice(i, 1);
-            i--;
           }
         }
       }else{
@@ -484,13 +483,11 @@ setPrefix('a-');
       view2Model(el, modelAttr.value, vm);
     }
     
-    for(var i = 0, l = el.attributes.length; i < l; i++){
+    for(var i = el.attributes.length - 1; i >= 0; i--){
       attr = el.attributes[i];
       vm.$$updateVM(attr, el);
       if(attr.nodeName.indexOf(prefix) === 0){
         el.removeAttribute(attr.nodeName);
-        i--;
-        l--;
       }
     }
   }
@@ -500,6 +497,9 @@ setPrefix('a-');
   //双向绑定
   function view2Model(el, keyPath, vm) {
     keyPath = keyPath.trim();
+    
+    if(!keyPath){ return; }
+    
     var ant = vm.$$root.$$ant
       , cur = keyPath === '.' ? vm : vm.$$getChild(keyPath)
       , ev = 'change'
@@ -732,12 +732,10 @@ setPrefix('a-');
     
     for(var i = 0, l = types.length; i < l; i++){
       watchers = vm[types[i]];
-      for(var j = 0, n = watchers.length; j < n; j++){
+      for(var j = watchers.length - 1; j >= 0; j--){
         watcher = watchers[j];
         if(watcher.el && el.contains(watcher.el)){
           watchers.splice(j, 1);
-          j--;
-          n--;
         }
       }
     }
@@ -903,7 +901,7 @@ setPrefix('a-');
       return false;
     }
   });
-  
+   
   
   function updateDom(newVal, token, tokenMap) {
     var pos = token.position
@@ -942,11 +940,9 @@ setPrefix('a-');
           _node.parentNode && _node.parentNode.removeChild(_node);
         });
         token.unescapeNodes = [];
-        for(var i = 0, l = nodes.length; i < l; i++){
+        for(var i = nodes.length - 1; i >= 0; i--){
           token.unescapeNodes.push(nodes[i]);
           node.parentNode.insertBefore(nodes[i], node);
-          i--;
-          l--;
         }
         
         node.nodeValue = '';

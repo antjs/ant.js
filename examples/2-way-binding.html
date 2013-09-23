@@ -43,6 +43,10 @@
         <label>下拉列表1: <select a-model=select1>
             <option value="ant">ant</option>
             <option selected value="bear">bear</option>
+            <optgroup label='分组'>
+              <option value="cicada">cicada</option>
+              <option value="dragonfly">dragonfly</option>
+            </optgroup>
           </select></label>
         <label>下拉列表2: <select name=select2 multiple a-model=select2>
             <option value="ant">ant</option>
@@ -56,7 +60,9 @@
       </fieldset>
       <fieldset>
         <legend>可编辑 HTML: </legend>
-        <div a-model='edit' contenteditable><em>任意一个可编辑标签</em></div>
+        <div a-model='edit' contenteditable>
+          <p><em>任意一个可编辑标签</em></p>
+        </div>
       </fieldset>
     </form>
       <ul>
