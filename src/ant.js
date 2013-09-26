@@ -198,6 +198,7 @@ setPrefix('a-');
     this.trigger('beforeInit');
     buildViewModel(this);
     this.trigger('build');
+    this.bindings = (this.bindings || []).concat(opts.bindings || []);
     
     //这里需要合并可能存在的 this.data
     //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
@@ -268,7 +269,8 @@ setPrefix('a-');
      */
   , clone: function(opts) {
       var options = modelExtend({}, this.options);
-      return new this.constructor(this.tpl, modelExtend(this.options, opts));
+      if(opts && opts.data){ options.data = null; }
+      return new this.constructor(this.tpl, modelExtend(options, opts));
     }
     
   , get: function(key) {
@@ -399,6 +401,14 @@ setPrefix('a-');
       return data;
     }
   , init: noop
+  
+    //TODO 
+  , watch: function(keyPath, callback) {
+      
+    }
+  , unwatch: function(keyPath, callback) {
+    
+    }
   });
   
   function tplParse(tpl, target) {
@@ -448,7 +458,7 @@ setPrefix('a-');
       return;
     }else if(el.nodeType === 3){
       //文本节点
-      vm.$$updateVM(el, el.parentNode);
+      checkBinding(vm, el, el.parentNode);
       return;
     }
     
@@ -463,19 +473,16 @@ setPrefix('a-');
     }
   }
   
+  //遍历属性
   function checkAttr(el, vm) {
     var repeatAttr = el.getAttributeNode(antAttr.REPEAT)
       , ifAttr = el.getAttributeNode(antAttr.IF)
       , modelAttr = el.getAttributeNode(antAttr.MODEL)
-      , attr
+      , attr, gen = repeatAttr || ifAttr
       ;
     
-    if(repeatAttr || ifAttr){
-      vm.$$addBinding({
-        name: (repeatAttr || ifAttr).nodeName
-      , path: (repeatAttr || ifAttr).nodeValue
-      , el: el
-      });
+    if(gen){
+      checkBinding(vm, gen, el, gen);
       return true;
     }
     
@@ -485,9 +492,30 @@ setPrefix('a-');
     
     for(var i = el.attributes.length - 1; i >= 0; i--){
       attr = el.attributes[i];
-      vm.$$updateVM(attr, el);
+      checkBinding(vm, attr, el);
       if(attr.nodeName.indexOf(prefix) === 0){
         el.removeAttribute(attr.nodeName);
+      }
+    }
+  }
+  
+  function checkBinding(vm, node, el, isGen) {
+    if(isGen || isToken(node.nodeValue) || isToken(node.nodeName)){
+      var tokens = parseTokens(node, el, isGen)
+        , textMap = tokens.textMap
+        ;
+      //如果绑定内容是在文本中, 则将其分割成单独的文本节点
+      if(tokens.type === 'text' && textMap.length > 1){
+        textMap.forEach(function(text) {
+          var tn = doc.createTextNode(text);
+          el.insertBefore(tn, node);
+          checkBinding(vm, tn, el);
+        });
+        el.removeChild(node);
+      }else{
+        tokens.forEach(function(token){
+          addWatcher(vm, token, tokens);
+        });
       }
     }
   }
@@ -595,6 +623,7 @@ setPrefix('a-');
   function ViewModel() {
     this.$$path = '';
     this.$$watchers = [];
+    this._watchers = [];
     this.$$repeaters = [];
   }
   
@@ -605,31 +634,9 @@ setPrefix('a-');
   , $$repeaters: null
   , $$ant: null
   , $$path: null
-  , $$links: null
-    
-    //根据 DOM 节点中的占位符及 ant 属性来更新 viewmodel
-  , $$updateVM: function(node, el) {
-      if(isToken(node.nodeValue) || isToken(node.nodeName)){
-        var tokenMap = parseTokens(node, el)
-          , textMap = tokenMap.textMap
-          , that = this
-          ;
-        //如果绑定内容是在文本中, 则将其分割成单独的文本节点
-        if(tokenMap.type === 'text' && textMap.length > 1){
-          textMap.forEach(function(text) {
-            var tn = doc.createTextNode(text);
-            el.insertBefore(tn, node);
-            that.$$updateVM(tn, el);
-          });
-          el.removeChild(node);
-        }else{
-          tokenMap.tokens.forEach(function(token){
-            that.$$addBinding(token, tokenMap);
-          });
-        }
-      }
-    }
   
+  , _watchers: null
+    
   //获取子 vm, 不存在的话将新建一个.
   , $$getChild: function(path, strict) {
       var key, vm
@@ -671,24 +678,6 @@ setPrefix('a-');
       }
       return keyPath;
     }
-    
-  , $$addBinding: function(info, tokenMap) {
-      var path = info.path, el = info.el, name = info.name
-        , vm
-        ;
-      
-      switch(name){
-        case antAttr.IF:
-          path = path.replace(invertedReg, '');
-        case antAttr.REPEAT:
-          vm = this.$$getChild(path);
-          vm.$$repeaters.push(new Generator(el, vm, this, name));
-          break;
-        default:
-          addBinding(tokenMap, this, info);
-          break;
-      }
-    }
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
   , $$getData: function(key, isStrict) {
@@ -700,7 +689,9 @@ setPrefix('a-');
       }
     }
   , $$render: function (data, isExtend) {
-      var map = isExtend ? data : this;
+      var map = isExtend ? data : this
+        , watcher, newVal
+        ;
       
       this.$$repeaters.forEach(function(repeater){
         repeater.generate(data, isExtend);
@@ -708,6 +699,16 @@ setPrefix('a-');
       
       for(var i = 0, l = this.$$watchers.length; i < l; i++){
         this.$$watchers[i].call(this, data);
+      }
+      
+      for(var i = 0, l = this._watchers.length; i < l; i++){
+        watcher = this._watchers[i];
+        newVal = watcher.getValue(this);
+        if(watcher.value !== newVal){
+          watcher.fn.call(this, newVal, watcher.value);
+          watcher.value = newVal;
+          watcher.state = Watcher.STATE_CALLED;
+        }
       }
       
       if(isObject(map)){
@@ -786,7 +787,7 @@ setPrefix('a-');
     return str && tokenReg.test(str);
   }
   
-  function parseTokens(node, el) {
+  function parseTokens(node, el, isGen) {
     var tokens = []
       , val, type
       , textMap = []
@@ -795,7 +796,14 @@ setPrefix('a-');
       , nodeName = node.nodeName
       ;
     
-    if(node.nodeType === 3){//文本节点
+    if(isGen){
+      tokens.push({
+        nodeName: nodeName
+      , path: text
+      , el: el
+      , node: node
+      });
+    }else if(node.nodeType === 3){//文本节点
       type = 'text';
     }else if(node.nodeType === 2){//属性节点
       type = 'attr';
@@ -803,7 +811,7 @@ setPrefix('a-');
         nodeName = node.nodeName.slice(prefix.length);
       }
       if(isToken(nodeName)){
-        text = nodeName;
+        text = nodeName;//属性名
       }
     }
     
@@ -821,7 +829,8 @@ setPrefix('a-');
       , position: textMap.length
       , el: el
       , node: node
-      , name: nodeName
+      , nodeName: nodeName
+      , type: type
       });
       
       //一个引用类型(数组)作为节点对象的文本图, 这样当某一个引用改变了一个值后, 其他引用取得的值都会同时更新
@@ -834,30 +843,26 @@ setPrefix('a-');
       textMap.push(text.slice(start, text.length));
     }
     
-    return {
-      tokens: tokens
-    , textMap: textMap
-    , node: node
-    , type: type
-    , attr: nodeName
-    , el: el
-    }
+    tokens.type = type;
+    tokens.textMap = textMap;
+    
+    return tokens;
   }
   
-  var addBinding = function (tokenMap, vm, token) {
+  var addBinding = function (vm, token, tokens) {
     var childVm = token.path === '.' ? vm : vm.$$getChild(token.path);
     var watcher = function(val) {
       var newVal = isUndefined(val) ? vm.$$getData(token.path) : val;
-      updateDom(newVal, token, tokenMap);
+      updateDom(newVal, token, tokens);
     };
-    watcher.el = tokenMap.el;
+    watcher.el = token.el;
     childVm.$$watchers.push(watcher);
   }
   
   var invertedReg = /^\^/;
   
   //{{data: str}}
-  addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
+  addBinding = _beforeFn(addBinding, function(vm, token, tokens) {
     var tokenStr = token.path
       , pair = tokenStr.split(':')
       ;
@@ -865,7 +870,7 @@ setPrefix('a-');
     var watcher = function() {
       var val = vm.$$getData(_path);
       var newVal = (invertedReg.test(path) ? !val : val) ? value : '';
-      updateDom(newVal, token, tokenMap);
+      updateDom(newVal, token, tokens);
     };
       
     if(pair.length === 2){
@@ -873,7 +878,7 @@ setPrefix('a-');
         , _path = path.replace(invertedReg, '')
         , value = pair[1].trim()
         ;
-      watcher.el = tokenMap.el;
+      watcher.el = token.el;
       vm.$$getChild(_path).$$watchers.push(watcher);
       return false;
     }
@@ -881,15 +886,15 @@ setPrefix('a-');
   
   //局部模板. {{> anotherant}}
   var pertialReg = /^>\s*(?=.+)/
-  addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
+  addBinding = _beforeFn(addBinding, function(vm, token) {
     var pName, ant, opts, node;
-    if(tokenMap.type === 'text' && pertialReg.test(token.path)){
+    if(token.type === 'text' && pertialReg.test(token.path)){
       pName = token.path.replace(pertialReg, '');
       ant = vm.$$root.$$ant;
       opts = ant.options;
       node = doc.createTextNode('');
-      tokenMap.el.insertBefore(node, tokenMap.node);
-      tokenMap.el.removeChild(tokenMap.node);
+      token.el.insertBefore(node, token.node);
+      token.el.removeChild(token.node);
       
       ant.setPartial({
         name: pName
@@ -901,15 +906,78 @@ setPrefix('a-');
       return false;
     }
   });
-   
   
-  function updateDom(newVal, token, tokenMap) {
+  //if / repeat
+  addBinding = _beforeFn(addBinding, function(vm, token) {
+    var nodeName = token.nodeName
+      , path = token.path
+      , child
+      ;
+      
+    switch(nodeName){
+      case antAttr.IF:
+        path = path.replace(invertedReg, '');
+      case antAttr.REPEAT:
+        child = vm.$$getChild(path);
+        child.$$repeaters.push(new Generator(token.el, child, vm, nodeName));
+        return false;
+        break;
+    }
+  });
+  
+  function addWatcher(vm, token, tokens) {
+    var bindings = getBindings(vm.$$root.$$ant.bindings);
+    
+    addBinding(vm, token, tokens);
+  }
+  
+  function getBindings(bindings) {
+    bindings = baseBindings.concat(bindings);
+    return 
+  }
+  
+  //core bindings
+  var baseBindings = [
+    //single keypath
+    function (vm, token) {
+      var childVm = token.path === '.' ? vm : vm.$$getChild(token.path);
+      
+      watcher = new watcher(vm, token, function() {
+        
+      });
+      
+      watcher.addKey(token.path);
+    }
+  ];
+  
+  function Watcher(vm, token, fn) {
+    this.vm = vm;
+    this.fn = fn;
+    this.keys = [];
+    this.el = token.el;
+  }
+  
+  extend(Watcher, {
+    STATE_READY: 0
+  , STATE_CALLED: 1
+  }, Class);
+  
+  extend(Watcher.prototype, {
+    getValue: function(vm) {
+      
+    }
+  , addKey: function(key) {
+      this.keys.push(key);
+    }
+  });
+  
+  function updateDom(newVal, token, tokens) {
     var pos = token.position
-      , node = tokenMap.node
-      , el = tokenMap.el
-      , type = tokenMap.type
-      , textMap = tokenMap.textMap
-      , attrName = tokenMap.attr
+      , node = token.node
+      , el = token.el
+      , type = token.type
+      , textMap = tokens.textMap
+      , attrName = token.nodeName
       , isAttrNameTpl = isToken(node.nodeName)
       , val
       ;
@@ -956,7 +1024,7 @@ setPrefix('a-');
               el.removeAttribute(attrName)
             }
             val && setAttr(el, val, node.nodeValue);
-            tokenMap.attr = val;
+            token.nodeName = val;
           }else{
             setAttr(el, attrName, val);
           }

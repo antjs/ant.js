@@ -20,138 +20,194 @@
       <li>» <a href="https://github.com/antjs/ant.js">Github 上的 ant.js</a></li>
       <li>» <a href="learn">学习 ant.js</a></li>
     </ul>
-    <ul class="sections"><li><h4><a href="#%E5%85%BC%E5%AE%B9%E6%80%A7%E5%92%8C%E4%BE%9D%E8%B5%96">兼容性和依赖</a></h4></li><li><h4><a href="#%E4%B8%8B%E8%BD%BD%E5%92%8C%E5%AE%89%E8%A3%85">下载和安装</a></h4></li><li><h4><a href="#%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</a></h4><ul><li><a href="#%E5%8F%98%E9%87%8F%E5%8D%A0%E4%BD%8D%E7%AC%A6">变量占位符</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%B1%9E%E6%80%A7">条件属性</a></li><li><a href="#%E5%BE%AA%E7%8E%AF%E5%B1%9E%E6%80%A7">循环属性</a></li><li><a href="#%E5%8F%8C%E5%90%91%E7%BB%91%E5%AE%9A%E5%B1%9E%E6%80%A7">双向绑定属性</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F">条件变量</a></li><li><a href="#%E9%9D%9E%E8%BD%AC%E4%B9%89%20html">非转义 HTML</a></li><li><a href="#%E5%AD%90%E6%A8%A1%E6%9D%BF">子模板</a></li></ul></li><li><h4><a href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</a></h4><ul><li><a href="#new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</a></li><li><a href="#ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95%3A">实例方法:</a></h4><ul><li><a href="#.get(keypath)">.get(keypath)</a></li><li><a href="#.set(keypath%5B%2C%20val%2C%20opts%5D)">.set(keypath[, val, opts])</a></li><li><a href="#.render(%5Bdata%5D)">.render([data])</a></li><li><a href="#.update(%5Bkeypath%2C%20data%2C%20isextend%5D)">.update([keyPath, data, isExtend])</a></li><li><a href="#.clone(%5Bopts%5D)">.clone([opts])</a></li><li><a href="#.on(eventname%2C%20callback)">.on(eventName, callback)</a></li><li><a href="#.off(eventname%5B%2C%20callback%5D)">.off(eventName[, callback])</a></li><li><a href="#.trigger(eventname%5B%2C%20extraparameters%20%5D)">.trigger(eventName[, extraParameters ])</a></li><li><a href="#.init(tpl%5B%2C%20options%5D)">.init(tpl[, options])</a></li><li><a href="#.setpartial(info)">.setPartial(info)</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7%3A%20">实例属性: </a></h4><ul><li><a href="#.el">.el</a></li><li><a href="#.tpl">.tpl</a></li><li><a href="#.data">.data</a></li><li><a href="#.options">.options</a></li><li><a href="#.isrendered">.isRendered</a></li></ul></li><li><h4><a href="#%E6%93%8D%E4%BD%9C%E6%95%B0%E7%BB%84">操作数组</a></h4></li><li><h4><a href="#%E4%BA%8B%E4%BB%B6%E5%A7%94%E6%89%98">事件委托</a></h4></li><li><h4><a href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B">使用示例</a></h4></li><li><h4><a href="#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97">更新日志</a></h4></li></ul>
+    <ul class="sections"><li><h4><a href="#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97">更新日志</a></h4></li><li><h4><a href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B">使用示例</a></h4></li><li><h4><a href="#%E4%BA%8B%E4%BB%B6%E5%A7%94%E6%89%98">事件委托</a></h4></li><li><h4><a href="#%E6%93%8D%E4%BD%9C%E6%95%B0%E7%BB%84">操作数组</a></h4></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7%3A%20">实例属性: </a></h4><ul><li><a href="#.el">.el</a></li><li><a href="#.tpl">.tpl</a></li><li><a href="#.data">.data</a></li><li><a href="#.options">.options</a></li><li><a href="#.isrendered">.isRendered</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95%3A">实例方法:</a></h4><ul><li><a href="#.get(keypath)">.get(keypath)</a></li><li><a href="#.set(keypath%5B%2C%20val%2C%20opts%5D)">.set(keypath[, val, opts])</a></li><li><a href="#.render(%5Bdata%5D)">.render([data])</a></li><li><a href="#.update(%5Bkeypath%2C%20data%2C%20isextend%5D)">.update([keyPath, data, isExtend])</a></li><li><a href="#.clone(%5Bopts%5D)">.clone([opts])</a></li><li><a href="#.on(eventname%2C%20callback)">.on(eventName, callback)</a></li><li><a href="#.off(eventname%5B%2C%20callback%5D)">.off(eventName[, callback])</a></li><li><a href="#.trigger(eventname%5B%2C%20extraparameters%20%5D)">.trigger(eventName[, extraParameters ])</a></li><li><a href="#.init(tpl%5B%2C%20options%5D)">.init(tpl[, options])</a></li><li><a href="#.setpartial(info)">.setPartial(info)</a></li></ul></li><li><h4><a href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</a></h4><ul><li><a href="#new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</a></li><li><a href="#ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</a></li></ul></li><li><h4><a href="#%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</a></h4><ul><li><a href="#%E5%8F%98%E9%87%8F%E5%8D%A0%E4%BD%8D%E7%AC%A6">变量占位符</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%B1%9E%E6%80%A7">条件属性</a></li><li><a href="#%E5%BE%AA%E7%8E%AF%E5%B1%9E%E6%80%A7">循环属性</a></li><li><a href="#%E5%8F%8C%E5%90%91%E7%BB%91%E5%AE%9A%E5%B1%9E%E6%80%A7">双向绑定属性</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F">条件变量</a></li><li><a href="#%E9%9D%9E%E8%BD%AC%E4%B9%89%20html">非转义 HTML</a></li><li><a href="#%E5%AD%90%E6%A8%A1%E6%9D%BF">子模板</a></li></ul></li><li><h4><a href="#%E4%B8%8B%E8%BD%BD%E5%92%8C%E5%AE%89%E8%A3%85">下载和安装</a></h4></li><li><h4><a href="#%E5%85%BC%E5%AE%B9%E6%80%A7%E5%92%8C%E4%BE%9D%E8%B5%96">兼容性和依赖</a></h4></li></ul>
   </header>
   <section id="content">
     <h1>Ant.js <span class="version">(0.1.2)</span></h1>
-    <p>Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具有数据驱动界面的能力. </p>
-<h2 id="%E5%85%BC%E5%AE%B9%E6%80%A7%E5%92%8C%E4%BE%9D%E8%B5%96">兼容性和依赖</h2>
+    
 <ul>
-<li>Ant.js 可以在 IE6+ 的浏览器中使用, 其核心部分不需要任何依赖. 委托事件扩展部分需要 jQuery.</li>
-<li>借助 <a href="https://github.com/tmpvar/jsdom">jsdom</a>, ant.js 也可以在 node.js 中作为 HTML 的模板引擎. </li>
+<li>传入的对象数据将拷贝一份, 而不再作为引用值使用.</li>
+<li>实现了数组操作和 DOM 操作映射关系的精确同步. 包括:  <code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>splice</code>, <code>reverse</code>.</li>
+<li>现在一个 ant 实例也可以作为子模板.</li>
 </ul>
-<h2 id="%E4%B8%8B%E8%BD%BD%E5%92%8C%E5%AE%89%E8%A3%85">下载和安装</h2>
+<p>Version <strong>0.1.1</strong> -- 2013-09-01</p>
 <ul>
-<li><a href="dist/ant.js">核心开发版</a> (36kb)</li>
-<li><a href="dist/ant.min.js">核心压缩版</a> (6kb Packed and gziped)</li>
+<li>修复带有 <code>a-</code> 前缀属性导致程序报错的问题.</li>
 </ul>
-<p>在 NodeJs 中可以使用 npm 直接安装:</p>
-<pre><code><div class="highlight"><pre>  <span class="nx">npm</span> <span class="nx">install</span> <span class="nx">ant</span><span class="p">.</span><span class="nx">js</span>
+<p>Version <strong>0.1.2</strong> -- 2013-09-02</p>
+<h2 id="%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97">更新日志</h2>
+<ul>
+<li><a href="learn/">使用 ant.js 编写的 ant.js 使用教程</a></li>
+<li><a href="examples/backbase/">noBackend 的实时评论系统</a></li>
+</ul>
+<p><a href="https://github.com/antjs/ant.js/tree/master/examples">Github 代码库中</a> 提供了一些使用示例. </p>
+<h2 id="%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B">使用示例</h2>
+<pre><code class="lang-javascript"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">ant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Ant</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="p">{</span>
+  <span class="nx">data</span><span class="o">:</span> <span class="nx">data</span>
+<span class="p">,</span> <span class="nx">events</span><span class="o">:</span> <span class="p">{</span>
+    <span class="s1">'click button'</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">//做些什么</span>
+    <span class="p">}</span>
+  <span class="p">,</span> <span class="s1">'change input'</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){}</span>
+  <span class="p">,</span> <span class="s1">'click'</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){}</span>
+  <span class="p">,</span> <span class="s1">'render'</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{}</span>
+  <span class="p">}</span>
+<span class="p">});</span>
 </pre></div>
 </code></pre>
-<h2 id="%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</h2>
-<p>  类似 <a href="http://mustache.github.io/mustache.5.html">mustache</a> 和 <a href="http://www.polymer-project.org/platform/template.html">polymer</a> 的弱逻辑模板, ant.js 的模板只使用少数的几种规则.</p>
-<p>  Ant 模板可以是 DOM 对象, 也可以是一段 HTML 字符串. 模板 DOM 对象的根节点不应该包含 <code>a-if</code> 和 <code>a-repeat</code> 属性.</p>
-<p>  一个典型的 ant 模板:</p>
-<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;section</span> <span class="na">id=</span><span class="s">"main"</span><span class="nt">&gt;</span>
-  <span class="nt">&lt;input</span> <span class="na">a-model=</span><span class="s">'completedAll'</span> <span class="na">type=</span><span class="s">"checkbox"</span> <span class="na">a-if=</span><span class="s">"todos.length"</span> <span class="nt">/&gt;</span>
-  <span class="nt">&lt;ul</span> <span class="na">id=</span><span class="s">"todo-list"</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;li</span> <span class="na">a-repeat=</span><span class="s">"todos"</span> <span class="na">a-if=</span><span class="s">"show"</span> <span class="na">class=</span><span class="s">"{{completed: completed}}"</span><span class="nt">&gt;</span>
-      <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"view"</span><span class="nt">&gt;</span>
-        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"checkbox"</span> <span class="na">class=</span><span class="s">"toggle"</span> <span class="na">a-model=</span><span class="s">"completed"</span> <span class="nt">/&gt;</span>
-        <span class="nt">&lt;label&gt;</span>{{{title}}}<span class="nt">&lt;/label&gt;</span>
-        <span class="nt">&lt;button</span> <span class="na">class=</span><span class="s">"destroy"</span><span class="nt">&gt;&lt;/button&gt;</span>
-      <span class="nt">&lt;/div&gt;</span>
-      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">a-model=</span><span class="s">"title"</span> <span class="na">class=</span><span class="s">"edit"</span><span class="nt">/&gt;</span>
-    <span class="nt">&lt;/li&gt;</span>
-  <span class="nt">&lt;/ul&gt;</span>
-<span class="nt">&lt;/section&gt;</span>
+<p>事件委托是作为 ant.js 的一个扩展而存在. 其提供了类似 <a href="http://documentcloud.github.io/backbone/#View-delegateEvents">Backbone</a> 的事件回调编写方式. 借助于 jQuery 强大的自定义事件系统, ant.js 的自定义事件也将跟随 DOM 树向上冒泡. </p>
+<h2 id="%E4%BA%8B%E4%BB%B6%E5%A7%94%E6%89%98">事件委托</h2>
+<p>更好的操作数组的方法是使用数组的自带方法: <code>push</code>, <code>pop</code>, <code>unshift</code>, <code>shift</code>, <code>splice</code>, <code>reverse</code>, <code>sort</code>. Ant.js 封装了这些的数组操作方法, 调用这些方法的时候会自动更新 DOM 界面.</p>
+<p>Ant.js 使用 <code>ant.set</code> 方法来改变普通对象的值并触发界面更新. 对于数组同样也可以使用 <code>set</code> 方法. 比如有数据 <code>{list: [{name: 'Ant'}, {name: 'Bee'}]}</code>, 可以使用 <code>ant.set('list[0].name', 'Cicada')</code> 来改变数组数据的值并更新界面. </p>
+<h2 id="%E6%93%8D%E4%BD%9C%E6%95%B0%E7%BB%84">操作数组</h2>
+<p>  该参数标示模板与数据的绑定状态. 初始化没有传入 data 时, 该值为 false, 传入了 data 或者手动调用 <code>render</code> 方法后其值为 true.</p>
+<p>  <code>Boolean</code></p>
+<h3 id=".isrendered">.isRendered</h3>
+<p>  对应传入构造函数的第二个参数.</p>
+<p>  <code>Object</code></p>
+<h3 id=".options">.options</h3>
+<p>  与模板绑定的数据. 需要注意的是该属性是 <code>options.data</code> 数据的一个拷贝.</p>
+<p>  <code>Object</code></p>
+<h3 id=".data">.data</h3>
+<p>  <code>.el</code> 对象对应的 HTML 字符串.</p>
+<p>  <code>String</code></p>
+<h3 id=".tpl">.tpl</h3>
+<p>  所有的 Ant 实例对象都有一个 <code>el</code> 属性来表示该模板的 DOM 对象. </p>
+<p>  <code>HTMLELement</code></p>
+<h3 id=".el">.el</h3>
+<h2 id="%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7%3A%20">实例属性: </h2>
+<ul>
+<li><strong>info.content</strong> <code>String|HTMLElement|AntObject</code> 子模板内容</li>
+<li><strong>[info.name]</strong> <code>String</code> 子模板标示符. 对应模板中 <code>{{&gt;partialName}}</code>. 没有预定义子模板, 该项可省略.</li>
+<li><strong>[info.node]</strong> <code>HTMLElement</code> 子模板的目标节点. 对于预定义好的子模板, 该项可省略.</li>
+<li><strong>[info.escape]</strong> <code>Boolean</code> 是否转义字符串子模板</li>
+<li><strong>[info.path]</strong> <code>String</code> 指定子模板中变量在数据中的作用域</li>
+</ul>
+<p>  该方法对于添加延时加载的子模板非常有用.</p>
+<p>  添加或者更改子模板. 根据 <code>ant.isRendered</code> 数据, 决定该子模板是否渲染.</p>
+<h3 id=".setpartial(info)">.setPartial(info)</h3>
+<p>  每个实例创建时都会调用该初始化函数. 其参数同构造函数参数.</p>
+<h3 id=".init(tpl%5B%2C%20options%5D)">.init(tpl[, options])</h3>
+<ul>
+<li><p><strong>eventName</strong> <code>String</code> 事件名.</p>
+</li>
+<li><p><strong>extraParameters</strong> <code>AnyType</code> </p>
+<p>所有的附加参数都会传递给事件监听函数.</p>
+</li>
+</ul>
+<p>  触发自定义事件.</p>
+<h3 id=".trigger(eventname%5B%2C%20extraparameters%20%5D)">.trigger(eventName[, extraParameters ])</h3>
+<p>  取消事件的监听</p>
+<h3 id=".off(eventname%5B%2C%20callback%5D)">.off(eventName[, callback])</h3>
+<ul>
+<li><p><strong>eventName</strong> <code>String</code> 事件名</p>
+<p>Ant 自带事件包括: <code>render, update</code>. </p>
+</li>
+<li><p><strong>callback</strong> <code>Function</code> 事件回调</p>
+</li>
+</ul>
+<p>  监听 ant 的事件或自定义事件.</p>
+<h3 id=".on(eventname%2C%20callback)">.on(eventName, callback)</h3>
+<ul>
+<li><p><strong>opts</strong> <code>Object</code></p>
+<p>扩展参数.</p>
+</li>
+</ul>
+<p>  拷贝当前 ant 实例对象.</p>
+<h3 id=".clone(%5Bopts%5D)">.clone([opts])</h3>
+<p>  参数请参考 <code>set</code> 方法.</p>
+<p>  直接用数据更新局部或者全部模板, 并且不更新数据层. 触发 <code>update</code> 事件.</p>
+<h3 id=".update(%5Bkeypath%2C%20data%2C%20isextend%5D)">.update([keyPath, data, isExtend])</h3>
+<ul>
+<li><strong>data</strong> <code>Object</code> 需要与模板绑定的数据.</li>
+</ul>
+<p>  如果初始化构造的时候没有传入数据, 可用该方法进行数据绑定. 触发 <code>render</code> 事件.</p>
+<h3 id=".render(%5Bdata%5D)">.render([data])</h3>
+<pre><code><div class="highlight"><pre><span class="nx">ant</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">'artist'</span><span class="p">,</span> <span class="p">{</span><span class="nx">age</span><span class="o">:</span> <span class="mi">24</span><span class="p">});</span><span class="c1">//替换 'artist' 的值. ant.data 为: {title: 'Ballad Of A Thin Man', artist: {age: 24}}</span>
+<span class="nx">ant</span><span class="p">.</span><span class="nx">set</span><span class="p">({</span><span class="nx">artist</span><span class="o">:</span> <span class="p">{</span><span class="nx">name</span><span class="o">:</span> <span class="s1">'Bob Dylan'</span><span class="p">,</span> <span class="nx">age</span><span class="o">:</span> <span class="mi">25</span><span class="p">}});</span><span class="c1">//扩展整个数据对象. ant.data 为: {title: 'Ballad Of A Thin Man', artist: {name: 'Bob Dylan', age: 25}}</span>
+<span class="nx">ant</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">'artist'</span><span class="p">,</span> <span class="p">{</span><span class="nx">country</span><span class="o">:</span> <span class="s1">'USA'</span><span class="p">},</span> <span class="kc">true</span><span class="p">)</span><span class="c1">//扩展 'artist'. ant.data 的值: {title: 'Ballad Of A Thin Man', artist: {name: 'Bob Dylan', age: 25, contry: 'USA'}}</span>
+<span class="nx">ant</span><span class="p">.</span><span class="nx">set</span><span class="p">({</span><span class="nx">newObj</span><span class="o">:</span> <span class="p">{},</span> <span class="nx">title</span><span class="o">:</span> <span class="s1">'Matrix'</span><span class="p">},</span> <span class="kc">false</span><span class="p">)</span><span class="c1">//完全替换原有 'ant.data'. ant.data 的值为: {newObj: {}, title: 'Matrix'}</span>
 </pre></div>
 </code></pre>
-<h3 id="%E5%8F%98%E9%87%8F%E5%8D%A0%E4%BD%8D%E7%AC%A6">变量占位符</h3>
-<p>  <code>{{name}}</code></p>
-<p>  两组大括号表示普通变量. 变量占位符只能位于文本节点和属性节点当中, 属性节点包括属性名和属性值. 深度变量用点表示法表示, 如: <code>{{todos.length}}</code></p>
-<h3 id="%E6%9D%A1%E4%BB%B6%E5%B1%9E%E6%80%A7">条件属性</h3>
-<p>  <code>a-if="val"</code></p>
-<p>  有 <code>a-if</code> 属性的节点会根据 <code>a-if</code> 属性的值对应的数据来决定该节点是否存在于 DOM 树中.</p>
-<p>  如模板: </p>
-<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;ul</span> <span class="na">a-if=</span><span class="s">"todos.length"</span><span class="nt">&gt;&lt;ul&gt;</span>
+<p>  对其进行 <code>set</code> :</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre><span class="nx">ant</span><span class="p">.</span><span class="nx">data</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="nx">title</span><span class="o">:</span> <span class="s1">'Ballad Of A Thin Man'</span>
+<span class="p">,</span> <span class="nx">artist</span><span class="o">:</span> <span class="p">{</span>
+    <span class="nx">name</span><span class="o">:</span> <span class="s1">'Bob Dylan'</span>
+  <span class="p">}</span>
+<span class="p">};</span>
 </pre></div>
 </code></pre>
-<p>  对应数据 <code>{todos: []}</code>, 由于 <code>todos</code> 数组的长度为零, 所以该 <code>ul</code> 将不会出现在 DOM 树中.</p>
-<p>  <strong>如果不是</strong>: <code>^</code> 标示符和条件属性配合使用时, 值的 true false 与 DOM 的显示与否刚好相反. </p>
-<p>  如:</p>
-<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;div</span> <span class="na">a-if=</span><span class="s">"^todos.length"</span><span class="nt">&gt;</span>对不起! 没有数据<span class="nt">&lt;/div&gt;</span>
-</pre></div>
-</code></pre>
-<p>  对应数据 <code>{todos: []}</code>, 当 <code>todos</code> 数组的长度为零时该节点将会显示.</p>
-<h3 id="%E5%BE%AA%E7%8E%AF%E5%B1%9E%E6%80%A7">循环属性</h3>
-<p>  <code>a-repeat="list"</code></p>
-<p>  带有 <code>a-repeat</code> 属性的元素将根据对应数组的长度而重复. 并且该元素及其子元素的变量占位符的作用域将会切换到数组数据当中. 类似 mustache, 如果想使用数组之外的父辈变量, 直接使用其变量名即可.</p>
-<p>  每个列表节点对象生成的时候会被添加一个名为 <code>a-index</code> 的对象属性(property), 其值是元素在数组中的索引.</p>
-<p>  如对于模板:</p>
-<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;ul&gt;</span>
-  <span class="nt">&lt;li</span> <span class="na">a-repeat=</span><span class="s">"todos"</span><span class="nt">&gt;</span>
-    {{title}}
-  <span class="nt">&lt;li&gt;</span>
-<span class="nt">&lt;/ul&gt;</span>
-</pre></div>
-</code></pre>
-<p>  其对应的数据为:</p>
-<pre><code class="lang-javascript"><div class="highlight"><pre><span class="p">{</span>
-  <span class="nx">todos</span><span class="o">:</span> <span class="p">[</span>
-    <span class="p">{</span><span class="nx">title</span><span class="o">:</span> <span class="s1">'下片'</span><span class="p">}</span>
-  <span class="p">,</span> <span class="p">{</span><span class="nx">title</span><span class="o">:</span> <span class="s1">'看片'</span><span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-</code></pre>
-<p>  最终将会渲染成:</p>
-<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;ul&gt;</span>
-  <span class="nt">&lt;li&gt;</span>下片<span class="nt">&lt;/li&gt;</span>
-  <span class="nt">&lt;li&gt;</span>看片<span class="nt">&lt;/li&gt;</span>
-<span class="nt">&lt;/ul&gt;</span>
-</pre></div>
-</code></pre>
-<h3 id="%E5%8F%8C%E5%90%91%E7%BB%91%E5%AE%9A%E5%B1%9E%E6%80%A7">双向绑定属性</h3>
-<p>  <code>a-model="val"</code> </p>
-<p>  而所谓的双向绑定, 即是在数据和表单值中任何一个发生了变化, 都会将该变化自动更新到另一层中.</p>
-<p>  在表单控件元素中加上 <code>a-model</code> 属性就表示该表单控件与某条数据相绑定了.</p>
-<p>  对于表单元素的绑定值, 目前分为 4 种情况: </p>
+<p>  如, 对于已有数据的示例:</p>
+<ul>
+<li><p><strong>keypath</strong> <code>String|Object</code></p>
+<p>需要更新的键值路径. 当一个参数是一个对象的时候, 则会将该对象并入数据中.</p>
+</li>
+<li><p><strong>val</strong> <code>AnyType</code></p>
+<p>需要更新的值. </p>
+</li>
+<li><p><strong>opts</strong> <code>Object</code></p>
+<ul>
+<li><p><strong>opts.silence</strong> <code>Boolean</code></p>
+<p>默认情况下, 设置一个新值会立即更新模板, 并会触发 <code>update</code> 事件. 该值为 <code>true</code> 的时候, 将不会更新模板, 只会安静的更改 <code>ant.data</code> 中的值.</p>
+</li>
+<li><p><strong>opts.isExtend</strong> <code>Boolean</code></p>
+<p>扩展数据还是替换数据:</p>
 <ol>
-<li><p>复选框 <code>&lt;input type='checkbox' a-model='somekey' /&gt;</code>. 与 <code>a-model</code> 绑定的是其选中状态. 即: 当用户选中时, 'somekey' 对应的值将会被设置成 <code>true</code>, 反之为 <code>false</code>.</p>
-</li>
-<li><p>单选框 </p>
-<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">radio</span> <span class="na">value=</span><span class="s">red,</span> <span class="na">a-model=</span><span class="s">color</span> <span class="nt">/&gt;</span>
-<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">radio</span> <span class="na">value=</span><span class="s">blue,</span> <span class="na">a-model=</span><span class="s">color</span> <span class="nt">/&gt;</span>
-</pre></div>
-</code></pre>
-<p>单选框往往是一组出现的, 同一组单选框应该有同一个 <code>a-model</code>, 与 <code>a-model</code> 绑定的是当前选中单选框的 <code>value</code> 值. 如: 用户选中 <code>value=red</code> 的单选框时, <code>color</code> 的值将设成 <code>red</code>.</p>
-</li>
-<li><p>下拉框</p>
-<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;select</span> <span class="na">a-model=</span><span class="s">'select'</span><span class="nt">&gt;</span>
- <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">'option1'</span><span class="nt">&gt;</span>option1<span class="nt">&lt;/option&gt;</span>
- <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">'option2'</span><span class="nt">&gt;</span>option2<span class="nt">&lt;/option&gt;</span>
-<span class="nt">&lt;/select&gt;</span>
-<span class="nt">&lt;select</span> <span class="na">a-model=</span><span class="s">'selects'</span> <span class="na">multiple=</span><span class="s">'true'</span><span class="nt">&gt;</span>
- <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">'option1'</span><span class="nt">&gt;</span>option1<span class="nt">&lt;/option&gt;</span>
- <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">'option2'</span><span class="nt">&gt;</span>option2<span class="nt">&lt;/option&gt;</span>
-<span class="nt">&lt;/select&gt;</span>
-</pre></div>
-</code></pre>
-<p>select 控件分为单选和多选. 单选下拉列表绑定的数据是其选中 option 元素的 value 值.</p>
-<p>多选的下拉框, 其绑定的数据是包含所有选中 option 元素 value 值的数组.</p>
-</li>
-<li><p>对于其他类型的表单元素, 如文本输入框 <code>input[type=text]</code>, <code>textarea</code> 等, 与 <code>a-model</code> 绑定的是其 <code>value</code> 属性.</p>
-</li>
+<li>为 true 时, 新传入的数据将会扩展原有数据, 只会替换简单类型数据.</li>
+<li>为 false 是, 将会替换原有同路径的数据.</li>
 </ol>
-<h3 id="%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F">条件变量</h3>
-<p>  <code>{{val: str}}</code></p>
-<p>  条件变量可以根据数据中某个值得真假来决定 DOM 中是否出现另一个字符. </p>
-<p>  比如对于<code>{{val: str}}</code>标记, 如果数据中, <code>val</code> 为真的话, 该段标记将显示成 <code>str</code> 字符, 如果 <code>val</code> 为假, 该段标记则表示一个空字符串.</p>
-<p>  类似于 <code>a-if</code> 属性, <code>^</code> 标记表示反向. <code>{{^val: str}}</code></p>
-<h3 id="%E9%9D%9E%E8%BD%AC%E4%B9%89%20html">非转义 HTML</h3>
-<p>  <code>{{{unescapeHTML}}}</code></p>
-<p>  三组大括号 <code>{{{unescapeHTML}}}</code> 表示里边的数据不会被转义, 就是说如果数据中包含 HTML 标签, 则会被当做 DOM 节点解析出来.</p>
-<h3 id="%E5%AD%90%E6%A8%A1%E6%9D%BF">子模板</h3>
-<p>  <code>{{&gt; partial}}</code></p>
-<p>  占位符 <code>{{&gt; partialName}}</code> 表示该处将插入子模板 partialName 中的内容. partialName 与 <code>ant.optioins.partials</code> 中的值对应. </p>
-<p>  当子模板内容是字符串时, <code>{{{&gt;partialName}}}</code>将不转义该字符串. 如果字符串中包含 HTML 标签, 将解析成 DOM 节点. 子模板是一个 DOM 节点时, 则将忽略非转义选项.</p>
-<p>  子模板可以通过 <code>ant.setPartial</code> 方法延时添加.</p>
-<h2 id="%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</h2>
-<p>  构造一个 Ant 实例. </p>
-<h3 id="new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</h3>
-<p>  返回值: <code>ant</code> 实例</p>
+<p>该参数的默认值取决于第一个参数: 第一个参数是数据路径是该值默认为 false, 而第一个数据是数据对象的时候则默认为 true.</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>  更新到 keypath 对应的值. </p>
+<h3 id=".set(keypath%5B%2C%20val%2C%20opts%5D)">.set(keypath[, val, opts])</h3>
+<ul>
+<li><p><strong>keypath</strong> <code>String</code></p>
+<p>参数 <em>keypath</em> 表示数据在集合中的键值路径, 可用下标标示法或点标示法.</p>
+<p>如:</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">ant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Ant</span><span class="p">(</span><span class="nx">el</span><span class="p">,</span> <span class="p">{</span>
+  <span class="nx">data</span><span class="o">:</span> <span class="p">{</span>
+    <span class="nx">title</span><span class="o">:</span> <span class="s1">'标题'</span>
+  <span class="p">,</span> <span class="nx">lists</span><span class="o">:</span> <span class="p">[{</span><span class="nx">name</span><span class="o">:</span> <span class="s1">'作者'</span><span class="p">}]</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+<span class="nx">ant</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'title'</span><span class="p">);</span>
+<span class="nx">ant</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'list.0.name'</span><span class="p">);</span>
+<span class="nx">ant</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'list[0].name'</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+</li>
+</ul>
+<p>  获取数据中 <em>keypath</em> 对应的值.</p>
+<h3 id=".get(keypath)">.get(keypath)</h3>
+<h2 id="%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95%3A">实例方法:</h2>
+<ul>
+<li><p><strong>prototypeProperties</strong> <code>Object</code></p>
+<p>扩展的原型对象.</p>
+</li>
+<li><p><strong>staticProperties</strong> <code>Object</code></p>
+<p>扩展的静态方法.</p>
+<p>如:</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">Comment</span> <span class="o">=</span> <span class="nx">Ant</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+  <span class="nx">addReply</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">reply</span><span class="p">){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'replys'</span><span class="p">).</span><span class="nx">push</span><span class="p">(</span><span class="nx">reply</span><span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="kd">var</span> <span class="nx">CommentAdmin</span> <span class="o">=</span> <span class="nx">Comment</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+  <span class="nx">removeReply</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">//...</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+</pre></div>
+</code></pre>
+</li>
+</ul>
+<p>  构造函数的扩展. 可以扩展 Ant 的原型对象来为实例提供属性和方法, 也可以直接扩展构造函数的静态方法.</p>
+<h3 id="ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</h3>
 <ul>
 <li><p><strong>template</strong> <code>String | HTMLElement</code></p>
 <p>模板必须是 DOM 对象或者是一段字符串. 如果是一个 DOM 对象, 则该元素不应包含 <code>a-repeat</code> 或 <code>a-if</code> 属性.</p>
@@ -197,190 +253,134 @@
 </ul>
 </li>
 </ul>
-<h3 id="ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</h3>
-<p>  构造函数的扩展. 可以扩展 Ant 的原型对象来为实例提供属性和方法, 也可以直接扩展构造函数的静态方法.</p>
-<ul>
-<li><p><strong>prototypeProperties</strong> <code>Object</code></p>
-<p>扩展的原型对象.</p>
-</li>
-<li><p><strong>staticProperties</strong> <code>Object</code></p>
-<p>扩展的静态方法.</p>
-<p>如:</p>
-<pre><code class="lang-javascript"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">Comment</span> <span class="o">=</span> <span class="nx">Ant</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
-  <span class="nx">addReply</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">reply</span><span class="p">){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'replys'</span><span class="p">).</span><span class="nx">push</span><span class="p">(</span><span class="nx">reply</span><span class="p">)</span>
-  <span class="p">}</span>
-<span class="p">});</span>
-
-<span class="kd">var</span> <span class="nx">CommentAdmin</span> <span class="o">=</span> <span class="nx">Comment</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
-  <span class="nx">removeReply</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="c1">//...</span>
-  <span class="p">}</span>
-<span class="p">});</span>
-</pre></div>
-</code></pre>
-</li>
-</ul>
-<h2 id="%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95%3A">实例方法:</h2>
-<h3 id=".get(keypath)">.get(keypath)</h3>
-<p>  获取数据中 <em>keypath</em> 对应的值.</p>
-<ul>
-<li><p><strong>keypath</strong> <code>String</code></p>
-<p>参数 <em>keypath</em> 表示数据在集合中的键值路径, 可用下标标示法或点标示法.</p>
-<p>如:</p>
-<pre><code class="lang-javascript"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">ant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Ant</span><span class="p">(</span><span class="nx">el</span><span class="p">,</span> <span class="p">{</span>
-  <span class="nx">data</span><span class="o">:</span> <span class="p">{</span>
-    <span class="nx">title</span><span class="o">:</span> <span class="s1">'标题'</span>
-  <span class="p">,</span> <span class="nx">lists</span><span class="o">:</span> <span class="p">[{</span><span class="nx">name</span><span class="o">:</span> <span class="s1">'作者'</span><span class="p">}]</span>
-  <span class="p">}</span>
-<span class="p">});</span>
-<span class="nx">ant</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'title'</span><span class="p">);</span>
-<span class="nx">ant</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'list.0.name'</span><span class="p">);</span>
-<span class="nx">ant</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'list[0].name'</span><span class="p">);</span>
-</pre></div>
-</code></pre>
-</li>
-</ul>
-<h3 id=".set(keypath%5B%2C%20val%2C%20opts%5D)">.set(keypath[, val, opts])</h3>
-<p>  更新到 keypath 对应的值. </p>
-<ul>
-<li><p><strong>keypath</strong> <code>String|Object</code></p>
-<p>需要更新的键值路径. 当一个参数是一个对象的时候, 则会将该对象并入数据中.</p>
-</li>
-<li><p><strong>val</strong> <code>AnyType</code></p>
-<p>需要更新的值. </p>
-</li>
-<li><p><strong>opts</strong> <code>Object</code></p>
-<ul>
-<li><p><strong>opts.silence</strong> <code>Boolean</code></p>
-<p>默认情况下, 设置一个新值会立即更新模板, 并会触发 <code>update</code> 事件. 该值为 <code>true</code> 的时候, 将不会更新模板, 只会安静的更改 <code>ant.data</code> 中的值.</p>
-</li>
-<li><p><strong>opts.isExtend</strong> <code>Boolean</code></p>
-<p>扩展数据还是替换数据:</p>
+<p>  返回值: <code>ant</code> 实例</p>
+<h3 id="new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</h3>
+<p>  构造一个 Ant 实例. </p>
+<h2 id="%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</h2>
+<p>  子模板可以通过 <code>ant.setPartial</code> 方法延时添加.</p>
+<p>  当子模板内容是字符串时, <code>{{{&gt;partialName}}}</code>将不转义该字符串. 如果字符串中包含 HTML 标签, 将解析成 DOM 节点. 子模板是一个 DOM 节点时, 则将忽略非转义选项.</p>
+<p>  占位符 <code>{{&gt; partialName}}</code> 表示该处将插入子模板 partialName 中的内容. partialName 与 <code>ant.optioins.partials</code> 中的值对应. </p>
+<p>  <code>{{&gt; partial}}</code></p>
+<h3 id="%E5%AD%90%E6%A8%A1%E6%9D%BF">子模板</h3>
+<p>  三组大括号 <code>{{{unescapeHTML}}}</code> 表示里边的数据不会被转义, 就是说如果数据中包含 HTML 标签, 则会被当做 DOM 节点解析出来.</p>
+<p>  <code>{{{unescapeHTML}}}</code></p>
+<h3 id="%E9%9D%9E%E8%BD%AC%E4%B9%89%20html">非转义 HTML</h3>
+<p>  类似于 <code>a-if</code> 属性, <code>^</code> 标记表示反向. <code>{{^val: str}}</code></p>
+<p>  比如对于<code>{{val: str}}</code>标记, 如果数据中, <code>val</code> 为真的话, 该段标记将显示成 <code>str</code> 字符, 如果 <code>val</code> 为假, 该段标记则表示一个空字符串.</p>
+<p>  条件变量可以根据数据中某个值得真假来决定 DOM 中是否出现另一个字符. </p>
+<p>  <code>{{val: str}}</code></p>
+<h3 id="%E6%9D%A1%E4%BB%B6%E5%8F%98%E9%87%8F">条件变量</h3>
 <ol>
-<li>为 true 时, 新传入的数据将会扩展原有数据, 只会替换简单类型数据.</li>
-<li>为 false 是, 将会替换原有同路径的数据.</li>
+<li><p>复选框 <code>&lt;input type='checkbox' a-model='somekey' /&gt;</code>. 与 <code>a-model</code> 绑定的是其选中状态. 即: 当用户选中时, 'somekey' 对应的值将会被设置成 <code>true</code>, 反之为 <code>false</code>.</p>
+</li>
+<li><p>单选框 </p>
+<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">radio</span> <span class="na">value=</span><span class="s">red,</span> <span class="na">a-model=</span><span class="s">color</span> <span class="nt">/&gt;</span>
+<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">radio</span> <span class="na">value=</span><span class="s">blue,</span> <span class="na">a-model=</span><span class="s">color</span> <span class="nt">/&gt;</span>
+</pre></div>
+</code></pre>
+<p>单选框往往是一组出现的, 同一组单选框应该有同一个 <code>a-model</code>, 与 <code>a-model</code> 绑定的是当前选中单选框的 <code>value</code> 值. 如: 用户选中 <code>value=red</code> 的单选框时, <code>color</code> 的值将设成 <code>red</code>.</p>
+</li>
+<li><p>下拉框</p>
+<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;select</span> <span class="na">a-model=</span><span class="s">'select'</span><span class="nt">&gt;</span>
+ <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">'option1'</span><span class="nt">&gt;</span>option1<span class="nt">&lt;/option&gt;</span>
+ <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">'option2'</span><span class="nt">&gt;</span>option2<span class="nt">&lt;/option&gt;</span>
+<span class="nt">&lt;/select&gt;</span>
+<span class="nt">&lt;select</span> <span class="na">a-model=</span><span class="s">'selects'</span> <span class="na">multiple=</span><span class="s">'true'</span><span class="nt">&gt;</span>
+ <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">'option1'</span><span class="nt">&gt;</span>option1<span class="nt">&lt;/option&gt;</span>
+ <span class="nt">&lt;option</span> <span class="na">value=</span><span class="s">'option2'</span><span class="nt">&gt;</span>option2<span class="nt">&lt;/option&gt;</span>
+<span class="nt">&lt;/select&gt;</span>
+</pre></div>
+</code></pre>
+<p>select 控件分为单选和多选. 单选下拉列表绑定的数据是其选中 option 元素的 value 值.</p>
+<p>多选的下拉框, 其绑定的数据是包含所有选中 option 元素 value 值的数组.</p>
+</li>
+<li><p>对于其他类型的表单元素, 如文本输入框 <code>input[type=text]</code>, <code>textarea</code> 等, 与 <code>a-model</code> 绑定的是其 <code>value</code> 属性.</p>
+</li>
 </ol>
-<p>该参数的默认值取决于第一个参数: 第一个参数是数据路径是该值默认为 false, 而第一个数据是数据对象的时候则默认为 true.</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>  如, 对于已有数据的示例:</p>
-<pre><code class="lang-javascript"><div class="highlight"><pre><span class="nx">ant</span><span class="p">.</span><span class="nx">data</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="nx">title</span><span class="o">:</span> <span class="s1">'Ballad Of A Thin Man'</span>
-<span class="p">,</span> <span class="nx">artist</span><span class="o">:</span> <span class="p">{</span>
-    <span class="nx">name</span><span class="o">:</span> <span class="s1">'Bob Dylan'</span>
-  <span class="p">}</span>
-<span class="p">};</span>
+<p>  对于表单元素的绑定值, 目前分为 4 种情况: </p>
+<p>  在表单控件元素中加上 <code>a-model</code> 属性就表示该表单控件与某条数据相绑定了.</p>
+<p>  而所谓的双向绑定, 即是在数据和表单值中任何一个发生了变化, 都会将该变化自动更新到另一层中.</p>
+<p>  <code>a-model="val"</code> </p>
+<h3 id="%E5%8F%8C%E5%90%91%E7%BB%91%E5%AE%9A%E5%B1%9E%E6%80%A7">双向绑定属性</h3>
+<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;ul&gt;</span>
+  <span class="nt">&lt;li&gt;</span>下片<span class="nt">&lt;/li&gt;</span>
+  <span class="nt">&lt;li&gt;</span>看片<span class="nt">&lt;/li&gt;</span>
+<span class="nt">&lt;/ul&gt;</span>
 </pre></div>
 </code></pre>
-<p>  对其进行 <code>set</code> :</p>
-<pre><code><div class="highlight"><pre><span class="nx">ant</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">'artist'</span><span class="p">,</span> <span class="p">{</span><span class="nx">age</span><span class="o">:</span> <span class="mi">24</span><span class="p">});</span><span class="c1">//替换 'artist' 的值. ant.data 为: {title: 'Ballad Of A Thin Man', artist: {age: 24}}</span>
-<span class="nx">ant</span><span class="p">.</span><span class="nx">set</span><span class="p">({</span><span class="nx">artist</span><span class="o">:</span> <span class="p">{</span><span class="nx">name</span><span class="o">:</span> <span class="s1">'Bob Dylan'</span><span class="p">,</span> <span class="nx">age</span><span class="o">:</span> <span class="mi">25</span><span class="p">}});</span><span class="c1">//扩展整个数据对象. ant.data 为: {title: 'Ballad Of A Thin Man', artist: {name: 'Bob Dylan', age: 25}}</span>
-<span class="nx">ant</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">'artist'</span><span class="p">,</span> <span class="p">{</span><span class="nx">country</span><span class="o">:</span> <span class="s1">'USA'</span><span class="p">},</span> <span class="kc">true</span><span class="p">)</span><span class="c1">//扩展 'artist'. ant.data 的值: {title: 'Ballad Of A Thin Man', artist: {name: 'Bob Dylan', age: 25, contry: 'USA'}}</span>
-<span class="nx">ant</span><span class="p">.</span><span class="nx">set</span><span class="p">({</span><span class="nx">newObj</span><span class="o">:</span> <span class="p">{},</span> <span class="nx">title</span><span class="o">:</span> <span class="s1">'Matrix'</span><span class="p">},</span> <span class="kc">false</span><span class="p">)</span><span class="c1">//完全替换原有 'ant.data'. ant.data 的值为: {newObj: {}, title: 'Matrix'}</span>
+<p>  最终将会渲染成:</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre><span class="p">{</span>
+  <span class="nx">todos</span><span class="o">:</span> <span class="p">[</span>
+    <span class="p">{</span><span class="nx">title</span><span class="o">:</span> <span class="s1">'下片'</span><span class="p">}</span>
+  <span class="p">,</span> <span class="p">{</span><span class="nx">title</span><span class="o">:</span> <span class="s1">'看片'</span><span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
 </pre></div>
 </code></pre>
-<h3 id=".render(%5Bdata%5D)">.render([data])</h3>
-<p>  如果初始化构造的时候没有传入数据, 可用该方法进行数据绑定. 触发 <code>render</code> 事件.</p>
-<ul>
-<li><strong>data</strong> <code>Object</code> 需要与模板绑定的数据.</li>
-</ul>
-<h3 id=".update(%5Bkeypath%2C%20data%2C%20isextend%5D)">.update([keyPath, data, isExtend])</h3>
-<p>  直接用数据更新局部或者全部模板, 并且不更新数据层. 触发 <code>update</code> 事件.</p>
-<p>  参数请参考 <code>set</code> 方法.</p>
-<h3 id=".clone(%5Bopts%5D)">.clone([opts])</h3>
-<p>  拷贝当前 ant 实例对象.</p>
-<ul>
-<li><p><strong>opts</strong> <code>Object</code></p>
-<p>扩展参数.</p>
-</li>
-</ul>
-<h3 id=".on(eventname%2C%20callback)">.on(eventName, callback)</h3>
-<p>  监听 ant 的事件或自定义事件.</p>
-<ul>
-<li><p><strong>eventName</strong> <code>String</code> 事件名</p>
-<p>Ant 自带事件包括: <code>render, update</code>. </p>
-</li>
-<li><p><strong>callback</strong> <code>Function</code> 事件回调</p>
-</li>
-</ul>
-<h3 id=".off(eventname%5B%2C%20callback%5D)">.off(eventName[, callback])</h3>
-<p>  取消事件的监听</p>
-<h3 id=".trigger(eventname%5B%2C%20extraparameters%20%5D)">.trigger(eventName[, extraParameters ])</h3>
-<p>  触发自定义事件.</p>
-<ul>
-<li><p><strong>eventName</strong> <code>String</code> 事件名.</p>
-</li>
-<li><p><strong>extraParameters</strong> <code>AnyType</code> </p>
-<p>所有的附加参数都会传递给事件监听函数.</p>
-</li>
-</ul>
-<h3 id=".init(tpl%5B%2C%20options%5D)">.init(tpl[, options])</h3>
-<p>  每个实例创建时都会调用该初始化函数. 其参数同构造函数参数.</p>
-<h3 id=".setpartial(info)">.setPartial(info)</h3>
-<p>  添加或者更改子模板. 根据 <code>ant.isRendered</code> 数据, 决定该子模板是否渲染.</p>
-<p>  该方法对于添加延时加载的子模板非常有用.</p>
-<ul>
-<li><strong>info.content</strong> <code>String|HTMLElement|AntObject</code> 子模板内容</li>
-<li><strong>[info.name]</strong> <code>String</code> 子模板标示符. 对应模板中 <code>{{&gt;partialName}}</code>. 没有预定义子模板, 该项可省略.</li>
-<li><strong>[info.node]</strong> <code>HTMLElement</code> 子模板的目标节点. 对于预定义好的子模板, 该项可省略.</li>
-<li><strong>[info.escape]</strong> <code>Boolean</code> 是否转义字符串子模板</li>
-<li><strong>[info.path]</strong> <code>String</code> 指定子模板中变量在数据中的作用域</li>
-</ul>
-<h2 id="%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7%3A%20">实例属性: </h2>
-<h3 id=".el">.el</h3>
-<p>  <code>HTMLELement</code></p>
-<p>  所有的 Ant 实例对象都有一个 <code>el</code> 属性来表示该模板的 DOM 对象. </p>
-<h3 id=".tpl">.tpl</h3>
-<p>  <code>String</code></p>
-<p>  <code>.el</code> 对象对应的 HTML 字符串.</p>
-<h3 id=".data">.data</h3>
-<p>  <code>Object</code></p>
-<p>  与模板绑定的数据. 需要注意的是该属性是 <code>options.data</code> 数据的一个拷贝.</p>
-<h3 id=".options">.options</h3>
-<p>  <code>Object</code></p>
-<p>  对应传入构造函数的第二个参数.</p>
-<h3 id=".isrendered">.isRendered</h3>
-<p>  <code>Boolean</code></p>
-<p>  该参数标示模板与数据的绑定状态. 初始化没有传入 data 时, 该值为 false, 传入了 data 或者手动调用 <code>render</code> 方法后其值为 true.</p>
-<h2 id="%E6%93%8D%E4%BD%9C%E6%95%B0%E7%BB%84">操作数组</h2>
-<p>Ant.js 使用 <code>ant.set</code> 方法来改变普通对象的值并触发界面更新. 对于数组同样也可以使用 <code>set</code> 方法. 比如有数据 <code>{list: [{name: 'Ant'}, {name: 'Bee'}]}</code>, 可以使用 <code>ant.set('list[0].name', 'Cicada')</code> 来改变数组数据的值并更新界面. </p>
-<p>更好的操作数组的方法是使用数组的自带方法: <code>push</code>, <code>pop</code>, <code>unshift</code>, <code>shift</code>, <code>splice</code>, <code>reverse</code>, <code>sort</code>. Ant.js 封装了这些的数组操作方法, 调用这些方法的时候会自动更新 DOM 界面.</p>
-<h2 id="%E4%BA%8B%E4%BB%B6%E5%A7%94%E6%89%98">事件委托</h2>
-<p>事件委托是作为 ant.js 的一个扩展而存在. 其提供了类似 <a href="http://documentcloud.github.io/backbone/#View-delegateEvents">Backbone</a> 的事件回调编写方式. 借助于 jQuery 强大的自定义事件系统, ant.js 的自定义事件也将跟随 DOM 树向上冒泡. </p>
-<pre><code class="lang-javascript"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">ant</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Ant</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="p">{</span>
-  <span class="nx">data</span><span class="o">:</span> <span class="nx">data</span>
-<span class="p">,</span> <span class="nx">events</span><span class="o">:</span> <span class="p">{</span>
-    <span class="s1">'click button'</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
-      <span class="c1">//做些什么</span>
-    <span class="p">}</span>
-  <span class="p">,</span> <span class="s1">'change input'</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){}</span>
-  <span class="p">,</span> <span class="s1">'click'</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){}</span>
-  <span class="p">,</span> <span class="s1">'render'</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{}</span>
-  <span class="p">}</span>
-<span class="p">});</span>
+<p>  其对应的数据为:</p>
+<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;ul&gt;</span>
+  <span class="nt">&lt;li</span> <span class="na">a-repeat=</span><span class="s">"todos"</span><span class="nt">&gt;</span>
+    {{title}}
+  <span class="nt">&lt;li&gt;</span>
+<span class="nt">&lt;/ul&gt;</span>
 </pre></div>
 </code></pre>
-<h2 id="%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B">使用示例</h2>
-<p><a href="https://github.com/antjs/ant.js/tree/master/examples">Github 代码库中</a> 提供了一些使用示例. </p>
+<p>  如对于模板:</p>
+<p>  每个列表节点对象生成的时候会被添加一个名为 <code>a-index</code> 的对象属性(property), 其值是元素在数组中的索引.</p>
+<p>  带有 <code>a-repeat</code> 属性的元素将根据对应数组的长度而重复. 并且该元素及其子元素的变量占位符的作用域将会切换到数组数据当中. 类似 mustache, 如果想使用数组之外的父辈变量, 直接使用其变量名即可.</p>
+<p>  <code>a-repeat="list"</code></p>
+<h3 id="%E5%BE%AA%E7%8E%AF%E5%B1%9E%E6%80%A7">循环属性</h3>
+<p>  对应数据 <code>{todos: []}</code>, 当 <code>todos</code> 数组的长度为零时该节点将会显示.</p>
+<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;div</span> <span class="na">a-if=</span><span class="s">"^todos.length"</span><span class="nt">&gt;</span>对不起! 没有数据<span class="nt">&lt;/div&gt;</span>
+</pre></div>
+</code></pre>
+<p>  如:</p>
+<p>  <strong>如果不是</strong>: <code>^</code> 标示符和条件属性配合使用时, 值的 true false 与 DOM 的显示与否刚好相反. </p>
+<p>  对应数据 <code>{todos: []}</code>, 由于 <code>todos</code> 数组的长度为零, 所以该 <code>ul</code> 将不会出现在 DOM 树中.</p>
+<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;ul</span> <span class="na">a-if=</span><span class="s">"todos.length"</span><span class="nt">&gt;&lt;ul&gt;</span>
+</pre></div>
+</code></pre>
+<p>  如模板: </p>
+<p>  有 <code>a-if</code> 属性的节点会根据 <code>a-if</code> 属性的值对应的数据来决定该节点是否存在于 DOM 树中.</p>
+<p>  <code>a-if="val"</code></p>
+<h3 id="%E6%9D%A1%E4%BB%B6%E5%B1%9E%E6%80%A7">条件属性</h3>
+<p>  两组大括号表示普通变量. 变量占位符只能位于文本节点和属性节点当中, 属性节点包括属性名和属性值. 深度变量用点表示法表示, 如: <code>{{todos.length}}</code></p>
+<p>  <code>{{name}}</code></p>
+<h3 id="%E5%8F%98%E9%87%8F%E5%8D%A0%E4%BD%8D%E7%AC%A6">变量占位符</h3>
+<pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;section</span> <span class="na">id=</span><span class="s">"main"</span><span class="nt">&gt;</span>
+  <span class="nt">&lt;input</span> <span class="na">a-model=</span><span class="s">'completedAll'</span> <span class="na">type=</span><span class="s">"checkbox"</span> <span class="na">a-if=</span><span class="s">"todos.length"</span> <span class="nt">/&gt;</span>
+  <span class="nt">&lt;ul</span> <span class="na">id=</span><span class="s">"todo-list"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;li</span> <span class="na">a-repeat=</span><span class="s">"todos"</span> <span class="na">a-if=</span><span class="s">"show"</span> <span class="na">class=</span><span class="s">"{{completed: completed}}"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"view"</span><span class="nt">&gt;</span>
+        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"checkbox"</span> <span class="na">class=</span><span class="s">"toggle"</span> <span class="na">a-model=</span><span class="s">"completed"</span> <span class="nt">/&gt;</span>
+        <span class="nt">&lt;label&gt;</span>{{{title}}}<span class="nt">&lt;/label&gt;</span>
+        <span class="nt">&lt;button</span> <span class="na">class=</span><span class="s">"destroy"</span><span class="nt">&gt;&lt;/button&gt;</span>
+      <span class="nt">&lt;/div&gt;</span>
+      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">a-model=</span><span class="s">"title"</span> <span class="na">class=</span><span class="s">"edit"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/li&gt;</span>
+  <span class="nt">&lt;/ul&gt;</span>
+<span class="nt">&lt;/section&gt;</span>
+</pre></div>
+</code></pre>
+<p>  一个典型的 ant 模板:</p>
+<p>  Ant 模板可以是 DOM 对象, 也可以是一段 HTML 字符串. 模板 DOM 对象的根节点不应该包含 <code>a-if</code> 和 <code>a-repeat</code> 属性.</p>
+<p>  类似 <a href="http://mustache.github.io/mustache.5.html">mustache</a> 和 <a href="http://www.polymer-project.org/platform/template.html">polymer</a> 的弱逻辑模板, ant.js 的模板只使用少数的几种规则.</p>
+<h2 id="%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</h2>
+<pre><code><div class="highlight"><pre>  <span class="nx">npm</span> <span class="nx">install</span> <span class="nx">ant</span><span class="p">.</span><span class="nx">js</span>
+</pre></div>
+</code></pre>
+<p>在 NodeJs 中可以使用 npm 直接安装:</p>
 <ul>
-<li><a href="learn/">使用 ant.js 编写的 ant.js 使用教程</a></li>
-<li><a href="examples/backbase/">noBackend 的实时评论系统</a></li>
+<li><a href="dist/ant.js">核心开发版</a> (36kb)</li>
+<li><a href="dist/ant.min.js">核心压缩版</a> (6kb Packed and gziped)</li>
 </ul>
-<h2 id="%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97">更新日志</h2>
-<p>Version <strong>0.1.2</strong> -- 2013-09-02</p>
+<h2 id="%E4%B8%8B%E8%BD%BD%E5%92%8C%E5%AE%89%E8%A3%85">下载和安装</h2>
 <ul>
-<li>修复带有 <code>a-</code> 前缀属性导致程序报错的问题.</li>
+<li>Ant.js 可以在 IE6+ 的浏览器中使用, 其核心部分不需要任何依赖. 委托事件扩展部分需要 jQuery.</li>
+<li>借助 <a href="https://github.com/tmpvar/jsdom">jsdom</a>, ant.js 也可以在 node.js 中作为 HTML 的模板引擎. </li>
 </ul>
-<p>Version <strong>0.1.1</strong> -- 2013-09-01</p>
-<ul>
-<li>传入的对象数据将拷贝一份, 而不再作为引用值使用.</li>
-<li>实现了数组操作和 DOM 操作映射关系的精确同步. 包括:  <code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>splice</code>, <code>reverse</code>.</li>
-<li>现在一个 ant 实例也可以作为子模板.</li>
-</ul>
-
+<h2 id="%E5%85%BC%E5%AE%B9%E6%80%A7%E5%92%8C%E4%BE%9D%E8%B5%96">兼容性和依赖</h2>
+<p>Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具有数据驱动界面的能力. </p>
   </section>
   <footer>
     
