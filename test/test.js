@@ -167,6 +167,100 @@ describe('模板语法', function() {
         //push 操作应该不影响原有的列表元素
         expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
       });
+      
+      it('.pop', function() {
+        var el = ant.el.getElementsByTagName('li')[0];
+        
+        ant.data.list.pop();
+        check(ant.el.getElementsByTagName('li'), ant.data.list);
+        
+        expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+      });
+      
+      it('.unshift', function() {
+        var el = ant.el.getElementsByTagName('li')[0];
+        
+        ant.data.list.unshift('000');
+        check(ant.el.getElementsByTagName('li'), ant.data.list);
+        
+        expect(el).to.be(ant.el.getElementsByTagName('li')[1]);
+      });
+      
+      it('.shift', function() {
+        var el = ant.el.getElementsByTagName('li')[1];
+        
+        ant.data.list.shift();
+        check(ant.el.getElementsByTagName('li'), ant.data.list);
+        
+        expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+      });
+      
+      it('.reverse', function() {
+        var el = ant.el.getElementsByTagName('li')[0];
+        
+        ant.data.list.reverse();
+        check(ant.el.getElementsByTagName('li'), ant.data.list);
+        
+        expect(el).to.be(ant.el.getElementsByTagName('li')[ant.data.list.length - 1]);
+      });
+      
+      it('.sort', function() {
+        var el = ant.el.getElementsByTagName('li')[0];
+        
+        ant.data.list.sort();
+        check(ant.el.getElementsByTagName('li'), ant.data.list);
+        
+        //TODO
+      });
+      
+      describe('.splice', function() {
+        it('splice()', function() {
+          var el = ant.el.getElementsByTagName('li')[0];
+          
+          ant.data.list.splice();
+          check(ant.el.getElementsByTagName('li'), ant.data.list);
+          
+          expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+        });
+        
+        it('splice(2, 0, "cicada")', function() {
+          var el = ant.el.getElementsByTagName('li')[0];
+          
+          ant.data.list.splice(2, 0, 'cicada');
+          check(ant.el.getElementsByTagName('li'), ant.data.list);
+          
+          expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+        });
+        
+        it('splice(2, 1)', function() {
+          var el = ant.el.getElementsByTagName('li')[0];
+          
+          ant.data.list.splice(2, 1);
+          check(ant.el.getElementsByTagName('li'), ant.data.list);
+          
+          expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+        });
+        
+        it('splice(0, 0, "000")', function() {
+          var el = ant.el.getElementsByTagName('li')[0];
+          
+          ant.data.list.splice(0, 0, "000");
+          check(ant.el.getElementsByTagName('li'), ant.data.list);
+          
+          expect(el).to.be(ant.el.getElementsByTagName('li')[1]);
+        });
+        
+        it('splice(0, 1, "111")', function() {
+          var el = ant.el.getElementsByTagName('li')[0];
+          
+          ant.data.list.splice(0, 1, "111");
+          check(ant.el.getElementsByTagName('li'), ant.data.list);
+          
+          expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+        });
+        
+      });
+      
     });
     
     describe('一个数组对应多个 DOM 列表', function() {
