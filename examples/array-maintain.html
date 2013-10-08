@@ -49,7 +49,7 @@ var ant = new Ant(document.getElementById('template'), {
       if(this.data.index){
         this.data.list.splice(this.data.index, 1, this.data.cur);
       }else{
-        this.data.list.splice(0, 1, this.data.cur)
+        this.data.list.unshift(this.data.cur)
       }
     }
   }

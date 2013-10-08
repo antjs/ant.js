@@ -251,12 +251,12 @@ describe('模板语法', function() {
         });
         
         it('splice(0, 1, "111")', function() {
-          var el = ant.el.getElementsByTagName('li')[0];
+          var el = ant.el.getElementsByTagName('li')[1];
           
           ant.data.list.splice(0, 1, "111");
           check(ant.el.getElementsByTagName('li'), ant.data.list);
           
-          expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+          expect(el).to.be(ant.el.getElementsByTagName('li')[1]);
         });
         
       });
@@ -282,10 +282,15 @@ describe('模板语法', function() {
         listCheck();
       });
       
-      it('修改数组: .set', function() {
-        ant.set('list[0]', 'ANT');
+      it('修改数组: .reverse', function() {
+        ant.data.list.reverse();
         listCheck();
       });
+      
+      // it('修改数组: .set', function() {
+      //   ant.set('list[0]', 'ANT');
+      //   listCheck();
+      // });
       
       it('替换数组', function(){
         ant.set('list', data.list);

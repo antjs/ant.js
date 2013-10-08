@@ -414,7 +414,19 @@ setPrefix('a-');
   
     //TODO 
   , watch: function(keyPath, callback) {
-      
+      var that = this
+        , vm = this.vm.$$getChild(keyPath)
+        , watcher = new Watcher(vm, vm, {}, function(vals) {
+            return vals[keyPath];
+          })
+      ;
+      watcher.addKey(keyPath);
+      watcher.callback = callback;
+      watcher.update = function(newVal) {
+        callback.call(that, newVal, that.val);
+        that.val = newVal;
+      };
+      vm.$watchers.push(watcher);
     }
   , unwatch: function(keyPath, callback) {
     
@@ -969,9 +981,11 @@ setPrefix('a-');
           console.warn(e);
         }
       }
+      this.state = Watcher.STATE_CALLED;
     };
     this.keys = [];
     this.el = token.el;
+    this.state = Watcher.STATE_READY
   }
   
   extend(Watcher, {
@@ -1067,9 +1081,11 @@ setPrefix('a-');
   //---
   function callRepeater(vmArray, method, args){
     var watchers = vmArray.__ant__.$watchers;
+    var noFixVm = false;
     for(var i = 0, l = watchers.length; i < l; i++){
       if(watchers[i].type === antAttr.REPEAT){
-        watchers[i][method](args, vmArray);
+        watchers[i][method](args, vmArray, noFixVm);
+        noFixVm = true;
       }
     }
     vmArray.__ant__.$$root.$$ant.trigger('update');
@@ -1107,9 +1123,7 @@ setPrefix('a-');
   //处理动态节点(z-repeat, z-if)
   var Generator = Watcher.extend(
     {
-      STATE_READY: 0
-    , STATE_GENEND: 1
-    , update: function(data, isExtend) {
+      update: function(data, isExtend) {
         var that = this
           , data = this.relativeVm.$$getData(this.path.replace(invertedReg, ''))
           ;
@@ -1135,11 +1149,12 @@ setPrefix('a-');
           that.lastIfState = data;
         }
         
-        that.state = this.STATE_GENEND;
       }
       //精确控制 DOM 列表
       //args: [index, n/*, items...*/]
-    , splice: function(args, arr) {
+      //arr: 数组数据
+      //noFixVm: 是否不需要维护 viewmodel 索引
+    , splice: function(args, arr, noFixVm) {
         var els = this.els
           , items = args.slice(2)
           , index = args[0] * 1
@@ -1148,7 +1163,7 @@ setPrefix('a-');
           , newEls = []
           , frag = doc.createDocumentFragment()
           , pn = this.relateEl.parentNode
-          , el, vm, vms = {}
+          , el, vm
           ;
         
         if(isUndefined(n)){
@@ -1160,19 +1175,16 @@ setPrefix('a-');
             //删除
             //对于拥有 if 属性并且不显示的节点, 其并不存在于 DOM 树中
             try{ pn.removeChild(els[i]); }catch(e){}
+            noFixVm || delete this.vm[i];
           }else{
             if(n || m){
               //维护索引
               var j = i - (n - m);
               els[i][prefix + 'index'] = j;
-              if(n - m < 0){
-                vms[i] = vms[i] || this.vm[i];
-                vms[j] = vms[j] || this.vm[j];
-                vm = this.vm[j] = vms[i]
-              }else{
+              if(!noFixVm){
                 vm = this.vm[j] = this.vm[i];
+                vm.$$path = j + '';
               }
-              vm.$$path = j + '';
             }else{
               break;
             }
@@ -1182,9 +1194,9 @@ setPrefix('a-');
         //新增
         for(var j = 0; j < m; j++){
           el = this.el.cloneNode(true);
-          //delete this.vm[index + j];
+          noFixVm || delete this.vm[index + j];
           vm = this.vm.$$getChild(index + j)
-          clearWatchers(vm, els[index + j]);
+          //clearWatchers(vm, els[index + j]);
           el[prefix + 'index'] = index + j;
           frag.appendChild(el);
           travelEl(el, vm);
@@ -1200,8 +1212,10 @@ setPrefix('a-');
         }
         
         //需要清除缩短后多出的部分
-        for(var k = l - n + m; k < l; k++){
-          delete this.vm[k];
+        if(!noFixVm){
+          for(var k = l - n + m; k < l; k++){
+            delete this.vm[k];
+          }
         }
         
         args = args.slice(0, 2).concat(newEls);
@@ -1211,13 +1225,13 @@ setPrefix('a-');
           this.vm.$$getChild('length').$$render(els.length);
         }
       }
-    , reverse: function() {
+    , reverse: function(args, arr, noFixVm) {
         var vms = this.vm, vm
           , el = this.relateEl
           , frag = doc.createDocumentFragment()
           ;
         for(var i = 0, l = this.els.length; i < l; i++){
-          if(i < 1/2){
+          if((!noFixVm) && i < 1/2){
             vm = vms[i];
             vms[i] = vms[l - i - 1];
             vms[i].$$path = i + '';
@@ -1264,7 +1278,6 @@ setPrefix('a-');
         travelEl(this.el, relativeVm);
       }
       
-      this.state = this.STATE_READY;
       el.parentNode.insertBefore(relateEl, el);
       el.parentNode.removeChild(el);
     }
