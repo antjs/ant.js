@@ -1,5 +1,6 @@
 var build = require('./build.js')
   , exec = require('child_process').exec
+  , spawn = require('child_process').spawn
   ;
 
 module.exports = function(grunt) {
@@ -59,7 +60,26 @@ module.exports = function(grunt) {
     exec('node build.js');
   });
   
+  grunt.registerTask('test', '全面测试 phantomJs / nodeJs', function() {
+    console.log('phantom.js test start');
+    grunt.task.run('mocha', 'testNode');
+  });
+  
+  grunt.registerTask('testNode', 'test for nodeJs', function() {
+    var done = this.async();
+    var cp = exec('npm run-script mocha', function(err, stdout, stderr){
+      //grunt.log.writeln(stdout);
+      if(stderr){
+        grunt.log.error(stderr);
+      }else{
+        done();
+      }
+    });
+    cp.stdout.pipe(process.stdout);
+    //cp.stderr.pipe(process.stderr);
+  });
+  
   // Default task(s).
-  grunt.registerTask('default', ['mocha', 'concat', 'uglify', 'build']);
+  grunt.registerTask('default', ['test', 'concat', 'uglify', 'build']);
 
 };

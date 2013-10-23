@@ -224,6 +224,7 @@ setPrefix('a-');
   extend(Ant, Class, {
     setPrefix: setPrefix
   , Event: Event
+  , doc: doc
   });
   
   //方法
@@ -256,7 +257,7 @@ setPrefix('a-');
       }
       
       if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
-      callRender(vm, data, isExtend);
+      vm.$$render(data, isExtend);
       this.trigger('update', attrs);
       return this;
     }
@@ -266,7 +267,7 @@ setPrefix('a-');
      */
   , render: function(data) {
       data && this.set(data, {isExtend: false, silence: true});
-      callRender(this.vm, this.data, false);
+      this.vm.$$render(this.data, false);
       this.isRendered = true;
       this.trigger('render');
       return this;
@@ -449,10 +450,6 @@ setPrefix('a-');
       el.innerHTML = tpl;
     }
     return {el: el, tpl: tpl};
-  }
-  
-  function callRender(vm, data, renderType) {
-    vm.$$render(data, renderType);
   }
   
   function buildViewModel(ant) {
@@ -1247,11 +1244,6 @@ setPrefix('a-');
     , sort: function(fn){
         //TODO 进行精确高还原的排序?
         this.update()
-      }
-    }
-  , {
-      isGenTempl: function(el) {
-        return el && el.hasAttributes && el.hasAttributes(antAttr.REPEAT) || el.hasAttributes(antAttr.IF);
       }
     }
   , function (vm, relativeVm, token){

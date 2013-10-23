@@ -7,7 +7,8 @@
     "example": "examples"
   },
   "scripts": {
-    "test": "grunt mocha:all"
+    "test": "grunt test",
+    "mocha": "mocha"
   },
   "repository": {
     "type": "git",
@@ -17,8 +18,6 @@
     "template",
     "data-binding",
     "MVW",
-    "MVC",
-    "MVVM",
     "MDV"
   ],
   "author": "Justan <ckr189@gmail.com>",
