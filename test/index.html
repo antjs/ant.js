@@ -9,11 +9,14 @@
   <script type="text/javascript">
     mocha.setup('bdd');
   </script>
-  <script type="text/javascript" src="../third-part/jquery.min.js"></script>
   <!--[if lt IE 9]>
   <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
-  <!--endif-->
+  <script type="text/javascript" src="../third-part/jquery.min.js"></script>
+  <![endif]-->
   <script type="text/javascript" src="../src/ant.js"></script>
+  <!--[if lt IE 8]>
+  <script type="text/javascript" src="../third-part/json2.js"></script>
+  <![endif]-->
 </head>
 <body>
 	<div id="mocha"></div>

@@ -1,12 +1,21 @@
-try{
-  var expect = require('expect.js');
-  var Ant = require('../');
+if(typeof require === 'function' && typeof exports === 'object'){
+  expect = require('expect.js');
+  Ant = require('../');
   console.log('node test start');
-}catch(e){
-  console.log('browser test start');
+}else{
+  typeof console === 'object' && console.log('browser test start');
 }
 
 var doc = Ant.doc;
+
+//hacks for IE6/7/8
+function _$(selector, context){
+  return typeof $ === 'function' ? $(selector, context).get() : context.querySelectorAll(selector);
+}
+
+function getText(el){
+  return typeof $ === 'function' ? $(el).text() : el.textContent;
+}
 
 describe('接口可用性', function() {
   it('Ant 基本接口', function() {
@@ -389,7 +398,7 @@ describe('模板语法', function() {
           content: content
         }
       });
-      expect(ant.el.querySelector('p').textContent).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
+      expect(getText(_$('p', ant.el)[0])).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
     });
     
     it('字符串非转义子模板, {{{>partial}}}', function() {
@@ -402,7 +411,7 @@ describe('模板语法', function() {
           content: content
         }
       });
-      expect(ant.el.querySelector('p').innerHTML.toLowerCase()).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
+      expect(_$('p', ant.el)[0].innerHTML.toLowerCase()).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
     });
     
     it('DOM 子模板', function() {
@@ -416,7 +425,7 @@ describe('模板语法', function() {
           content: content
         }
       });
-      expect((ant.el).querySelector('p>div')).to.be(content);
+      expect(_$('p>div', ant.el)[0]).to.be(content);
       expect(content.innerHTML.toLowerCase()).to.be(html.replace('{{title}}', ant.data.title))
     });
     
@@ -440,7 +449,7 @@ describe('模板语法', function() {
       
       //$('body').append(ant.el);
       
-      expect((ant.el).querySelector('p>div')).to.be(child.el);
+      expect(_$('p>div', ant.el)[0]).to.be(child.el);
       expect(child.el.innerHTML.toLowerCase()).to.be(tpl.replace('{{title}}', ant.data.title));
     });
     
@@ -456,10 +465,13 @@ describe('模板语法', function() {
             }
           })
         ;
-      var partial = (ant.el).querySelector('p'), span;
-      expect(partial.querySelectorAll('.repeat').length).to.be(ant.data.list.length);
-      for(var i = 0, l = partial.querySelectorAll('.repeat').length; i < l; i++){
-        span = partial.querySelectorAll('.repeat')[i];
+      var partial = _$('p', ant.el)[0]
+        , repeats = _$('.repeat', partial)
+        , span
+        ;
+      expect(repeats.length).to.be(ant.data.list.length);
+      for(var i = 0, l = repeats.length; i < l; i++){
+        span = repeats[i];
         expect(span.innerHTML).to.be(ant.data.list[i]);
       };
     })
@@ -468,7 +480,7 @@ describe('模板语法', function() {
       var ant = new Ant(getTpl(), {
         data: {}
       });
-      expect((ant.el).querySelector('p').textContent).to.be(prefix + postfix);
+      expect(getText(_$('p', ant.el)[0])).to.be(prefix + postfix);
     });
     
     it('延时添加子模板. ant.addPartial', function() {
@@ -480,7 +492,7 @@ describe('模板语法', function() {
         name: 'content'
       , content: content
       });
-      expect((ant.el).querySelector('p').textContent).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
+      expect(getText(_$('p', ant.el)[0])).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
     })
   });
   
@@ -497,10 +509,13 @@ describe('模板语法', function() {
         , el = (ant.el).children[0]
         ;
       
-      expect(el.attributes.length).to.be(3);
+      expect(el.getAttribute('a-style')).to.not.be.ok();
+      expect(el.getAttribute('style')).to.be.ok();
+      expect(el.getAttribute('a-class')).to.not.be.ok();
+      expect(el.getAttribute('class')).to.be.ok();
       expect(el.getAttribute('data-test')).to.be(ant.data.test);
       expect(el.style.width).to.be(ant.data.width + 'px');
-      expect(el.className).to.be(ant.data.className);
+      expect(el.getAttribute('class')).to.be(ant.data.className);
     })
   });
 
