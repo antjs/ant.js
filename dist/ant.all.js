@@ -23,36 +23,14 @@ if(!String.prototype.trim) {
 }
 
 if (!Array.prototype.indexOf) {
-  Array.prototype.indexOf = function (searchElement /*, fromIndex */ ) {
-    'use strict';
-    if (this == null) {
-      throw new TypeError();
-    }
-    var n, k, t = Object(this),
-        len = t.length >>> 0;
-
-    if (len === 0) {
-      return -1;
-    }
-    n = 0;
-    if (arguments.length > 1) {
-      n = Number(arguments[1]);
-      if (n != n) { // shortcut for verifying if it's NaN
-        n = 0;
-      } else if (n != 0 && n != Infinity && n != -Infinity) {
-        n = (n > 0 || -1) * Math.floor(Math.abs(n));
-      }
-    }
-    if (n >= len) {
-      return -1;
-    }
-    for (k = n >= 0 ? n : Math.max(len - Math.abs(n), 0); k < len; k++) {
-      if (k in t && t[k] === searchElement) {
-        return k;
+  Array.prototype.indexOf = function (obj, start) {
+    for (var i = (start || 0); i < this.length; i++) {
+      if (this[i] === obj) {
+        return i;
       }
     }
     return -1;
-  };
+  }
 }
 ;/***
  *          .o.                       .           o8o          
@@ -106,10 +84,9 @@ var Event = {
       
     if(name && handlers[name]){
       if('function' === typeof handler){
-        for(var i = 0; i < handlers[name].length; i++) {
+        for(var i = handlers[name].length - 1; i >=0; i--) {
           if(handlers[name][i].handler === handler){
             handlers[name].splice(i, 1);
-            i--;
           }
         }
       }else{
@@ -152,21 +129,30 @@ var Class = {
   /** 
    * 构造函数继承. 
    * 如: `var Car = Ant.extend({drive: function(){}}); new Car();`
-   * @param {Object} protoProps 子构造函数的扩展原型对象
+   * @param {Object} [protoProps] 子构造函数的扩展原型对象
    * @param {Object} [staticProps] 子构造函数的扩展静态属性
+   * @param {Function} [constructor] 子构造函数
    * @return {Function} 子构造函数
    */
-  extend: function (protoProps, staticProps) {
+  extend: function (protoProps, staticProps, constructor) {
+    if(typeof staticProps === 'function'){
+      constructor = staticProps;
+      staticProps = {};
+    }
+    if(typeof protoProps === 'function'){
+      constructor = protoProps;
+      protoProps = {};
+    }
     var sup = this;
-    var sub = function(){ return sup.apply(this, arguments); };
-    var Fn = function() { this.constructor = sub; };
+    constructor = constructor || function(){ return sup.apply(this, arguments); };
+    var Fn = function() { this.constructor = constructor; };
     
     Fn.prototype = sup.prototype;
-    sub.prototype = new Fn();
-    extend(sub.prototype, protoProps);
-    extend(sub, sup, staticProps);
+    constructor.prototype = new Fn();
+    extend(constructor.prototype, protoProps, {__super__: sup});
+    extend(constructor, sup, staticProps);
     
-    return sub;
+    return constructor;
   }
 };
 
@@ -178,6 +164,7 @@ function setPrefix(newPrefix) {
     antAttr.IF = prefix + 'if';
     antAttr.REPEAT = prefix + 'repeat';
     antAttr.MODEL = prefix + 'model';
+    Ant.PREFIX = prefix;
   }
 }
 
@@ -247,11 +234,15 @@ setPrefix('a-');
     
     this.partials = null;
     
+    this.bindings = (this.bindings || []).concat(opts.bindings || []);
+    
     for(var event in events) {
       this.on(event, events[event]);
     }
     
+    this.trigger('beforeInit');
     buildViewModel(this);
+    this.trigger('build');
     
     //这里需要合并可能存在的 this.data
     //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
@@ -261,11 +252,13 @@ setPrefix('a-');
       this.render(data);
     }
     this.init.apply(this, arguments);
+    this.trigger('afterInit');
   }
   
   extend(Ant, Class, {
     setPrefix: setPrefix
   , Event: Event
+  , doc: doc
   });
   
   //方法
@@ -298,7 +291,7 @@ setPrefix('a-');
       }
       
       if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
-      callRender(vm, data, isExtend);
+      vm.$$render(data, isExtend);
       this.trigger('update', attrs);
       return this;
     }
@@ -308,7 +301,7 @@ setPrefix('a-');
      */
   , render: function(data) {
       data && this.set(data, {isExtend: false, silence: true});
-      callRender(this.vm, this.data, false);
+      this.vm.$$render(this.data, false);
       this.isRendered = true;
       this.trigger('render');
       return this;
@@ -321,7 +314,8 @@ setPrefix('a-');
      */
   , clone: function(opts) {
       var options = modelExtend({}, this.options);
-      return new this.constructor(this.tpl, modelExtend(this.options, opts));
+      if(opts && opts.data){ options.data = null; }
+      return new this.constructor(this.tpl, modelExtend(options, opts));
     }
     
   , get: function(key) {
@@ -452,6 +446,26 @@ setPrefix('a-');
       return data;
     }
   , init: noop
+  
+    //TODO 
+  , watch: function(keyPath, callback) {
+      var that = this
+        , vm = this.vm.$$getChild(keyPath)
+        , watcher = new Watcher(vm, vm, {}, function(vals) {
+            return vals[keyPath];
+          })
+      ;
+      watcher.addKey(keyPath);
+      watcher.callback = callback;
+      watcher.update = function(newVal) {
+        callback.call(that, newVal, that.val);
+        that.val = newVal;
+      };
+      vm.$watchers.push(watcher);
+    }
+  , unwatch: function(keyPath, callback) {
+    
+    }
   });
   
   function tplParse(tpl, target) {
@@ -470,10 +484,6 @@ setPrefix('a-');
       el.innerHTML = tpl;
     }
     return {el: el, tpl: tpl};
-  }
-  
-  function callRender(vm, data, renderType) {
-    vm.$$render(data, renderType);
   }
   
   function buildViewModel(ant) {
@@ -501,7 +511,7 @@ setPrefix('a-');
       return;
     }else if(el.nodeType === 3){
       //文本节点
-      vm.$$updateVM(el, el.parentNode);
+      checkBinding(vm, el, el.parentNode);
       return;
     }
     
@@ -516,160 +526,69 @@ setPrefix('a-');
     }
   }
   
+  //遍历属性
   function checkAttr(el, vm) {
     var repeatAttr = el.getAttributeNode(antAttr.REPEAT)
       , ifAttr = el.getAttributeNode(antAttr.IF)
       , modelAttr = el.getAttributeNode(antAttr.MODEL)
+      , attr, gen = repeatAttr || ifAttr
       ;
     
-    if(repeatAttr || ifAttr){
-      vm.$$addBinding({
-        name: (repeatAttr || ifAttr).nodeName
-      , path: (repeatAttr || ifAttr).nodeValue
-      , el: el
-      });
+    if(gen){
+      checkBinding(vm, gen, el, true);
       return true;
     }
     
     if(modelAttr){
-      view2Model(el, modelAttr.value, vm);
+      checkBinding(vm, modelAttr, el, true);
+      //view2Model(el, modelAttr.value, vm);
     }
     
-    for(var i = 0, l = el.attributes.length; i < l; i++){
-      vm.$$updateVM(el.attributes[i], el);
+    for(var i = el.attributes.length - 1; i >= 0; i--){
+      attr = el.attributes[i];
+      checkBinding(vm, attr, el);
+      if(attr.nodeName.indexOf(prefix) === 0){
+        el.removeAttribute(attr.nodeName);
+      }
+    }
+  }
+  
+  function checkBinding(vm, node, el, isGen) {
+    if(isGen || isToken(node.nodeValue) || isToken(node.nodeName)){
+      var tokens = parseTokens(node, el, isGen)
+        , textMap = tokens.textMap
+        ;
+      //如果绑定内容是在文本中, 则将其分割成单独的文本节点
+      if(tokens.type === 'text' && textMap.length > 1){
+        textMap.forEach(function(text) {
+          var tn = doc.createTextNode(text);
+          el.insertBefore(tn, node);
+          checkBinding(vm, tn, el);
+        });
+        el.removeChild(node);
+      }else{
+        tokens.forEach(function(token){
+          addWatcher(vm, token, tokens);
+        });
+      }
     }
   }
   
   var isIE = !!doc.attachEvent;
   
-  //双向绑定
-  function view2Model(el, keyPath, vm) {
-    keyPath = keyPath.trim();
-    var ant = vm.$$root.$$ant
-      , cur = vm.$$getChild(keyPath)
-      , ev = 'change'
-      , attr, value = attr = 'value'
-      , isSetDefaut = isUndefined(ant.get(cur.$$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
-      , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
-      , watcher = function(val) {
-          //执行这里的时候, 很可能 render 还未执行. vm.$$getData(keyPath) 未定义, 不能返回新设置的值
-          var newVal = val || vm.$$getData(keyPath) || ''
-            , val = el[attr]
-            ;
-          val && val.replace && (val = val.replace(crlf, '\n'));
-          if(newVal !== val){ el[attr] = newVal; }
-        }
-      , handler = function() {
-          var val = el[value];
-          
-          val.replace && (val = val.replace(crlf, '\n'));
-          ant.set(cur.$$getKeyPath(), val);
-        }
-      ;
-    
-    switch(el.tagName) {
-      case 'INPUT':
-      case 'TEXTAREA':
-        switch(el.type) {
-          case 'checkbox':
-            value = attr = 'checked';
-            //IE6, IE7 下监听 propertychange 会挂?
-            if(isIE) { ev += ' click'; }
-          break;
-          case 'radio':
-            attr = 'checked';
-            if(isIE) { ev += ' click'; }
-            watcher = function() {
-              el.checked = el.value === vm.$$getData(keyPath);
-            };
-            isSetDefaut = el.checked;
-          break;
-          default:
-            if(!ant.isLazy){
-              if('oninput' in el){
-                ev += ' input';
-              }
-              //IE 下的 input 事件替代
-              if(isIE) {
-                ev += ' keyup propertychange cut';
-              }
-            }
-          break;
-        }
-      break;
-      case 'SELECT':
-        if(el.multiple){
-          handler = function() {
-            var vals = [];
-            for(var i = 0, l = el.options.length; i < l; i++){
-              if(el.options[i].selected){ vals.push(el.options[i].value) }
-            }
-            ant.set(cur.$$getKeyPath(), vals);
-          };
-          watcher = function(){
-            var vals = vm.$$getData(keyPath);
-            if(vals && vals.length){
-              for(var i = 0, l = el.options.length; i < l; i++){
-                el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
-              }
-            }
-          };
-        }
-        isSetDefaut = isSetDefaut && !isToken(el[value]);
-      break;
-    }
-    
-    cur.$$watchers.push(watcher);
-    
-    ev.split(/\s+/g).forEach(function(e){
-      removeEvent(el, e, handler);
-      addEvent(el, e, handler);
-    });
-    
-    el.removeAttribute(antAttr.MODEL);
-    
-    //根据表单元素的初始化默认值设置对应 model 的值
-    if(el[value] && isSetDefaut){
-       handler(); 
-    }
-  }
-  
   function ViewModel() {
     this.$$path = '';
-    this.$$watchers = [];
-    this.$$repeaters = [];
+    this.$watchers = [];
   }
   
   ViewModel.prototype = {
-    $$watchers: null
-  , $$root: null
+    $$root: null
   , $$parent: null
-  , $$repeaters: null
   , $$ant: null
   , $$path: null
-  , $$links: null
-    
-  , $$updateVM: function(node, el) {
-      if(isToken(node.nodeValue) || isToken(node.nodeName)){
-        var tokenMap = parseTokens(node, el)
-          , textMap = tokenMap.textMap
-          , that = this
-          ;
-        if(tokenMap.type === 'text' && textMap.length > 1){
-          textMap.forEach(function(text) {
-            var tn = doc.createTextNode(text);
-            el.insertBefore(tn, node);
-            that.$$updateVM(tn, el);
-          });
-          el.removeChild(node);
-        }else{
-          tokenMap.tokens.forEach(function(token){
-            that.$$addBinding(token, tokenMap);
-          });
-        }
-      }
-    }
   
+  , $watchers: null
+    
   //获取子 vm, 不存在的话将新建一个.
   , $$getChild: function(path, strict) {
       var key, vm
@@ -711,24 +630,6 @@ setPrefix('a-');
       }
       return keyPath;
     }
-    
-  , $$addBinding: function(info, tokenMap) {
-      var path = info.path, el = info.el, name = info.name
-        , vm
-        ;
-      
-      switch(name){
-        case antAttr.IF:
-          path = path.replace(invertedReg, '');
-        case antAttr.REPEAT:
-          vm = this.$$getChild(path);
-          vm.$$repeaters.push(new Generator(el, vm, this, name));
-          break;
-        default:
-          addBinding(tokenMap, this, info);
-          break;
-      }
-    }
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
   , $$getData: function(key, isStrict) {
@@ -742,12 +643,8 @@ setPrefix('a-');
   , $$render: function (data, isExtend) {
       var map = isExtend ? data : this;
       
-      this.$$repeaters.forEach(function(repeater){
-        repeater.generate(data, isExtend);
-      });
-      
-      for(var i = 0, l = this.$$watchers.length; i < l; i++){
-        this.$$watchers[i].call(this, data);
+      for(var i = 0, l = this.$watchers.length; i < l; i++){
+        this.$watchers[i].fn(isExtend);
       }
       
       if(isObject(map)){
@@ -764,21 +661,16 @@ setPrefix('a-');
   
   //清空 vm 中某个元素及其子元素的 watcher, reperter, conditioner
   function clearWatchers(vm, el){
-    var types = ['$$repeaters', '$$watchers']
-      , watchers, watcher
+    var watchers = vm.$watchers
+      , watcher
       ;
     
     if(!el){ return }
     
-    for(var i = 0, l = types.length; i < l; i++){
-      watchers = vm[types[i]];
-      for(var j = 0, n = watchers.length; j < n; j++){
-        watcher = watchers[j];
-        if(watcher.el && el.contains(watcher.el)){
-          watchers.splice(j, 1);
-          j--;
-          n--;
-        }
+    for(var i = watchers.length - 1; i >= 0; i--){
+      watcher = watchers[i];
+      if(watcher.el && el.contains(watcher.el)){
+        watchers.splice(i, 1);
       }
     }
     
@@ -828,7 +720,7 @@ setPrefix('a-');
     return str && tokenReg.test(str);
   }
   
-  function parseTokens(node, el) {
+  function parseTokens(node, el, isGen) {
     var tokens = []
       , val, type
       , textMap = []
@@ -837,16 +729,22 @@ setPrefix('a-');
       , nodeName = node.nodeName
       ;
     
-    if(node.nodeType === 3){//文本节点
+    if(isGen){
+      tokens.push({
+        nodeName: nodeName
+      , path: text
+      , el: el
+      , node: node
+      });
+    }else if(node.nodeType === 3){//文本节点
       type = 'text';
     }else if(node.nodeType === 2){//属性节点
       type = 'attr';
       if(nodeName.indexOf(prefix) === 0){
         nodeName = node.nodeName.slice(prefix.length);
-        el.removeAttribute(node.nodeName);
       }
       if(isToken(nodeName)){
-        text = nodeName;
+        text = nodeName;//属性名
       }
     }
     
@@ -864,7 +762,9 @@ setPrefix('a-');
       , position: textMap.length
       , el: el
       , node: node
-      , name: nodeName
+      , nodeName: nodeName
+      , type: type
+      , textMap: textMap
       });
       
       //一个引用类型(数组)作为节点对象的文本图, 这样当某一个引用改变了一个值后, 其他引用取得的值都会同时更新
@@ -877,145 +777,330 @@ setPrefix('a-');
       textMap.push(text.slice(start, text.length));
     }
     
-    return {
-      tokens: tokens
-    , textMap: textMap
-    , node: node
-    , type: type
-    , attr: nodeName
-    , el: el
+    tokens.type = type;
+    tokens.textMap = textMap;
+    
+    return tokens;
+  }
+  
+  
+  function addWatcher(vm, token, tokens) {
+    var binding = getBinding(vm.$$root.$$ant.bindings);
+    var watcher = binding(vm, token);
+    if(watcher){
+      watcher.vm.$watchers.push(watcher);
     }
   }
   
-  var addBinding = function (tokenMap, vm, token) {
-    var childVm = token.path === '.' ? vm : vm.$$getChild(token.path);
-    var watcher = function(val) {
-      var newVal = isUndefined(val) ? vm.$$getData(token.path) : val;
-      updateDom(newVal, token, tokenMap);
-    };
-    watcher.el = tokenMap.el;
-    childVm.$$watchers.push(watcher);
+  function getBinding(bindings) {
+    bindings = baseBindings.concat(bindings);
+    var binding = bindings[0];
+    for(var i = 1, l = bindings.length; i < l; i++){
+      binding = beforeFn(binding, bindings[i], function(ret) {
+        return (ret instanceof Watcher) || ret === false;
+      })
+    }
+    return binding;
   }
   
   var invertedReg = /^\^/;
-  
-  //{{data: str}}
-  addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
-    var tokenStr = token.path
-      , pair = tokenStr.split(':')
-      ;
+  var pertialReg = /^>\s*(?=.+)/;
+  //core bindings
+  var baseBindings = [
+    //single keypath
+    function (vm, token) {
+      var childVm = token.path === '.' ? vm : vm.$$getChild(token.path);
       
-    var watcher = function() {
-      var val = vm.$$getData(_path);
-      var newVal = (invertedReg.test(path) ? !val : val) ? value : '';
-      updateDom(newVal, token, tokenMap);
-    };
-      
-    if(pair.length === 2){
-      var path = pair[0].trim()
-        , _path = path.replace(invertedReg, '')
-        , value = pair[1].trim()
-        ;
-      watcher.el = tokenMap.el;
-      vm.$$getChild(_path).$$watchers.push(watcher);
-      return false;
-    }
-  });
-  
-  //局部模板. {{> anotherant}}
-  var pertialReg = /^>\s*(?=.+)/
-  addBinding = _beforeFn(addBinding, function(tokenMap, vm, token) {
-    var pName, ant, opts, node;
-    if(tokenMap.type === 'text' && pertialReg.test(token.path)){
-      pName = token.path.replace(pertialReg, '');
-      ant = vm.$$root.$$ant;
-      opts = ant.options;
-      node = doc.createTextNode('');
-      tokenMap.el.insertBefore(node, tokenMap.node);
-      tokenMap.el.removeChild(tokenMap.node);
-      
-      ant.setPartial({
-        name: pName
-      , content: opts && opts.partials && opts.partials[pName]
-      , node: node
-      , escape: token.escape
-      , path: vm.$$getKeyPath()
+      var watcher = new Watcher(childVm, vm, token, function(vals) {
+        return vals[token.path];
       });
-      return false;
+      watcher.addKey(token.path);
+      return watcher;
     }
-  });
-  
-  function updateDom(newVal, token, tokenMap) {
-    var pos = token.position
-      , node = tokenMap.node
-      , el = tokenMap.el
-      , type = tokenMap.type
-      , textMap = tokenMap.textMap
-      , attrName = tokenMap.attr
-      , isAttrNameTpl = isToken(node.nodeName)
-      , val
-      ;
-    if(newVal + '' !== textMap[pos] + '') {
-      
-      //模板内容被外部程序修改
-      if((isAttrNameTpl ? attrName : node.nodeValue) !== textMap.join('') && token.escape) {
-        //什么都不做?
-        console.warn('模板内容被修改!');
-        return;
+    
+    // {{data: str}}
+  , function(vm, token) {
+      var tokenStr = token.path
+        , pair = tokenStr.split(':')
+        ;
+        
+      if(pair.length === 2){
+        var path = pair[0].trim()
+          , _path = path.replace(invertedReg, '')
+          , value = pair[1].trim()
+          , watcher = new Watcher(vm.$$getChild(_path), vm, token, function(vals) {
+              var val = vals[_path];
+              return (invertedReg.test(path) ? !val : val) ? value : '';
+            })
+          ;
+        watcher.addKey(_path);
+        return watcher;
       }
-
-      textMap[pos] = newVal && (newVal + '');
-      val = textMap.join('');
+    }
+    
+    //局部模板. {{> anotherant}}
+  , function(vm, token) {
+      var pName, ant, opts, node;
+      if(token.type === 'text' && pertialReg.test(token.path)){
+        pName = token.path.replace(pertialReg, '');
+        ant = vm.$$root.$$ant;
+        opts = ant.options;
+        node = doc.createTextNode('');
+        token.el.insertBefore(node, token.node);
+        token.el.removeChild(token.node);
+        
+        ant.setPartial({
+          name: pName
+        , content: opts && opts.partials && opts.partials[pName]
+        , node: node
+        , escape: token.escape
+        , path: vm.$$getKeyPath()
+        });
+        return false;
+      }
+    }
+    
+    //if / repeat
+  , function(vm, token) {
+      var nodeName = token.nodeName
+        , path = token.path
+        , child
+        ;
+        
+      switch(nodeName){
+        case antAttr.IF:
+          path = path.replace(invertedReg, '');
+        case antAttr.REPEAT:
+          child = vm.$$getChild(path);
+          var watcher = new Generator(child, vm, token, function(vals) {
+            return vals[path];
+          });
+          
+          watcher.addKey(path);
+          return watcher;
+          break;
+      }
+    }
+    
+    //model 双向绑定
+  , function (vm, token) {
+      var keyPath = token.path
+        , el = token.el
+        ;
       
-      if(!token.escape && type === 'text') {
-        //没有转义的 HTML 代码
-        var div = doc.createElement('div')
-          , nodes
+      if(token.nodeName === antAttr.MODEL){
+      
+        if(!keyPath){ return false; }
+        
+        var ant = vm.$$root.$$ant
+          , cur = keyPath === '.' ? vm : vm.$$getChild(keyPath)
+          , ev = 'change'
+          , attr, value = attr = 'value'
+          , isSetDefaut = isUndefined(ant.get(cur.$$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
+          , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
+          , update = function(val) {
+              //执行这里的时候, 很可能 render 还未执行. vm.$$getData(keyPath) 未定义, 不能返回新设置的值
+              var newVal = val || vm.$$getData(keyPath) || ''
+                , val = el[attr]
+                ;
+              val && val.replace && (val = val.replace(crlf, '\n'));
+              if(newVal !== val){ el[attr] = newVal; }
+            }
+          , handler = function() {
+              var val = el[value];
+              
+              val.replace && (val = val.replace(crlf, '\n'));
+              ant.set(cur.$$getKeyPath(), val);
+            }
           ;
         
-        token.unescapeNodes = token.unescapeNodes || [];
-        
-        div.innerHTML = val;
-        nodes = div.childNodes;
-        
-        token.unescapeNodes.forEach(function(_node) {
-          _node.parentNode && _node.parentNode.removeChild(_node);
-        });
-        token.unescapeNodes = [];
-        for(var i = 0, l = nodes.length; i < l; i++){
-          token.unescapeNodes.push(nodes[i]);
-          node.parentNode.insertBefore(nodes[i], node);
-          i--;
-          l--;
-        }
-        
-        node.nodeValue = '';
-      }else{
-        if(!isAttrNameTpl){
-          node.nodeValue = val;
-        }
-        if(type !== 'text'){
-          if(isAttrNameTpl){
-            if(attrName){
-              el.removeAttribute(attrName)
+        switch(el.tagName) {
+          default:
+            value = attr = 'innerHTML';
+            ev += ' blur';
+          case 'INPUT':
+          case 'TEXTAREA':
+            switch(el.type) {
+              case 'checkbox':
+                value = attr = 'checked';
+                //IE6, IE7 下监听 propertychange 会挂?
+                if(isIE) { ev += ' click'; }
+              break;
+              case 'radio':
+                attr = 'checked';
+                if(isIE) { ev += ' click'; }
+                update = function() {
+                  el.checked = el.value === vm.$$getData(keyPath);
+                };
+                isSetDefaut = el.checked;
+              break;
+              default:
+                if(!ant.isLazy){
+                  if('oninput' in el){
+                    ev += ' input';
+                  }
+                  //IE 下的 input 事件替代
+                  if(isIE) {
+                    ev += ' keyup propertychange cut';
+                  }
+                }
+              break;
             }
-            val && setAttr(el, val, node.nodeValue);
-            tokenMap.attr = val;
-          }else{
-            setAttr(el, attrName, val);
+          break;
+          case 'SELECT':
+            if(el.multiple){
+              handler = function() {
+                var vals = [];
+                for(var i = 0, l = el.options.length; i < l; i++){
+                  if(el.options[i].selected){ vals.push(el.options[i].value) }
+                }
+                ant.set(cur.$$getKeyPath(), vals);
+              };
+              update = function(){
+                var vals = vm.$$getData(keyPath);
+                if(vals && vals.length){
+                  for(var i = 0, l = el.options.length; i < l; i++){
+                    el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
+                  }
+                }
+              };
+            }
+            isSetDefaut = isSetDefaut && !isToken(el[value]);
+          break;
+        }
+        
+        ev.split(/\s+/g).forEach(function(e){
+          removeEvent(el, e, handler);
+          addEvent(el, e, handler);
+        });
+        
+        el.removeAttribute(antAttr.MODEL);
+        
+        var watcher = new Watcher(vm, cur, token, function(vals) {
+          return vals[keyPath];
+        });
+        watcher.update = update;
+        watcher.addKey(keyPath);
+        
+        //根据表单元素的初始化默认值设置对应 model 的值
+        if(el[value] && isSetDefaut){
+           handler(); 
+        }
+        
+        return watcher;
+      }
+    }
+  ];
+  
+  function Watcher(vm, relativeVm, token, fn) {
+    this.token = token;
+    this.relativeVm = relativeVm;
+    this.vm = vm;
+    this.val = null;
+    this.fn = function(isExtend) {
+      var vals = {}, key;
+      for(var i = 0, l = this.keys.length; i < l; i++){
+        key = this.keys[i];
+        vals[key] = relativeVm.$$getData(key === '.' ? '' : key);
+      }
+      var newVal = fn(vals);
+      if(newVal !== this.val){
+        try{
+          this.update(newVal, isExtend);
+          this.val = newVal;
+        }catch(e){
+          console.warn(e);
+        }
+      }
+      this.state = Watcher.STATE_CALLED;
+    };
+    this.keys = [];
+    this.el = token.el;
+    this.state = Watcher.STATE_READY
+  }
+  
+  extend(Watcher, {
+    STATE_READY: 0
+  , STATE_CALLED: 1
+  }, Class);
+  
+  extend(Watcher.prototype, {
+    addKey: function(key) {
+      this.keys.push(key);
+    }
+  , update: function(newVal) {
+      var token = this.token
+        , pos = token.position
+        , node = token.node
+        , el = token.el
+        , type = token.type
+        , textMap = token.textMap
+        , attrName = token.nodeName
+        , isAttrNameTpl = isToken(node.nodeName)
+        , val
+        ;
+      if(newVal + '' !== textMap[pos] + '') {
+        
+        //模板内容被外部程序修改
+        if((isAttrNameTpl ? attrName : node.nodeValue) !== textMap.join('') && token.escape) {
+          //什么都不做?
+          console.warn('模板内容被修改!');
+          return;
+        }
+
+        textMap[pos] = newVal && (newVal + '');
+        val = textMap.join('');
+        
+        if(!token.escape && type === 'text') {
+          //没有转义的 HTML 代码
+          var div = doc.createElement('div')
+            , nodes
+            ;
+          
+          token.unescapeNodes = token.unescapeNodes || [];
+          
+          div.innerHTML = val;
+          nodes = div.childNodes;
+          
+          token.unescapeNodes.forEach(function(_node) {
+            _node.parentNode && _node.parentNode.removeChild(_node);
+          });
+          token.unescapeNodes = [];
+          for(var i = nodes.length - 1; i >= 0; i--){
+            token.unescapeNodes.push(nodes[i]);
+            node.parentNode.insertBefore(nodes[i], node);
+          }
+          
+          node.nodeValue = '';
+        }else{
+          if(!isAttrNameTpl){
+            node.nodeValue = val;
+          }
+          if(type !== 'text'){
+            if(isAttrNameTpl){
+              if(attrName){
+                el.removeAttribute(attrName)
+              }
+              val && setAttr(el, val, node.nodeValue);
+              token.nodeName = val;
+            }else{
+              setAttr(el, attrName, val);
+            }
           }
         }
       }
     }
-  }
+  });
   
   //IE 浏览器很多属性通过 `setAttribute` 设置后无效. 
   //这些通过 `el[attr] = value` 设置的属性却能够通过 `removeAttribute` 清除.
   function setAttr(el, attr, val){
     try{
-      if((attr in el) && isIE){
+      if(((attr in el) || attr === 'class')&& isIE){
         if(attr === 'style' && el.style.setAttribute){
           el.style.setAttribute('cssText', val);
+        }else if(attr === 'class'){
+          el.className = val;
         }else{
           el[attr] = typeof el[attr] === 'boolean' ? true : val;
         }
@@ -1026,11 +1111,14 @@ setPrefix('a-');
   }
   
   
+  //---
   function callRepeater(vmArray, method, args){
-    var repeaters = vmArray.__ant__.$$repeaters;
-    for(var i = 0, l = repeaters.length; i < l; i++){
-      if(repeaters[i].type === antAttr.REPEAT){
-        repeaters[i][method](args, vmArray);
+    var watchers = vmArray.__ant__.$watchers;
+    var noFixVm = false;
+    for(var i = 0, l = watchers.length; i < l; i++){
+      if(watchers[i].type === antAttr.REPEAT){
+        watchers[i][method](args, vmArray, noFixVm);
+        noFixVm = true;
       }
     }
     vmArray.__ant__.$$root.$$ant.trigger('update');
@@ -1066,162 +1154,162 @@ setPrefix('a-');
   };
   
   //处理动态节点(z-repeat, z-if)
-  function Generator(el, vm, relativeVm, type){
-    //文档参照节点. 
-    var relateEl = doc.createTextNode('')
-      ;
-      
-    this.path = el.getAttribute(type);
-    
-    el.removeAttribute(type);
-    
-    
-    this.el = el;
-    this.vm = vm;
-    this.relativeVm = relativeVm;
-    this.type = type;
-    
-    this.relateEl = relateEl;
-    
-    this.els = [];
-    
-    if(type === antAttr.IF){
-      //if 属性不用切换作用域
-      travelEl(this.el, relativeVm);
-    }
-    
-    this.state = this.STATE_READY;
-    el.parentNode.insertBefore(relateEl, el);
-    el.parentNode.removeChild(el);
-  }
-  
-  extend(Generator, {
-    isGenTempl: function(el) {
-      return el && el.hasAttributes && el.hasAttributes(antAttr.REPEAT) || el.hasAttributes(antAttr.IF);
-    }
-  });
-  
-  Generator.prototype = {
-    STATE_READY: 0
-  , STATE_GENEND: 1
-  , generate: function(data, isExtend) {
-      var that = this
-        , data = this.relativeVm.$$getData(this.path.replace(invertedReg, ''))
-        ;
-      if(that.type === antAttr.REPEAT){
-        if(data && !Array.isArray(data)){
-          console.warn('需要一个数组');
-          return;
-        }
-        if(this.state === 0 || !isExtend){
-          data && this.splice([0, this.els.length].concat(data));
-        }
-      }else{
-        if(invertedReg.test(this.path)){ data = !data; }
-        if(data) {
-          if(!that.lastIfState) {
-            that.relateEl.parentNode.insertBefore(that.el, that.relateEl);
+  var Generator = Watcher.extend(
+    {
+      update: function(data, isExtend) {
+        var that = this
+          , data = this.relativeVm.$$getData(this.path.replace(invertedReg, ''))
+          ;
+        if(that.type === antAttr.REPEAT){
+          if(data && !Array.isArray(data)){
+            console.warn('需要一个数组');
+            return;
+          }
+          if(this.state === 0 || !isExtend){
+            data && this.splice([0, this.els.length].concat(data));
           }
         }else{
-          if(that.lastIfState) {
-            that.el.parentNode.removeChild(that.el);
-          }
-        }
-        that.lastIfState = data;
-      }
-      
-      that.state = this.STATE_GENEND;
-    }
-    //精确控制 DOM 列表
-    //args: [index, n/*, items...*/]
-  , splice: function(args, arr) {
-      var els = this.els
-        , items = args.slice(2)
-        , index = args[0]
-        , n = args[1]
-        , m = items.length
-        , newEls = []
-        , frag = doc.createDocumentFragment()
-        , pn = this.relateEl.parentNode
-        , el, vm
-        ;
-      
-      if(isUndefined(n)){
-        args[1] = n = els.length - index;
-      }
-      
-      for(var i = index, l = els.length; i < l; i++){
-        if(i < index + n){
-          //删除
-          //对于拥有 if 属性并且不显示的节点, 其并不存在于 DOM 树中
-          try{ pn.removeChild(els[i]); }catch(e){}
-        }else{
-          if(m || n){
-            els[i][prefix + 'index'] = i - n + m;
-            vm = this.vm[i - n + m] = this.vm[i];
-            vm.$$path = i - n + m;
+          if(invertedReg.test(this.path)){ data = !data; }
+          if(data) {
+            if(!that.lastIfState) {
+              that.relateEl.parentNode.insertBefore(that.el, that.relateEl);
+            }
           }else{
-            break;
+            if(that.lastIfState) {
+              that.el.parentNode.removeChild(that.el);
+            }
+          }
+          that.lastIfState = data;
+        }
+        
+      }
+      //精确控制 DOM 列表
+      //args: [index, n/*, items...*/]
+      //arr: 数组数据
+      //noFixVm: 是否不需要维护 viewmodel 索引
+    , splice: function(args, arr, noFixVm) {
+        var els = this.els
+          , items = args.slice(2)
+          , index = args[0] * 1
+          , n = args[1] * 1
+          , m = items.length
+          , newEls = []
+          , frag = doc.createDocumentFragment()
+          , pn = this.relateEl.parentNode
+          , el, vm
+          ;
+        
+        if(isUndefined(n)){
+          args[1] = n = els.length - index;
+        }
+        
+        for(var i = index, l = els.length; i < l; i++){
+          if(i < index + n){
+            //删除
+            //对于拥有 if 属性并且不显示的节点, 其并不存在于 DOM 树中
+            try{ pn.removeChild(els[i]); }catch(e){}
+            noFixVm || delete this.vm[i];
+          }else{
+            if(n || m){
+              //维护索引
+              var j = i - (n - m);
+              els[i][prefix + 'index'] = j;
+              if(!noFixVm){
+                vm = this.vm[j] = this.vm[i];
+                vm.$$path = j + '';
+              }
+            }else{
+              break;
+            }
           }
         }
-      }
-      
-      //新增
-      for(var j = 0; j < m; j++){
-        el = this.el.cloneNode(true);
-        //delete this.vm[index + j];
-        vm = this.vm.$$getChild(index + j)
-        clearWatchers(vm, els[index + j]);
-        el[prefix + 'index'] = index + j;
-        frag.appendChild(el);
-        travelEl(el, vm);
-        vm.$$render(items[j]);
         
-        newEls.push(el);
-        if(arr && isObject(arr[index + j])){
-          arr[index + j] = modelExtend(Array.isArray(arr[index + j]) ? []: {}, arr[index + j], vm);
+        //新增
+        for(var j = 0; j < m; j++){
+          el = this.el.cloneNode(true);
+          noFixVm || delete this.vm[index + j];
+          vm = this.vm.$$getChild(index + j)
+          //clearWatchers(vm, els[index + j]);
+          el[prefix + 'index'] = index + j;
+          frag.appendChild(el);
+          travelEl(el, vm);
+          vm.$$render(items[j]);
+          
+          newEls.push(el);
+          if(arr && isObject(arr[index + j])){
+            arr[index + j] = modelExtend(Array.isArray(arr[index + j]) ? []: {}, arr[index + j], vm);
+          }
+        }
+        if(newEls.length){
+          pn.insertBefore(frag, els[index + n] || this.relateEl);
+        }
+        
+        //需要清除缩短后多出的部分
+        if(!noFixVm){
+          for(var k = l - n + m; k < l; k++){
+            delete this.vm[k];
+          }
+        }
+        
+        args = args.slice(0, 2).concat(newEls);
+        els.splice.apply(els, args);
+        
+        if(n !== m){
+          this.vm.$$getChild('length').$$render(els.length);
         }
       }
-      if(newEls.length){
-        pn.insertBefore(frag, els[index + n] || this.relateEl);
+    , reverse: function(args, arr, noFixVm) {
+        var vms = this.vm, vm
+          , el = this.relateEl
+          , frag = doc.createDocumentFragment()
+          ;
+        for(var i = 0, l = this.els.length; i < l; i++){
+          if((!noFixVm) && i < 1/2){
+            vm = vms[i];
+            vms[i] = vms[l - i - 1];
+            vms[i].$$path = i + '';
+            vm.$$path = l - i - 1 + '';
+            vms[l - i - 1] = vm;
+          }
+          this.els[i][prefix + 'index'] = l - i - 1;
+          frag.appendChild(this.els[l - i - 1]);
+        }
+        el.parentNode.insertBefore(frag, el);
+        this.els.reverse();
       }
-      
-      //需要清除缩短后多出的部分
-      for(var k = l - n + m; k < l; k++){
-        delete this.vm[k];
-      }
-      
-      args = args.slice(0, 2).concat(newEls);
-      els.splice.apply(els, args);
-      
-      if(n !== m){
-        this.vm.$$getChild('length').$$render(els.length);
+    , sort: function(fn){
+        //TODO 进行精确高还原的排序?
+        this.update()
       }
     }
-  , reverse: function() {
-      var vms = this.vm, vm
-        , el = this.relateEl
-        , frag = doc.createDocumentFragment()
+  , function (vm, relativeVm, token){
+      //文档参照节点. 
+      var relateEl = doc.createTextNode('')
+        , el = token.el
+        , type = token.nodeName
         ;
-      for(var i = 0, l = this.els.length; i < l; i++){
-        if(i < 1/2){
-          vm = vms[i];
-          vms[i] = vms[l - i - 1];
-          vms[i].$$path = i;
-          vm.$$path = l - i - 1;
-          vms[l - i - 1] = vm;
-        }
-        this.els[i][prefix + 'index'] = l - i - 1;
-        frag.appendChild(this.els[l - i - 1]);
+        
+      this.__super__.apply(this, arguments);
+      
+      this.path = el.getAttribute(type);
+      
+      el.removeAttribute(type);
+      
+      this.type = type;
+      
+      this.relateEl = relateEl;
+      
+      this.els = [];
+      
+      if(type === antAttr.IF){
+        //if 属性不用切换作用域
+        travelEl(this.el, relativeVm);
       }
-      el.parentNode.insertBefore(frag, el);
-      this.els.reverse();
+      
+      el.parentNode.insertBefore(relateEl, el);
+      el.parentNode.removeChild(el);
     }
-  , sort: function(fn){
-      //TODO 进行精确高还原的排序?
-      this.generate()
-    }
-  }
+  )
   
   //---
   

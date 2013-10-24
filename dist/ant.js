@@ -1096,9 +1096,11 @@ setPrefix('a-');
   //这些通过 `el[attr] = value` 设置的属性却能够通过 `removeAttribute` 清除.
   function setAttr(el, attr, val){
     try{
-      if((attr in el) && isIE){
+      if(((attr in el) || attr === 'class')&& isIE){
         if(attr === 'style' && el.style.setAttribute){
           el.style.setAttribute('cssText', val);
+        }else if(attr === 'class'){
+          el.className = val;
         }else{
           el[attr] = typeof el[attr] === 'boolean' ? true : val;
         }

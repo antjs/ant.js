@@ -13,10 +13,8 @@ module.exports = function(grunt) {
         separator: ';'
       },
       all: {
-        dist: {
-          src: ['src/ant-es5-shim.js', 'src/ant.js', 'src/event.js', 'src/router.js'],
-          dest: 'dist/ant.all.js'
-        }
+        src: ['src/ant-es5-shim.js', 'src/ant.js', 'src/event.js', 'src/router.js'],
+        dest: 'dist/ant.all.js'
       },
       core: {
         files: {
@@ -69,11 +67,8 @@ module.exports = function(grunt) {
     var done = this.async();
     var cp = exec('npm run-script mocha', function(err, stdout, stderr){
       //grunt.log.writeln(stdout);
-      if(stderr){
-        grunt.log.error(stderr);
-      }else{
-        done();
-      }
+      //grunt.log.write(stdout);
+      done(err);
     });
     cp.stdout.pipe(process.stdout);
     //cp.stderr.pipe(process.stderr);

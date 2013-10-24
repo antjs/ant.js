@@ -512,10 +512,10 @@ describe('模板语法', function() {
       expect(el.getAttribute('a-style')).to.not.be.ok();
       expect(el.getAttribute('style')).to.be.ok();
       expect(el.getAttribute('a-class')).to.not.be.ok();
-      expect(el.getAttribute('class')).to.be.ok();
+      expect(el.className).to.be.ok();
       expect(el.getAttribute('data-test')).to.be(ant.data.test);
       expect(el.style.width).to.be(ant.data.width + 'px');
-      expect(el.getAttribute('class')).to.be(ant.data.className);
+      expect(el.className).to.be(ant.data.className);
     })
   });
 

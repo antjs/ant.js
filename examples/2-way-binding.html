@@ -12,6 +12,18 @@
       margin:1em;
       padding: 1em;
     }
+    .ant{
+      color: #000;
+    }
+    .bee{
+      color: #990;
+    }
+    .cicada{
+      color: brown;
+    }
+    .dragonfly{
+      color: green;
+    }
   </style>
 </head>
 <body>
@@ -42,7 +54,7 @@
         </div>
         <label>下拉列表1: <select a-model=select1>
             <option value="ant">ant</option>
-            <option selected value="bear">bear</option>
+            <option selected value="bee">bee</option>
             <optgroup label='分组'>
               <option value="cicada">cicada</option>
               <option value="dragonfly">dragonfly</option>
@@ -71,7 +83,7 @@
       	<li>复选框: {{checkbox}}</li>
       	<li>单选框: <span a-style="background-color:{{radio}};color:#fff">{{radio}}</span></li>
       	<li>多行文本框: {{{textarea}}}</li>
-      	<li>下拉框1: {{select1}}</li>
+      	<li>下拉框1: <span  a-class='{{select1}}'>{{select1}}</span></li>
       	<li>下拉框2: {{select2}}</li>
       	<li a-if=select3>下拉框3: {{select3}}</li>
         <li a-style="background-color: {{color}}; width: {{range}}%">范围框/取色框/日期框: <span>{{range}} / {{color}} / {{date}}</span></li>
