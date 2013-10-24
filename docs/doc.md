@@ -471,7 +471,13 @@ var ant = new Ant(element, {
 
 - [双向绑定的例子](examples/2-way-binding.html)
 - [noBackend 的实时评论系统](examples/backbase/)
-- [tutorials.js](http://justan.github.io/tutorials.js)
+- [Tutorials.js](http://justan.github.io/tutorials.js)
+
+
+讨论
+----
+- [Github issue](https://github.com/antjs/ant.js/issues)
+- 邮件讨论组：[antjs@librelist.com](mailto:antjs@librelist.com)
  
   
 [0]: http://documentcloud.github.io/backbone/#View-delegateEvents
