@@ -1066,9 +1066,11 @@ setPrefix('a-');
             _node.parentNode && _node.parentNode.removeChild(_node);
           });
           token.unescapeNodes = [];
-          for(var i = nodes.length - 1; i >= 0; i--){
+          for(var i = 0, l = nodes.length; i < l; i++){
             token.unescapeNodes.push(nodes[i]);
             node.parentNode.insertBefore(nodes[i], node);
+            i--;
+            l--;
           }
           
           node.nodeValue = '';

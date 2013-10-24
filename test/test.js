@@ -379,6 +379,13 @@ describe('模板语法', function() {
     });
   });
   
+  it('非转义模板 {{{token}}}', function() {
+    var tpl = 'This is a unescape code: <span>{{{unescape}}}</span> !!'
+      , html = '...<span>1</span><code>222</code>..'
+      ;
+    var ant = new Ant(tpl, {data: {unescape: html}});
+    expect(ant.el.innerHTML).to.be(tpl.replace(/{{{unescape}}}/, html));
+  });
   
   describe('子模板', function() {
     var prefix = '下面有个子节点: ', postfix = ' !'
@@ -386,7 +393,7 @@ describe('模板语法', function() {
           var partial = unescape ? '{{{>content}}}' : '{{> content}}';
           return '<h1>父模板</h1><p>' + prefix + partial + postfix + '</p>';
         }
-      , content = '-- <span>这里是子节点, 里面可以包含变量标签: </span>{{title}} --'
+      , content = '-- <span>这里是子节点, 里面可以包含变量标签: </span>{{title}}<span>。。。</span> --'
       , ant
       ;
     it('字符串子模板, {{>partial}}', function() {
