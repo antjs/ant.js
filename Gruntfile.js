@@ -55,7 +55,11 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-mocha');
 
   grunt.registerTask('build', '生成 HTML', function() {
-    exec('node build.js');
+    var done = this.async();
+    exec('node build.js', function(err, stdout){
+      grunt.log.write(stdout)
+      done(err);
+    });
   });
   
   grunt.registerTask('test', '全面测试 phantomJs / nodeJs', function() {
@@ -66,8 +70,6 @@ module.exports = function(grunt) {
   grunt.registerTask('testNode', 'test for nodeJs', function() {
     var done = this.async();
     var cp = exec('npm run-script mocha', function(err, stdout, stderr){
-      //grunt.log.writeln(stdout);
-      //grunt.log.write(stdout);
       done(err);
     });
     cp.stdout.pipe(process.stdout);

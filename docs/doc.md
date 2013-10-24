@@ -469,8 +469,9 @@ var ant = new Ant(element, {
 
 [Github 代码库中](https://github.com/antjs/ant.js/tree/master/examples) 提供了一些使用示例. 
 
-- [使用 ant.js 编写的 ant.js 使用教程](learn/)
+- [双向绑定的例子](examples/2-way-binding.html)
 - [noBackend 的实时评论系统](examples/backbase/)
+- [tutorials.js](http://justan.github.io/tutorials.js)
  
   
 [0]: http://documentcloud.github.io/backbone/#View-delegateEvents
