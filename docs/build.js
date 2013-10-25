@@ -1,13 +1,13 @@
 var fs = require('fs')
-  , Ant = require('./')
-  , marked = require('./third-part/marked.js')
+  , Ant = require('../')
+  , marked = require('../third-part/marked.js')
   , pygmentize = require('pygmentize-bundled')
   ;
 
-var layout = fs.readFileSync(__dirname + '/docs/_layouts/default.html', 'utf8')
-  , doc = fs.readFileSync(__dirname + '/docs/doc.md', 'utf8')
-  , log = fs.readFileSync(__dirname + '/CHANGELOG.md', 'utf8')
-  , site = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8'))
+var layout = fs.readFileSync(__dirname + '/_layouts/default.html', 'utf8')
+  , doc = fs.readFileSync(__dirname + '/doc.md', 'utf8')
+  , log = fs.readFileSync(__dirname + '/../CHANGELOG.md', 'utf8')
+  , site = JSON.parse(fs.readFileSync(__dirname + '/../package.json', 'utf8'))
   , ant =  new Ant(layout, {data: {site: site}})
   , doctype = '<!DOCTYPE HTML>'
   ;
@@ -37,7 +37,8 @@ marked.Parser.parse = function(tokens, opt) {
   return parse.apply(this, arguments);
 }  
   
-function build() {
+function build(callback) {
+  log = genHistroyLinks(log);
   marked(doc + '\n\n' + log, {highlight: function(code, lang, callback){
     pygmentize({lang: lang, format: 'html'}, code, function(err, result){
       if(err) return callback(err);
@@ -48,12 +49,19 @@ function build() {
       console.error(err)
     }else{
       ant.set('content', html);
-      fs.writeFileSync(__dirname + '/index.html', doctype + ant.el.innerHTML, 'utf8');
+      fs.writeFileSync(__dirname + '/../index.html', doctype + ant.el.innerHTML, 'utf8');
     }
+    callback && callback(err, 'Homepage completed!')
+  });
+}
+
+function genHistroyLinks(md){
+  return md.replace(/\[(\d+\.\d+\.\d+)\]/g, function(all, ver){
+    return all + '(https://rawgithub.com/antjs/ant.js/v' + ver + '/index.html)'
   });
 }
   
 module.exports = build;
 
 
-build();
+//build();

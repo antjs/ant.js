@@ -1,4 +1,4 @@
-var build = require('./build.js')
+var build = require('./docs/build.js')
   , exec = require('child_process').exec
   , spawn = require('child_process').spawn
   ;
@@ -54,12 +54,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-mocha');
 
-  grunt.registerTask('build', '生成 HTML', function() {
+  grunt.registerTask('site', '生成 HTML', function() {
     var done = this.async();
-    exec('node build.js', function(err, stdout){
-      grunt.log.write(stdout)
-      done(err);
-    });
+    build(done)
   });
   
   grunt.registerTask('test', '全面测试 phantomJs / nodeJs', function() {
@@ -77,6 +74,6 @@ module.exports = function(grunt) {
   });
   
   // Default task(s).
-  grunt.registerTask('default', ['test', 'concat', 'uglify', 'build']);
+  grunt.registerTask('default', ['test', 'concat', 'uglify', 'site']);
 
 };

@@ -1,7 +1,7 @@
 {
   "name": "ant.js",
   "version": "0.1.3",
-  "description": "轻量级 HTML 数据驱动框架",
+  "description": "数据驱动 HTML 模板",
   "main": "src/ant.js",
   "directories": {
     "example": "examples"
