@@ -153,6 +153,7 @@ setPrefix('a-');
     var el
       , data = opts.data || {}
       , events = opts.events || {}
+      , filters = opts.filters || {}
       ;
     
     el = tplParse(tpl, opts.el);
@@ -201,9 +202,15 @@ setPrefix('a-');
     this.partials = null;
     
     this.bindings = (this.bindings || []).concat(opts.bindings || []);
+
+    this.filters = {};
     
     for(var event in events) {
       this.on(event, events[event]);
+    }
+
+    for(var filterName in filters){
+      this.setFilter(filterName, filters[filterName]);
     }
     
     this.trigger('beforeInit');
@@ -431,6 +438,10 @@ setPrefix('a-');
     }
   , unwatch: function(keyPath, callback) {
     
+    }
+
+  , setFilter: function(name, filter) {
+      this.filters[name] = filter;
     }
   });
   
@@ -771,6 +782,7 @@ setPrefix('a-');
   
   var invertedReg = /^\^/;
   var pertialReg = /^>\s*(?=.+)/;
+  var filterReg = /\/(!:\/)/
   //core bindings
   var baseBindings = [
     //single keypath
@@ -800,6 +812,30 @@ setPrefix('a-');
             })
           ;
         watcher.addKey(_path);
+        return watcher;
+      }
+    }
+
+  , function(vm, token){
+      var path = token.path
+        , filters  = path.split(/\s*\|(?!\|)\s*/)
+        , ant = vm.$$root.$$ant
+        , watcher, childVm
+        ;
+      
+      if(filters.length > 1){
+        path = filters.shift();
+        childVm = path === '.' ? vm : vm.$$getChild(path);
+        watcher = new Watcher(childVm, vm, token, function(vals){
+          var val = vals[path]
+            
+          for(var i = 0, l = filters.length; i < l; i++){
+            val = ant.filters[filters[i]](val);
+          }
+          return val;
+        })
+        
+        watcher.addKey(path);
         return watcher;
       }
     }
