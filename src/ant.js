@@ -439,9 +439,16 @@ setPrefix('a-');
   , unwatch: function(keyPath, callback) {
     
     }
-
+    
+    
   , setFilter: function(name, filter) {
       this.filters[name] = filter;
+    }
+  , getFilter: function(name) {
+      return this.filters[name]
+    }
+  , removeFilter: function(name) {
+      delete this.filters[name];
     }
   });
   
@@ -782,7 +789,8 @@ setPrefix('a-');
   
   var invertedReg = /^\^/;
   var pertialReg = /^>\s*(?=.+)/;
-  var filterReg = /\/(!:\/)/
+  var filterReg = /\s*\|(?!\|)\s*/;
+  
   //core bindings
   var baseBindings = [
     //single keypath
@@ -815,7 +823,7 @@ setPrefix('a-');
         return watcher;
       }
     }
-
+    //filter. {{path | filter0 | filter1}}
   , function(vm, token){
       var path = token.path
         , filters  = path.split(/\s*\|(?!\|)\s*/)
@@ -830,7 +838,7 @@ setPrefix('a-');
           var val = vals[path]
             
           for(var i = 0, l = filters.length; i < l; i++){
-            val = ant.filters[filters[i]](val);
+            val = ant.filters[filters[i]].call(ant, val);
           }
           return val;
         })

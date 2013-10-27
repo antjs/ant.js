@@ -2,33 +2,49 @@
 <html lang="en-US">
 <head>
 	<meta charset="UTF-8">
-	<title>嵌套数组</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Filters in ant.js</title>
   <!--[if lt IE 9]>
   <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
   <![endif]-->
   <script type="text/javascript" src="../src/ant.js"></script>
 </head>
 <body>
-  <h1>Ant.js 中的嵌套数组: </h1>
-	<div id=template>
-    <ul>
-      {{money | rmb | rise}}
-    </ul>
+  <h1>Filters in ant.js: </h1>
+	<div id=template><ul>
+    <div a-style='{{money | color}}'>
+      You got {{ money | rmb }} !!  
+    </div>
+    <div><input value=50 type="range" a-model=money min=0 max=100 autofocus /> 
+      <label>$: <input type="radio" name=type a-model=type value='dol' checked /></label>
+      <label>￥: <input type="radio" name=type a-model=type value='rmb' /></label>
+    </div>
   </div>
 <script type="text/javascript">
   var ant = new Ant(document.getElementById('template'), {
-    data: {
-      money: 150
-    }
-  , filters: {
-      rmb: function(val){
-        return val + 'RMB';
+      data: {}
+    //You can write filters here, just like events
+    , filters: {
+        rmb: function(val){
+          return this.data.type === 'rmb' ? '￥ ' + (val * 6.084).toFixed(2) : '$ ' + val;
+        }
+      , color: function(val) {
+          var r, g;
+          if(val <= 50){
+            r = 'ff';
+            g = prefixO(Math.round((2.55 * 2 * val)).toString(16), 2)
+          }else{
+            r = prefixO(Math.round((2.55 * 2 * (100 - val))).toString(16), 2);
+            g = prefixO(Math.round(127 + (1.28 * 2 * (100 - val))).toString(16), 2)
+          }
+          return 'background-color: #' + r + g + '00';
+        }
       }
-    , rise: function(val) {
-        return parseInt(val, 10) > 0 ? val : '0RMB';
-      }
-    }
-  });
+    });
+  
+  function prefixO(str) {
+    return str.length < 2 ? ('0' + str) : str;
+  }
 </script>
 </body>
 </html>

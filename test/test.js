@@ -150,6 +150,36 @@ describe('实例接口', function(){
     
   });
   
+  describe('filters', function() {
+    var tpl = '{{path | twice}}'
+      , twice = function(val) {
+          return val * 2;
+        }
+      , ant
+      ;
+    
+    it('new Ant("tpl", { filters: {} })', function() {
+      ant = new Ant(tpl, {filters: {
+        twice: twice
+      }, data: {path: 5}});
+      expect(ant.el.innerHTML).to.be('10');
+    });
+    
+    it('ant.setFilter', function() {
+      ant = new Ant(tpl);
+      ant.setFilter('twice', twice);
+      ant.render({path: 5});
+      expect(ant.el.innerHTML).to.be('10');
+    });
+    
+    it('ant.getFilter', function() {
+      expect(ant.getFilter('twice')).to.be(twice);
+    });
+    it('ant.removeFilter', function() {
+      ant.removeFilter('twice');
+      expect(ant.getFilter('twice')).to.be(undefined);
+    });
+  });
 });
 
 describe('模板语法', function() {
