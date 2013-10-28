@@ -1,77 +1,83 @@
 (function(window, $, undefined){
+  "use strict";
   var $root = $(window);
 
   //### url 路由控制
-  var router = (function(Event) {
-    var routes = {};
+  var router = function() {
+  
     var listener = function(e) {
-      var hash = urlParse.queryParse(location.hash)
-        , match, route
-        , params = hash.params = []
+      var hashInfo = urlParse.queryParse(location.hash)
+        , that = this
         ;
-      for(var routeName in routes) {
-        route = routes[routeName]
-        match = route.reg.exec(hash.path);
-        if(match) {
-          for(var i = 1, l = match.length; i < l; i++) {
-            var key = route.keys[i - 1]
-              , val = decodeURIComponent(match[i])
-              ;
-            if (key) {
-              params[key.name] = val;
-            } else {
-              params.push(val);
+        
+      (function next(index){
+        var route = that.routes[index]
+          , params, match
+          ;
+        if(route){
+          match = route.reg.exec(hashInfo.path);
+          if(match) {
+            params = hashInfo.params = match.length - 1 === route.keys.length ? {} : [];
+            for(var i = 1, l = match.length; i < l; i++) {
+              var key = route.keys[i - 1]
+                , val = decodeURIComponent(match[i])
+                ;
+              if (key) {
+                params[key.name] = val;
+              } else {
+                params.push(val);
+              }
             }
+            
+            route.handler.call(that, hashInfo, function (){
+              next(++index);
+            });
+            //break;
+          }else {
+            next(++index);
           }
-          this.trigger(routeName, hash);
-          //break;
         }
-      }
+      })(0);
     };
     
-    var router = $.extend({}, Event, {
-      on: function(path, callback) {
-        if(!routes[path]){
-          var keys = [];
-          routes[path] = {reg: pathRegexp(path, keys, true, true), keys: keys};
-        }
-        Event.on.call(this, path, callback);
-        return this;
-      }
-    , off: function(path) {
-        Event.off.apply(this, arguments);
-        
-        if(!(this._handlers[path] && this._handlers[path].length)){
-          delete routes[path];
-        }
+    var router = {
+      /**
+       * routes 集合.
+       */
+      routes: []
+      /**
+       * 设置 router 规则
+       * @param {Object} routers router 规则
+       */
+    , route: function(path, handler) {
+        var keys = [];
+        this.routes.push({
+          path: path//path rule
+        , handler: handler
+        , reg: pathRegexp(path, keys, true, true)
+        , keys: keys
+        });
         return this;
       }
     , navigate: function(path, opts) {
+        //TODO
         location.hash = path;
         return this;
       }
       /**
-       * 设置 router 规则
-       * @param {Object} routes router 规则
-       */
-    , route: function(routes) {
-        for(var path in routes) {
-          this.on(path, routes[path]);
-        }
-        return this;
-      }
-      /**
        * 开始监听 hash 变化
-       * @param {Object} [routes] 初始化传入的 router 规则
+       * @param {Object} [routers] 初始化传入的 route 规则
        */
-    , start: function(routes) {
+    , start: function(routers) {
         this.stop();
         var callback = listener.bind(this);
         $root.on('hashchange', callback);
         
         listener.guid = callback.guid;
         
-        this.route(routes);
+        for(var path in routers) {
+          this.route(path, routers[path]);
+        }
         
         $root.trigger('hashchange');
         return this;
@@ -81,7 +87,7 @@
         $root.off('hashchange', listener);
         return this;
       }
-    });
+    };
     
     /**
    * Normalize the given path string,
@@ -97,7 +103,6 @@
    * @param  {Boolean} sensitive
    * @param  {Boolean} strict
    * @return {RegExp}
-   * @api private
    */
     var pathRegexp = function(path, keys, sensitive, strict) {
       if (({}).toString.call(path) == '[object RegExp]') return path;
@@ -139,7 +144,7 @@
         ret.pathname = ret.pathname || '/';
         ret.paths = fn.pathParse(ret.pathname);
         if(flag){
-          ret.searchobj = fn.queryParse(ret.search);
+          ret.query = fn.queryParse(ret.search);
           ret.hashobj = fn.queryParse(ret.hash);
         }
         return ret;
@@ -158,7 +163,7 @@
               var b= a[i].split("=");
               o[b[0]]=b[1];
             }
-            url.searchObj = o;
+            url.query = o;
           }
           return url;
         };
@@ -171,7 +176,7 @@
     })();
 
     return router;
-  })(Ant.Event);
+  }();
   
   window.Ant = window.Ant.extend({}, {
     router: router
