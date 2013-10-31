@@ -4,41 +4,6 @@
 
   //### url 路由控制
   var router = function() {
-  
-    var listener = function(e) {
-      var hashInfo = urlParse.queryParse(location.hash)
-        , that = this
-        ;
-        
-      (function next(index){
-        var route = that.routes[index]
-          , params, match
-          ;
-        if(route){
-          match = route.reg.exec(hashInfo.path);
-          if(match) {
-            params = hashInfo.params = match.length - 1 === route.keys.length ? {} : [];
-            for(var i = 1, l = match.length; i < l; i++) {
-              var key = route.keys[i - 1]
-                , val = decodeURIComponent(match[i])
-                ;
-              if (key) {
-                params[key.name] = val;
-              } else {
-                params.push(val);
-              }
-            }
-            
-            route.handler.call(that, hashInfo, function (){
-              next(++index);
-            });
-            //break;
-          }else {
-            next(++index);
-          }
-        }
-      })(0);
-    };
     
     var router = {
       /**
@@ -47,7 +12,8 @@
       routes: []
       /**
        * 设置 router 规则
-       * @param {Object} routers router 规则
+       * @param {String | RegExp} path rule
+       * @param {Function} handler
        */
     , route: function(path, handler) {
         var keys = [];
@@ -60,25 +26,21 @@
         return this;
       }
     , navigate: function(path, opts) {
-        //TODO
-        location.hash = path;
+        opts = opts || {};
+        //TODO silence
+        if(opts.replace){
+          location.replace('#' + path);
+        }else{
+          location.hash = path;
+        }
         return this;
       }
       /**
        * 开始监听 hash 变化
-       * @param {Object} [routers] 初始化传入的 route 规则
        */
-    , start: function(routers) {
+    , start: function() {
         this.stop();
-        var callback = listener.bind(this);
-        $root.on('hashchange', callback);
-        
-        listener.guid = callback.guid;
-        
-        for(var path in routers) {
-          this.route(path, routers[path]);
-        }
-        
+        $root.on('hashchange', listener);
         $root.trigger('hashchange');
         return this;
       }
@@ -87,6 +49,44 @@
         $root.off('hashchange', listener);
         return this;
       }
+    };
+        
+    var listener = function(e) {
+      var hashInfo = urlParse(location.hash.slice(1), true)
+        ;
+        
+      (function next(index){
+        var route = router.routes[index]
+          , params, match
+          ;
+        if(route){
+          match = route.reg.exec(hashInfo.pathname);
+          if(match) {
+            params = hashInfo.params = match.length - 1 === route.keys.length ? {} : [];
+            for(var i = 1, l = match.length; i < l; i++) {
+              var key = route.keys[i - 1]
+                , val
+                ;
+              try{
+                val = match[i] && decodeURIComponent(match[i]);
+              }catch(e){
+                val = match[i];
+              }
+              if (key) {
+                params[key.name] = val;
+              } else {
+                params.push(val);
+              }
+            }
+            
+            route.handler.call(router, hashInfo, function (){
+              next(++index);
+            });
+          }else {
+            next(++index);
+          }
+        }
+      })(0);
     };
     
     /**
@@ -126,52 +126,50 @@
     }
     
     var urlParse = (function() {
+      var reg = /^(?:(\w+\:)\/\/([^\/]+)?)?((\/?[^?#]*)(\?[^#]*)?(#.*)?)$/
+        , map = ['href', 'protocal', 'host', 'path', 'pathname', 'search', 'hash']
+        ;
+        
      /**
       * url解析
-      * @param {String} str url字符
-      * @param {Boolean} flag 是否解析search和hash
+      * @param {String} str url. 
+      * @param {Boolean} isParseQuery
+      * @return {Object}
       */
-      var fn = function(str, flag){
-        str = str || location.href;
-        var reg = /(?:(\w+\:)\/\/)?([^\/]+)?(\/[^?#]*)?(\?[^#]*)?(#.*)?/,
-          match = str.match(reg), ret = {},
-          map = ['href', 'protocal', 'host', 'pathname', 'search', 'hash']
-        ;
+      var fn = function(str, isParseQuery){
+        str = typeof str === 'string' ? str : location.href;
+        var match = str.match(reg)
+          , ret = {query: isParseQuery ? {} : null}, query
+          ;
+        
         for(var i = 0, l = map.length; i < l; i++){
-          ret[map[i]] = match[i] || '';
+          ret[map[i]] = typeof match[i] === 'undefined' ? null : match[i];
         }
         ret.hostname = ret.host;
-        ret.pathname = ret.pathname || '/';
-        ret.paths = fn.pathParse(ret.pathname);
-        if(flag){
-          ret.query = fn.queryParse(ret.search);
-          ret.hashobj = fn.queryParse(ret.hash);
+        
+        if(ret.search !== null){
+          query = ret.search.slice(1);
+          ret.query = isParseQuery ? fn.queryParse(query) : query;
         }
+        
         return ret;
       };
-      fn.queryParse = (function(){
-        var urlExp = /#?([^?]*)(\?.*)?$/;
-        var hashParse = function(hash){
-          var res = hash.match(urlExp), url = {}, a, o;
-          url.path = res[1];
-          url.search = res[2];
-          url.paths = res[1] && fn.pathParse(res[1]);
-          
-          if(url.search){
-            a = url.search.slice(1).split("&"), o={};
-            for(var i=0; i<a.length; i++){
-              var b= a[i].split("=");
-              o[b[0]]=b[1];
-            }
-            url.query = o;
-          }
-          return url;
-        };
-        return hashParse;
-      })();
-      fn.pathParse = function(path){
-        return path.replace(/(^\/|\/$)/, '').split('/');
+      
+      fn.queryParse = function(queryStr) {
+        var query = {}
+          , queries, q
+          ;
+        
+        queryStr = queryStr || '';
+        queries = queryStr.split("&");
+        
+        for(var i = 0; i < queries.length; i++){
+          q = queries[i].split("=");
+          query[q[0]] = q[1];
+        }
+        return query;
       };
+      
       return fn;
     })();
 

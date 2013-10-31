@@ -1,5 +1,8 @@
 更新日志
 ----
+
+* Change `.setParital` argument `opts.node` to `opts.target`.
+
 Version **[0.1.3]** -- 2013-10-24
 
 * More Tests.
