@@ -15,9 +15,9 @@
     <div a-style='{{money | color}}'>
       You got {{ money | rmb }} !!  
     </div>
-    <div><input value=50 type="range" a-model=money min=0 max=100 autofocus /> 
-      <label>$: <input type="radio" name=type a-model=type value='dol' checked /></label>
-      <label>￥: <input type="radio" name=type a-model=type value='rmb' /></label>
+    <div><input value=50 type="range" a-model={{money}} min=0 max=100 autofocus /> 
+      <label>$: <input type="radio" name=type a-model='{{type }}' value='dol' checked /></label>
+      <label>￥: <input type="radio" name=type a-model='{{ type }}' value='rmb' /></label>
     </div>
   </div>
 <script type="text/javascript">

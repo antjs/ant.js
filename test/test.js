@@ -184,7 +184,7 @@ describe('实例接口', function(){
 
 describe('模板语法', function() {
   describe('a-repeat 属性', function() {
-    var tpl = '<li a-repeat=list>{{.}}</li>'
+    var tpl = '<li a-repeat={{list}}>{{.}}</li>'
       , data = {list: ['ant', 'bee']}
       , ant = new Ant(tpl, {data: data});
       ;
@@ -313,7 +313,7 @@ describe('模板语法', function() {
     });
     
     describe('一个数组对应多个 DOM 列表', function() {
-      var tpl = '<ul class="list0"><li a-repeat=list>{{.}}</li></ul><ul class="list1"><li a-repeat=list>{{.}}</li></ul>'
+      var tpl = '<ul class="list0"><li a-repeat={{list}}>{{.}}</li></ul><ul class="list1"><li a-repeat={{list}}>{{.}}</li></ul>'
         , ant = new Ant(tpl, {data: data})
         ;
        
@@ -363,7 +363,7 @@ describe('模板语法', function() {
           }
         ]
       };
-      var tpl = '<ul class="list0"><li a-repeat=list a-if=state>{{name}}</li></ul>';
+      var tpl = '<ul class="list0"><li a-repeat={{list}} a-if={{state}}>{{name}}</li></ul>';
       var ant = new Ant(tpl, {data: data});
       
       function listCheck(){
@@ -491,7 +491,7 @@ describe('模板语法', function() {
     });
     
     it('子模板根元素带有 repeat 属性', function() {
-      var content = '<span>{{title}}</span><span class=repeat a-repeat=list>{{.}}</span>'
+      var content = '<span>{{title}}</span><span class=repeat a-repeat={{list}}>{{.}}</span>'
         , ant = new Ant(getTpl(true), {
             data: {
               title: 'Ant'

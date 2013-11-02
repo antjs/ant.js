@@ -58,7 +58,9 @@ if (!Array.prototype.indexOf) {
         return Ant;
       });
     }
-    root.Ant = Ant;
+    if(!root.Ant){
+      root.Ant = Ant;
+    }
   }
 })(function(doc) {
 "use strict";
@@ -83,7 +85,7 @@ var Event = {
       ;
       
     if(name && handlers[name]){
-      if('function' === typeof handler){
+      if(isFunction(handler)){
         for(var i = handlers[name].length - 1; i >=0; i--) {
           if(handlers[name][i].handler === handler){
             handlers[name].splice(i, 1);
@@ -135,11 +137,11 @@ var Class = {
    * @return {Function} 子构造函数
    */
   extend: function (protoProps, staticProps, constructor) {
-    if(typeof staticProps === 'function'){
+    if(isFunction(staticProps)){
       constructor = staticProps;
       staticProps = {};
     }
-    if(typeof protoProps === 'function'){
+    if(isFunction(protoProps)){
       constructor = protoProps;
       protoProps = {};
     }
@@ -166,6 +168,10 @@ function setPrefix(newPrefix) {
     antAttr.MODEL = prefix + 'model';
     Ant.PREFIX = prefix;
   }
+}
+
+function isAntAttr(attrName) {
+  return attrName === antAttr.IF || attrName === antAttr.REPEAT || attrName === antAttr.MODEL;
 }
 
 setPrefix('a-');
@@ -233,11 +239,11 @@ setPrefix('a-');
     
     this.options = opts;
     
-    this.partials = null;
-    
+    //TODO
     this.bindings = (this.bindings || []).concat(opts.bindings || []);
 
-    this.filters = {};
+    this._partials = {};
+    this._filters = {};
     
     for(var event in events) {
       this.on(event, events[event]);
@@ -399,44 +405,47 @@ setPrefix('a-');
      * @param {Object} info 子模板信息
      * @param {String|HTMLElement} info.content 子模板内容
      * @param {String} [info.name] 子模板标示符
-     * @param {HTMLElement} [info.node] 子模板的目标节点
+     * @param {HTMLElement|function} [info.target] 子模板的目标节点
      * @param {Boolean} [info.escape] 是否转义字符串子模板
      * @param {String} [info.path] 指定子模板中变量在数据中的作用域
      */
-  , setPartial: function(info) {
-      if(!info){ return; }
-      this.partials = this.partials || {};
+  , setPartial: function(partialInfo) {
+      if(!partialInfo){ return; }
       
-      info = extend({}, this.partials[info.name], info);
+      partialInfo = extend({}, this._partials[partialInfo.name], partialInfo);
       
       var els, _els, vm
-        , name = info.name
-        , node = info.node
-        , pn = node && node.parentNode
-        , partial = info.content
-        , path = info.path || ''
+        , name = partialInfo.name
+        , target = partialInfo.target
+        , partial = partialInfo.content
+        , path = partialInfo.path || ''
         ;
       if(name){
-        this.partials[name] = info;
+        this._partials[name] = partialInfo;
       }
       if(partial) {
         vm = this.vm.$$getChild(path);
         
-        if(partial instanceof Ant){
-          els = [partial.el];
-        }else{
-          if(info.escape && !isObject(partial)){
+        if(typeof partial === 'string'){
+          if(partialInfo.escape){
             els = [doc.createTextNode(partial)];
           }else{
-              _els = tplParse(partial, 'div').el.childNodes;
-              els = [];
-              for(var i = 0, l = _els.length; i < l; i++){
-                els.push(_els[i]);
-              }
+            _els = tplParse(partial, 'div').el.childNodes;
+            els = [];
+            for(var i = 0, l = _els.length; i < l; i++){
+              els.push(_els[i]);
+            }
           }
+        }else{
+          els = [(partial instanceof Ant) ? partial.el : partial];
         }
-        for(var i = 0, l = els.length; i < l; i++){
-          pn && pn.insertBefore(els[i], node);
+        
+        if(target){
+          for(var i = 0, l = els.length; i < l; i++){
+            isFunction(target) ? 
+              target.call(this, els[i]) :
+              target.appendChild(els[i]);
+          }
         }
         
         travelEls(els, vm);
@@ -476,13 +485,13 @@ setPrefix('a-');
     
     
   , setFilter: function(name, filter) {
-      this.filters[name] = filter;
+      this._filters[name] = filter;
     }
   , getFilter: function(name) {
-      return this.filters[name]
+      return this._filters[name]
     }
   , removeFilter: function(name) {
-      delete this.filters[name];
+      delete this._filters[name];
     }
   });
   
@@ -553,13 +562,12 @@ setPrefix('a-');
       ;
     
     if(gen){
-      checkBinding(vm, gen, el, true);
+      checkBinding(vm, gen, el);
       return true;
     }
     
     if(modelAttr){
-      checkBinding(vm, modelAttr, el, true);
-      //view2Model(el, modelAttr.value, vm);
+      checkBinding(vm, modelAttr, el);
     }
     
     for(var i = el.attributes.length - 1; i >= 0; i--){
@@ -571,9 +579,9 @@ setPrefix('a-');
     }
   }
   
-  function checkBinding(vm, node, el, isGen) {
-    if(isGen || isToken(node.nodeValue) || isToken(node.nodeName)){
-      var tokens = parseTokens(node, el, isGen)
+  function checkBinding(vm, node, el) {
+    if(isToken(node.nodeValue) || isToken(node.nodeName)){
+      var tokens = parseTokens(node, el)
         , textMap = tokens.textMap
         ;
       //如果绑定内容是在文本中, 则将其分割成单独的文本节点
@@ -738,7 +746,7 @@ setPrefix('a-');
     return str && tokenReg.test(str);
   }
   
-  function parseTokens(node, el, isGen) {
+  function parseTokens(node, el) {
     var tokens = []
       , val, type
       , textMap = []
@@ -747,18 +755,11 @@ setPrefix('a-');
       , nodeName = node.nodeName
       ;
     
-    if(isGen){
-      tokens.push({
-        nodeName: nodeName
-      , path: text
-      , el: el
-      , node: node
-      });
-    }else if(node.nodeType === 3){//文本节点
+    if(node.nodeType === 3){//文本节点
       type = 'text';
     }else if(node.nodeType === 2){//属性节点
       type = 'attr';
-      if(nodeName.indexOf(prefix) === 0){
+      if(nodeName.indexOf(prefix) === 0 && !isAntAttr(nodeName)){
         nodeName = node.nodeName.slice(prefix.length);
       }
       if(isToken(nodeName)){
@@ -872,7 +873,7 @@ setPrefix('a-');
           var val = vals[path]
             
           for(var i = 0, l = filters.length; i < l; i++){
-            val = ant.filters[filters[i]].call(ant, val);
+            val = ant._filters[filters[i]].call(ant, val);
           }
           return val;
         })
@@ -896,7 +897,7 @@ setPrefix('a-');
         ant.setPartial({
           name: pName
         , content: opts && opts.partials && opts.partials[pName]
-        , node: node
+        , target: function(el) { token.el.insertBefore(el, node) }
         , escape: token.escape
         , path: vm.$$getKeyPath()
         });
@@ -1337,7 +1338,7 @@ setPrefix('a-');
         
       this.__super__.apply(this, arguments);
       
-      this.path = el.getAttribute(type);
+      this.path = token.path;
       
       el.removeAttribute(type);
       
@@ -1367,6 +1368,10 @@ setPrefix('a-');
   
   function isUndefined(val) {
     return typeof val === 'undefined';
+  }
+  
+  function isFunction(val){
+    return typeof val === 'function';
   }
   
   //简单对象的简易判断
@@ -1401,12 +1406,6 @@ setPrefix('a-');
     }
   }
   
-  //返回 false 终止
-  function _beforeFn(oriFn, fn) {
-    return beforeFn(oriFn, fn, function(ret) {
-      return ret === false; 
-    })
-  }
   var keyPathReg = /(?:\.|\[)/g
     , bra = /\]/g
     ;
@@ -1544,80 +1543,48 @@ if (!Function.prototype.bind) {
     }
   });
 })(this, jQuery);;(function(window, $, undefined){
+  "use strict";
   var $root = $(window);
 
   //### url 路由控制
-  var router = (function(Event) {
-    var routes = {};
-    var listener = function(e) {
-      var hash = urlParse.queryParse(location.hash)
-        , match, route
-        , params = hash.params = []
-        ;
-      for(var routeName in routes) {
-        route = routes[routeName]
-        match = route.reg.exec(hash.path);
-        if(match) {
-          for(var i = 1, l = match.length; i < l; i++) {
-            var key = route.keys[i - 1]
-              , val = decodeURIComponent(match[i])
-              ;
-            if (key) {
-              params[key.name] = val;
-            } else {
-              params.push(val);
-            }
-          }
-          this.trigger(routeName, hash);
-          //break;
-        }
-      }
-    };
+  var router = function() {
     
-    var router = $.extend({}, Event, {
-      on: function(path, callback) {
-        if(!routes[path]){
-          var keys = [];
-          routes[path] = {reg: pathRegexp(path, keys, true, true), keys: keys};
-        }
-        Event.on.call(this, path, callback);
-        return this;
-      }
-    , off: function(path) {
-        Event.off.apply(this, arguments);
-        
-        if(!(this._handlers[path] && this._handlers[path].length)){
-          delete routes[path];
-        }
+    var router = {
+      /**
+       * routes 集合.
+       */
+      routes: []
+      /**
+       * 设置 router 规则
+       * @param {String | RegExp} path rule
+       * @param {Function} handler
+       */
+    , route: function(path, handler) {
+        var keys = [];
+        this.routes.push({
+          path: path//path rule
+        , handler: handler
+        , reg: pathRegexp(path, keys, true, true)
+        , keys: keys
+        });
         return this;
       }
     , navigate: function(path, opts) {
-        location.hash = path;
-        return this;
-      }
-      /**
-       * 设置 router 规则
-       * @param {Object} routes router 规则
-       */
-    , route: function(routes) {
-        for(var path in routes) {
-          this.on(path, routes[path]);
+        opts = opts || {};
+        //TODO silence
+        if(opts.replace){
+          location.replace('#' + path);
+        }else{
+          location.hash = path;
         }
         return this;
       }
       /**
        * 开始监听 hash 变化
-       * @param {Object} [routes] 初始化传入的 router 规则
        */
-    , start: function(routes) {
+    , start: function() {
         this.stop();
-        var callback = listener.bind(this);
-        $root.on('hashchange', callback);
-        
-        listener.guid = callback.guid;
-        
-        this.route(routes);
-        
+        $root.on('hashchange', listener);
         $root.trigger('hashchange');
         return this;
       }
@@ -1626,7 +1593,45 @@ if (!Function.prototype.bind) {
         $root.off('hashchange', listener);
         return this;
       }
-    });
+    };
+        
+    var listener = function(e) {
+      var hashInfo = urlParse(location.hash.slice(1), true)
+        ;
+        
+      (function next(index){
+        var route = router.routes[index]
+          , params, match
+          ;
+        if(route){
+          match = route.reg.exec(hashInfo.pathname);
+          if(match) {
+            params = hashInfo.params = match.length - 1 === route.keys.length ? {} : [];
+            for(var i = 1, l = match.length; i < l; i++) {
+              var key = route.keys[i - 1]
+                , val
+                ;
+              try{
+                val = match[i] && decodeURIComponent(match[i]);
+              }catch(e){
+                val = match[i];
+              }
+              if (key) {
+                params[key.name] = val;
+              } else {
+                params.push(val);
+              }
+            }
+            
+            route.handler.call(router, hashInfo, function (){
+              next(++index);
+            });
+          }else {
+            next(++index);
+          }
+        }
+      })(0);
+    };
     
     /**
    * Normalize the given path string,
@@ -1642,7 +1647,6 @@ if (!Function.prototype.bind) {
    * @param  {Boolean} sensitive
    * @param  {Boolean} strict
    * @return {RegExp}
-   * @api private
    */
     var pathRegexp = function(path, keys, sensitive, strict) {
       if (({}).toString.call(path) == '[object RegExp]') return path;
@@ -1666,57 +1670,55 @@ if (!Function.prototype.bind) {
     }
     
     var urlParse = (function() {
+      var reg = /^(?:(\w+\:)\/\/([^\/]+)?)?((\/?[^?#]*)(\?[^#]*)?(#.*)?)$/
+        , map = ['href', 'protocal', 'host', 'path', 'pathname', 'search', 'hash']
+        ;
+        
      /**
       * url解析
-      * @param {String} str url字符
-      * @param {Boolean} flag 是否解析search和hash
+      * @param {String} str url. 
+      * @param {Boolean} isParseQuery
+      * @return {Object}
       */
-      var fn = function(str, flag){
-        str = str || location.href;
-        var reg = /(?:(\w+\:)\/\/)?([^\/]+)?(\/[^?#]*)?(\?[^#]*)?(#.*)?/,
-          match = str.match(reg), ret = {},
-          map = ['href', 'protocal', 'host', 'pathname', 'search', 'hash']
-        ;
+      var fn = function(str, isParseQuery){
+        str = typeof str === 'string' ? str : location.href;
+        var match = str.match(reg)
+          , ret = {query: isParseQuery ? {} : null}, query
+          ;
+        
         for(var i = 0, l = map.length; i < l; i++){
-          ret[map[i]] = match[i] || '';
+          ret[map[i]] = typeof match[i] === 'undefined' ? null : match[i];
         }
         ret.hostname = ret.host;
-        ret.pathname = ret.pathname || '/';
-        ret.paths = fn.pathParse(ret.pathname);
-        if(flag){
-          ret.searchobj = fn.queryParse(ret.search);
-          ret.hashobj = fn.queryParse(ret.hash);
+        
+        if(ret.search !== null){
+          query = ret.search.slice(1);
+          ret.query = isParseQuery ? fn.queryParse(query) : query;
         }
+        
         return ret;
       };
-      fn.queryParse = (function(){
-        var urlExp = /#?([^?]*)(\?.*)?$/;
-        var hashParse = function(hash){
-          var res = hash.match(urlExp), url = {}, a, o;
-          url.path = res[1];
-          url.search = res[2];
-          url.paths = res[1] && fn.pathParse(res[1]);
-          
-          if(url.search){
-            a = url.search.slice(1).split("&"), o={};
-            for(var i=0; i<a.length; i++){
-              var b= a[i].split("=");
-              o[b[0]]=b[1];
-            }
-            url.searchObj = o;
-          }
-          return url;
-        };
-        return hashParse;
-      })();
-      fn.pathParse = function(path){
-        return path.replace(/(^\/|\/$)/, '').split('/');
+      
+      fn.queryParse = function(queryStr) {
+        var query = {}
+          , queries, q
+          ;
+        
+        queryStr = queryStr || '';
+        queries = queryStr.split("&");
+        
+        for(var i = 0; i < queries.length; i++){
+          q = queries[i].split("=");
+          query[q[0]] = q[1];
+        }
+        return query;
       };
+      
       return fn;
     })();
 
     return router;
-  })(Ant.Event);
+  }();
   
   window.Ant = window.Ant.extend({}, {
     router: router

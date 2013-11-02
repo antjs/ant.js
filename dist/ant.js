@@ -58,7 +58,9 @@ if (!Array.prototype.indexOf) {
         return Ant;
       });
     }
-    root.Ant = Ant;
+    if(!root.Ant){
+      root.Ant = Ant;
+    }
   }
 })(function(doc) {
 "use strict";
@@ -83,7 +85,7 @@ var Event = {
       ;
       
     if(name && handlers[name]){
-      if('function' === typeof handler){
+      if(isFunction(handler)){
         for(var i = handlers[name].length - 1; i >=0; i--) {
           if(handlers[name][i].handler === handler){
             handlers[name].splice(i, 1);
@@ -135,11 +137,11 @@ var Class = {
    * @return {Function} 子构造函数
    */
   extend: function (protoProps, staticProps, constructor) {
-    if(typeof staticProps === 'function'){
+    if(isFunction(staticProps)){
       constructor = staticProps;
       staticProps = {};
     }
-    if(typeof protoProps === 'function'){
+    if(isFunction(protoProps)){
       constructor = protoProps;
       protoProps = {};
     }
@@ -166,6 +168,10 @@ function setPrefix(newPrefix) {
     antAttr.MODEL = prefix + 'model';
     Ant.PREFIX = prefix;
   }
+}
+
+function isAntAttr(attrName) {
+  return attrName === antAttr.IF || attrName === antAttr.REPEAT || attrName === antAttr.MODEL;
 }
 
 setPrefix('a-');
@@ -233,11 +239,11 @@ setPrefix('a-');
     
     this.options = opts;
     
-    this.partials = null;
-    
+    //TODO
     this.bindings = (this.bindings || []).concat(opts.bindings || []);
 
-    this.filters = {};
+    this._partials = {};
+    this._filters = {};
     
     for(var event in events) {
       this.on(event, events[event]);
@@ -399,44 +405,47 @@ setPrefix('a-');
      * @param {Object} info 子模板信息
      * @param {String|HTMLElement} info.content 子模板内容
      * @param {String} [info.name] 子模板标示符
-     * @param {HTMLElement} [info.node] 子模板的目标节点
+     * @param {HTMLElement|function} [info.target] 子模板的目标节点
      * @param {Boolean} [info.escape] 是否转义字符串子模板
      * @param {String} [info.path] 指定子模板中变量在数据中的作用域
      */
-  , setPartial: function(info) {
-      if(!info){ return; }
-      this.partials = this.partials || {};
+  , setPartial: function(partialInfo) {
+      if(!partialInfo){ return; }
       
-      info = extend({}, this.partials[info.name], info);
+      partialInfo = extend({}, this._partials[partialInfo.name], partialInfo);
       
       var els, _els, vm
-        , name = info.name
-        , node = info.node
-        , pn = node && node.parentNode
-        , partial = info.content
-        , path = info.path || ''
+        , name = partialInfo.name
+        , target = partialInfo.target
+        , partial = partialInfo.content
+        , path = partialInfo.path || ''
         ;
       if(name){
-        this.partials[name] = info;
+        this._partials[name] = partialInfo;
       }
       if(partial) {
         vm = this.vm.$$getChild(path);
         
-        if(partial instanceof Ant){
-          els = [partial.el];
-        }else{
-          if(info.escape && !isObject(partial)){
+        if(typeof partial === 'string'){
+          if(partialInfo.escape){
             els = [doc.createTextNode(partial)];
           }else{
-              _els = tplParse(partial, 'div').el.childNodes;
-              els = [];
-              for(var i = 0, l = _els.length; i < l; i++){
-                els.push(_els[i]);
-              }
+            _els = tplParse(partial, 'div').el.childNodes;
+            els = [];
+            for(var i = 0, l = _els.length; i < l; i++){
+              els.push(_els[i]);
+            }
           }
+        }else{
+          els = [(partial instanceof Ant) ? partial.el : partial];
         }
-        for(var i = 0, l = els.length; i < l; i++){
-          pn && pn.insertBefore(els[i], node);
+        
+        if(target){
+          for(var i = 0, l = els.length; i < l; i++){
+            isFunction(target) ? 
+              target.call(this, els[i]) :
+              target.appendChild(els[i]);
+          }
         }
         
         travelEls(els, vm);
@@ -476,13 +485,13 @@ setPrefix('a-');
     
     
   , setFilter: function(name, filter) {
-      this.filters[name] = filter;
+      this._filters[name] = filter;
     }
   , getFilter: function(name) {
-      return this.filters[name]
+      return this._filters[name]
     }
   , removeFilter: function(name) {
-      delete this.filters[name];
+      delete this._filters[name];
     }
   });
   
@@ -553,13 +562,12 @@ setPrefix('a-');
       ;
     
     if(gen){
-      checkBinding(vm, gen, el, true);
+      checkBinding(vm, gen, el);
       return true;
     }
     
     if(modelAttr){
-      checkBinding(vm, modelAttr, el, true);
-      //view2Model(el, modelAttr.value, vm);
+      checkBinding(vm, modelAttr, el);
     }
     
     for(var i = el.attributes.length - 1; i >= 0; i--){
@@ -571,9 +579,9 @@ setPrefix('a-');
     }
   }
   
-  function checkBinding(vm, node, el, isGen) {
-    if(isGen || isToken(node.nodeValue) || isToken(node.nodeName)){
-      var tokens = parseTokens(node, el, isGen)
+  function checkBinding(vm, node, el) {
+    if(isToken(node.nodeValue) || isToken(node.nodeName)){
+      var tokens = parseTokens(node, el)
         , textMap = tokens.textMap
         ;
       //如果绑定内容是在文本中, 则将其分割成单独的文本节点
@@ -738,7 +746,7 @@ setPrefix('a-');
     return str && tokenReg.test(str);
   }
   
-  function parseTokens(node, el, isGen) {
+  function parseTokens(node, el) {
     var tokens = []
       , val, type
       , textMap = []
@@ -747,18 +755,11 @@ setPrefix('a-');
       , nodeName = node.nodeName
       ;
     
-    if(isGen){
-      tokens.push({
-        nodeName: nodeName
-      , path: text
-      , el: el
-      , node: node
-      });
-    }else if(node.nodeType === 3){//文本节点
+    if(node.nodeType === 3){//文本节点
       type = 'text';
     }else if(node.nodeType === 2){//属性节点
       type = 'attr';
-      if(nodeName.indexOf(prefix) === 0){
+      if(nodeName.indexOf(prefix) === 0 && !isAntAttr(nodeName)){
         nodeName = node.nodeName.slice(prefix.length);
       }
       if(isToken(nodeName)){
@@ -872,7 +873,7 @@ setPrefix('a-');
           var val = vals[path]
             
           for(var i = 0, l = filters.length; i < l; i++){
-            val = ant.filters[filters[i]].call(ant, val);
+            val = ant._filters[filters[i]].call(ant, val);
           }
           return val;
         })
@@ -896,7 +897,7 @@ setPrefix('a-');
         ant.setPartial({
           name: pName
         , content: opts && opts.partials && opts.partials[pName]
-        , node: node
+        , target: function(el) { token.el.insertBefore(el, node) }
         , escape: token.escape
         , path: vm.$$getKeyPath()
         });
@@ -1337,7 +1338,7 @@ setPrefix('a-');
         
       this.__super__.apply(this, arguments);
       
-      this.path = el.getAttribute(type);
+      this.path = token.path;
       
       el.removeAttribute(type);
       
@@ -1367,6 +1368,10 @@ setPrefix('a-');
   
   function isUndefined(val) {
     return typeof val === 'undefined';
+  }
+  
+  function isFunction(val){
+    return typeof val === 'function';
   }
   
   //简单对象的简易判断
@@ -1401,12 +1406,6 @@ setPrefix('a-');
     }
   }
   
-  //返回 false 终止
-  function _beforeFn(oriFn, fn) {
-    return beforeFn(oriFn, fn, function(ret) {
-      return ret === false; 
-    })
-  }
   var keyPathReg = /(?:\.|\[)/g
     , bra = /\]/g
     ;

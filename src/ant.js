@@ -136,6 +136,10 @@ function setPrefix(newPrefix) {
   }
 }
 
+function isAntAttr(attrName) {
+  return attrName === antAttr.IF || attrName === antAttr.REPEAT || attrName === antAttr.MODEL;
+}
+
 setPrefix('a-');
   
   /**
@@ -524,13 +528,12 @@ setPrefix('a-');
       ;
     
     if(gen){
-      checkBinding(vm, gen, el, true);
+      checkBinding(vm, gen, el);
       return true;
     }
     
     if(modelAttr){
-      checkBinding(vm, modelAttr, el, true);
-      //view2Model(el, modelAttr.value, vm);
+      checkBinding(vm, modelAttr, el);
     }
     
     for(var i = el.attributes.length - 1; i >= 0; i--){
@@ -542,9 +545,9 @@ setPrefix('a-');
     }
   }
   
-  function checkBinding(vm, node, el, isGen) {
-    if(isGen || isToken(node.nodeValue) || isToken(node.nodeName)){
-      var tokens = parseTokens(node, el, isGen)
+  function checkBinding(vm, node, el) {
+    if(isToken(node.nodeValue) || isToken(node.nodeName)){
+      var tokens = parseTokens(node, el)
         , textMap = tokens.textMap
         ;
       //如果绑定内容是在文本中, 则将其分割成单独的文本节点
@@ -709,7 +712,7 @@ setPrefix('a-');
     return str && tokenReg.test(str);
   }
   
-  function parseTokens(node, el, isGen) {
+  function parseTokens(node, el) {
     var tokens = []
       , val, type
       , textMap = []
@@ -718,18 +721,11 @@ setPrefix('a-');
       , nodeName = node.nodeName
       ;
     
-    if(isGen){
-      tokens.push({
-        nodeName: nodeName
-      , path: text
-      , el: el
-      , node: node
-      });
-    }else if(node.nodeType === 3){//文本节点
+    if(node.nodeType === 3){//文本节点
       type = 'text';
     }else if(node.nodeType === 2){//属性节点
       type = 'attr';
-      if(nodeName.indexOf(prefix) === 0){
+      if(nodeName.indexOf(prefix) === 0 && !isAntAttr(nodeName)){
         nodeName = node.nodeName.slice(prefix.length);
       }
       if(isToken(nodeName)){
@@ -1308,7 +1304,7 @@ setPrefix('a-');
         
       this.__super__.apply(this, arguments);
       
-      this.path = el.getAttribute(type);
+      this.path = token.path;
       
       el.removeAttribute(type);
       
@@ -1376,12 +1372,6 @@ setPrefix('a-');
     }
   }
   
-  //返回 false 终止
-  function _beforeFn(oriFn, fn) {
-    return beforeFn(oriFn, fn, function(ret) {
-      return ret === false; 
-    })
-  }
   var keyPathReg = /(?:\.|\[)/g
     , bra = /\]/g
     ;

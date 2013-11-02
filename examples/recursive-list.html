@@ -12,11 +12,11 @@
   <h1>Ant.js 中的嵌套数组: </h1>
 	<div id=template>
     <ul>
-      <li a-repeat=province><span>{{name}}</span>
+      <li a-repeat={{province}}><span>{{name}}</span>
         <ul>
-          <li a-repeat=city><span>{{name}}</span>
-            <ul a-if=county>
-              <li a-repeat=county>{{.}}</li>
+          <li a-repeat={{city}}><span>{{name}}</span>
+            <ul a-if={{county}}>
+              <li a-repeat={{county}}>{{.}}</li>
             </ul>
           </li>
         </ul>
