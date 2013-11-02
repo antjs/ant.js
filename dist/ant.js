@@ -171,7 +171,12 @@ function setPrefix(newPrefix) {
 }
 
 function isAntAttr(attrName) {
-  return attrName === antAttr.IF || attrName === antAttr.REPEAT || attrName === antAttr.MODEL;
+  for(var attr in antAttr){
+    if(antAttr[attr] === attrName){
+      return true;
+    }
+  }
+  return false;
 }
 
 setPrefix('a-');
@@ -585,7 +590,7 @@ setPrefix('a-');
         , textMap = tokens.textMap
         ;
       //如果绑定内容是在文本中, 则将其分割成单独的文本节点
-      if(tokens.type === 'text' && textMap.length > 1){
+      if(node.nodeType === 3 && textMap.length > 1){
         textMap.forEach(function(text) {
           var tn = doc.createTextNode(text);
           el.insertBefore(tn, node);
@@ -594,7 +599,7 @@ setPrefix('a-');
         el.removeChild(node);
       }else{
         tokens.forEach(function(token){
-          addWatcher(vm, token, tokens);
+          addWatcher(vm, token);
         });
       }
     }
@@ -796,14 +801,13 @@ setPrefix('a-');
       textMap.push(text.slice(start, text.length));
     }
     
-    tokens.type = type;
     tokens.textMap = textMap;
     
     return tokens;
   }
   
   
-  function addWatcher(vm, token, tokens) {
+  function addWatcher(vm, token) {
     var binding = getBinding(vm.$$root.$$ant.bindings);
     var watcher = binding(vm, token);
     if(watcher){
@@ -828,15 +832,29 @@ setPrefix('a-');
   
   //core bindings
   var baseBindings = [
-    //single keypath
-    function (vm, token) {
-      var childVm = token.path === '.' ? vm : vm.$$getChild(token.path);
+    //filter. {{path | filter0 | filter1}}
+    function(vm, token){
+      var path = token.path
+        , filters  = path.split(filterReg)
+        , ant = vm.$$root.$$ant
+        , watcher, childVm
+        ;
       
-      var watcher = new Watcher(childVm, vm, token, function(vals) {
-        return vals[token.path];
-      });
-      watcher.addKey(token.path);
-      return watcher;
+      if(filters.length >= 1){
+        path = filters.shift();
+        childVm = path === '.' ? vm : vm.$$getChild(path);
+        watcher = new Watcher(childVm, vm, token, function(vals){
+          var val = vals[path]
+            
+          for(var i = 0, l = filters.length; i < l; i++){
+            val = ant._filters[filters[i]].call(ant, val);
+          }
+          return val;
+        })
+        
+        watcher.addKey(path);
+        return watcher;
+      }
     }
     
     // {{data: str}}
@@ -855,30 +873,6 @@ setPrefix('a-');
             })
           ;
         watcher.addKey(_path);
-        return watcher;
-      }
-    }
-    //filter. {{path | filter0 | filter1}}
-  , function(vm, token){
-      var path = token.path
-        , filters  = path.split(/\s*\|(?!\|)\s*/)
-        , ant = vm.$$root.$$ant
-        , watcher, childVm
-        ;
-      
-      if(filters.length > 1){
-        path = filters.shift();
-        childVm = path === '.' ? vm : vm.$$getChild(path);
-        watcher = new Watcher(childVm, vm, token, function(vals){
-          var val = vals[path]
-            
-          for(var i = 0, l = filters.length; i < l; i++){
-            val = ant._filters[filters[i]].call(ant, val);
-          }
-          return val;
-        })
-        
-        watcher.addKey(path);
         return watcher;
       }
     }

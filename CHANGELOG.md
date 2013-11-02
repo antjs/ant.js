@@ -1,6 +1,7 @@
 更新日志
 ----
 
+* All of ant attribute(a-model, a-repeat, a-if) must use `{{}}` to binding.
 * Change `.setParital` argument `opts.node` to `opts.target`.
 
 Version **[0.1.3]** -- 2013-10-24

@@ -10,9 +10,9 @@
   <script type="text/javascript" src="../src/ant.js"></script>
 </head>
 <body>
-  <h1>Filters in ant.js: </h1>
-	<div id=template>
-    <div a-style='{{money | color}}'>
+	<div id=template a-style='{{money | color}}'>
+    <h1>Filters in ant.js: </h1>
+    <div>
       You got {{ money | rmb }} !!  
     </div>
     <div><input value=50 type="range" a-model={{money}} min=0 max=100 autofocus /> 
