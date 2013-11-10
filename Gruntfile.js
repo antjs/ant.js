@@ -13,12 +13,12 @@ module.exports = function(grunt) {
         separator: ';'
       },
       all: {
-        src: ['src/ant-es5-shim.js', 'src/ant.js', 'src/event.js', 'src/router.js'],
+        src: ['src/ant-es5-shim.js', 'src/ant.js', 'src/parse.js', 'src/event.js', 'src/router.js'],
         dest: 'dist/ant.all.js'
       },
       core: {
         files: {
-          'dist/ant.js': ['src/ant-es5-shim.js', 'src/ant.js']
+          'dist/ant.js': ['src/ant-es5-shim.js', 'src/ant.js', 'src/parse.js']
         }
       }
     },
@@ -43,6 +43,9 @@ module.exports = function(grunt) {
     mocha: {
       all: {
         src: ['test/*.html'],
+        mocha: {
+          ignoreLeaks: false
+        },
         options: {
           run: true
         }

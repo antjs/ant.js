@@ -1,0 +1,29 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<title>Ant.js测试页面</title>
+  <link rel="stylesheet" type="text/css" href="../node_modules/mocha/mocha.css" media="all"/>
+  <script type="text/javascript" src="../node_modules/mocha/mocha.js"></script>
+  <script type="text/javascript" src="../node_modules/expect.js/expect.js"></script>
+  <script type="text/javascript">
+    mocha.setup('bdd');
+  </script>
+  <!--[if lt IE 9]>
+  <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
+  <script type="text/javascript" src="../third-part/jquery.min.js"></script>
+  <![endif]-->
+  <script type="text/javascript" src="../src/ant.js"></script>
+  <script type="text/javascript" src="../src/parse.js"></script>
+  <!--[if lt IE 8]>
+  <script type="text/javascript" src="../third-part/json2.js"></script>
+  <![endif]-->
+</head>
+<body>
+	<div id="mocha"></div>
+</body>
+<script type="text/javascript" src="test.parse.js"></script>
+<script type="text/javascript">
+mocha.run();
+</script>
+</html>

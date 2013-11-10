@@ -174,6 +174,7 @@ setPrefix('a-');
     //属性
     //----
     
+    this.options = opts;
     /**
      * ### ant.tpl
      * 模板字符串
@@ -200,15 +201,6 @@ setPrefix('a-');
      * @type {Boolean} 在调用 `render` 方法后, 该属性将为 `true`
      */
     this.isRendered = false;
-    
-    /**
-     * ### ant.isLazy
-     * 是否使用的是延时的 view -> model 同步方式.
-     * @type {Boolean}
-     */
-    this.isLazy = !!opts.lazy;
-    
-    this.options = opts;
     
     //TODO
     this.bindings = (this.bindings || []).concat(opts.bindings || []);
@@ -259,7 +251,7 @@ setPrefix('a-');
               为 false 时, 为替换更新, 不在 data 中的变量, 将在 DOM 中被清空.
      */
     update: function(keyPath, data, isExtend) {
-      var attrs, vm = this.vm;
+      var attrs, vm = this._vm;
       if(isObject(keyPath)){
         isExtend = data;
         attrs = data = keyPath;
@@ -285,7 +277,7 @@ setPrefix('a-');
      */
   , render: function(data) {
       data && this.set(data, {isExtend: false, silence: true});
-      this.vm.$$render(this.data, false);
+      this._vm.$$render(this.data, false);
       this.isRendered = true;
       this.trigger('render');
       return this;
@@ -327,10 +319,10 @@ setPrefix('a-');
         opt = opt || {};
         if(opt.isExtend !== false){
           isExtend = true;
-          modelExtend(this.data, key, this.vm);
+          modelExtend(this.data, key, this._vm);
         }else{
           isExtend = false;
-          this.data = modelExtend({}, key, this.vm);
+          this.data = modelExtend({}, key, this._vm);
         }
       }else{
         opt = opt || {};
@@ -359,10 +351,10 @@ setPrefix('a-');
                 path = 'data';
               }
             }
-            parent[path] = isObject(val) ? modelExtend(Array.isArray(val) ? [] : {}, val, this.vm.$$getChild(key, !Array.isArray(val))) : val;
+            parent[path] = isObject(val) ? modelExtend(Array.isArray(val) ? [] : {}, val, this._vm.$$getChild(key, !Array.isArray(val))) : val;
             isExtend = false;
           }else{
-            modelExtend(this.data, deepSet(key, val, {}), this.vm);
+            modelExtend(this.data, deepSet(key, val, {}), this._vm);
             isExtend = true;
           }
         }
@@ -395,7 +387,7 @@ setPrefix('a-');
         this._partials[name] = partialInfo;
       }
       if(partial) {
-        vm = this.vm.$$getChild(path);
+        vm = this._vm.$$getChild(path);
         
         if(typeof partial === 'string'){
           if(partialInfo.escape){
@@ -424,20 +416,12 @@ setPrefix('a-');
       }
       return this;
     }
-    /**
-     * 数据预处理.
-     * @param {Object} data
-     * @return {Object}
-     */
-  , parse: function(data) {
-      return data;
-    }
   , init: noop
   
     //TODO 
   , watch: function(keyPath, callback) {
       var that = this
-        , vm = this.vm.$$getChild(keyPath)
+        , vm = this._vm.$$getChild(keyPath)
         , watcher = new Watcher(vm, vm, {}, function(vals) {
             return vals[keyPath];
           })
@@ -488,7 +472,7 @@ setPrefix('a-');
     var vm = new ViewModel();
     vm.$$root = vm;
     vm.$$ant = ant;
-    ant.vm = vm;
+    ant._vm = vm;
     travelEls(ant.el, vm);
   }
   
@@ -813,7 +797,11 @@ setPrefix('a-');
           var val = vals[path]
             
           for(var i = 0, l = filters.length; i < l; i++){
-            val = ant._filters[filters[i]].call(ant, val);
+            if(ant._filters[filters[i]]){
+              val = ant._filters[filters[i]].call(ant, val);
+            }else{
+              console.error('Filter: ' + filters[i] + ' not found!');
+            }
           }
           return val;
         })
@@ -940,7 +928,7 @@ setPrefix('a-');
                 isSetDefaut = el.checked;
               break;
               default:
-                if(!ant.isLazy){
+                if(!ant.options.lazy){
                   if('oninput' in el){
                     ev += ' input';
                   }
