@@ -8,12 +8,13 @@
   <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
   <![endif]-->
   <script type="text/javascript" src="../src/ant.js"></script>
+  <script type="text/javascript" src="../src/parse.js"></script>
 </head>
 <body>
 	<div id=template a-style='{{money | color}}'>
     <h1>Filters in ant.js: </h1>
     <div>
-      You got {{ money | rmb }} !!  
+      You got {{ money | rmb : type }} !!  
     </div>
     <div><input value=50 type="range" a-model={{money}} min=0 max=100 autofocus /> 
       <label>$: <input type="radio" name=type a-model='{{type }}' value='dol' checked /></label>
@@ -22,11 +23,11 @@
   </div>
 <script type="text/javascript">
   var ant = new Ant(document.getElementById('template'), {
-      data: {}
+      data: { rate: 6.084 }
     //You can write filters here, just like events
     , filters: {
-        rmb: function(val){
-          return this.data.type === 'rmb' ? '￥ ' + (val * 6.084).toFixed(2) : '$ ' + val;
+        rmb: function(money, type){
+          return type === 'rmb' ? '￥ ' + (money * this.data.rate).toFixed(2) : '$ ' + money;
         }
       , color: function(val) {
           var r, g;

@@ -1,5 +1,4 @@
-var build = require('./docs/build.js')
-  , exec = require('child_process').exec
+var exec = require('child_process').exec
   , spawn = require('child_process').spawn
   ;
 
@@ -59,7 +58,7 @@ module.exports = function(grunt) {
 
   grunt.registerTask('site', '生成 HTML', function() {
     var done = this.async();
-    build(done)
+    require('./docs/build.js')(done)
   });
   
   grunt.registerTask('test', '全面测试 phantomJs / nodeJs', function() {

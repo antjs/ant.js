@@ -1,5 +1,5 @@
 var fs = require('fs')
-  , Ant = require('../')
+  , Ant = require('../dist/ant.js')
   , marked = require('../third-part/marked.js')
   , pygmentize = require('pygmentize-bundled')
   ;

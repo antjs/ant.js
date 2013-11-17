@@ -7,6 +7,7 @@
   <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
   <![endif]-->
   <script type="text/javascript" src="../src/ant.js"></script>
+  <script type="text/javascript" src="../src/parse.js"></script>
   <script type="text/javascript" src="../third-part/jquery.min.js"></script>
   <script type="text/javascript" src="../src/event.js"></script>
   <style>
@@ -22,7 +23,7 @@
     <ul>
       <li a-repeat={{list}}>{{.}} <button class='edit' title="编辑">编辑</button><button class='del' title="删除">删除</button></li>
     </ul>
-    <form onsubmit='return false;'><label><input type="text" a-model='{{cur}}'></label><input type="submit" value="{{index:确定修改}}{{^index:添加}}"><button a-if={{index}} class='cancel-edit'>取消编辑</button</form>
+    <form onsubmit='return false;'><label><input type="text" a-model='{{cur}}'></label><input type="submit" value="{{index ? '确定修改': '添加'}}"><button a-if={{index}} class='cancel-edit'>取消编辑</button</form>
   </div>
 <script type="text/javascript">
 var ant = new Ant(document.getElementById('template'), {

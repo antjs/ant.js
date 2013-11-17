@@ -172,12 +172,12 @@ describe('实例接口', function(){
       expect(ant.el.innerHTML).to.be('10');
     });
     
-    it('ant.getFilter', function() {
-      expect(ant.getFilter('twice')).to.be(twice);
-    });
+    // it('ant.getFilter', function() {
+      // expect(ant.getFilter('twice')).to.be(twice);
+    // });
     it('ant.removeFilter', function() {
       ant.removeFilter('twice');
-      expect(ant.getFilter('twice')).to.be(undefined);
+      expect(ant._filters['twice']).to.be(undefined);
     });
   });
 });

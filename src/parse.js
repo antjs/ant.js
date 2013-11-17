@@ -1,28 +1,20 @@
+//if (typeof define !== 'function') { var define = require('amdefine')(module) }
+
 (function(Ant){
-  // tokens.js
-  // 2010-02-23
 
-  // (c) 2006 Douglas Crockford
-
-  // Produce an array of simple token objects from a string.
-  // A simple token object contains these members:
-  //      type: 'name', 'string', 'number', 'operator'
-  //      value: string or number value of the token
-  //      from: index of first character of the token
-  //      to: index of the last character + 1
-
-  // Comments of the // type are ignored.
-
-  // Operators are by default single characters. Multicharacter
-  // operators can be made by supplying a string of prefix and
-  // suffix characters.
-  // characters. For example,
-  //      '<>+-&', '=>&:'
-  // will match any of these:
-  //      <=  >>  >>>  <>  >=  +: -: &: &&: &&
-
-
-
+  var create = Object.create || function (o) {
+    function F() {}
+    F.prototype = o;
+    return new F();
+  };
+  
+  var error = function (message, t) {
+      t = t || this;
+      t.name = "SyntaxError";
+      t.message = message;
+      throw t;
+  };
+  
   var tokenize = function (code, prefix, suffix) {
       var c;                      // The current character.
       var from;                   // The index of the start of the token.
@@ -129,7 +121,7 @@
                       c = code.charAt(i);
                   }
                   if (c < '0' || c > '9') {
-                      make('number', str).error("Bad exponent");
+                      error("Bad exponent", make('number', str));
                   }
                   do {
                       i += 1;
@@ -143,7 +135,7 @@
               if (c >= 'a' && c <= 'z') {
                   str += c;
                   i += 1;
-                  make('number', str).error("Bad number");
+                  error("Bad number", make('number', str));
               }
 
   // Convert the string value to a number. If it is finite, then it is a good
@@ -153,7 +145,7 @@
               if (isFinite(n)) {
                   result.push(make('number', n));
               } else {
-                  make('number', str).error("Bad number");
+                  error("Bad number", make('number', str));
               }
 
   // string
@@ -165,7 +157,8 @@
               for (;;) {
                   c = code.charAt(i);
                   if (c < ' ') {
-                      make('string', str).error(c === '\n' || c === '\r' || c === '' ?
+                      make('string', str);
+                      error(c === '\n' || c === '\r' || c === '' ?
                           "Unterminated string." :
                           "Control character in string.", make('', str));
                   }
@@ -181,7 +174,7 @@
                   if (c === '\\') {
                       i += 1;
                       if (i >= length) {
-                          make('string', str).error("Unterminated string");
+                        error("Unterminated string", make('string', str));
                       }
                       c = code.charAt(i);
                       switch (c) {
@@ -202,11 +195,11 @@
                           break;
                       case 'u':
                           if (i >= length) {
-                              make('string', str).error("Unterminated string");
+                             error("Unterminated string", make('string', str));
                           }
                           c = parseInt(code.substr(i + 1, 4), 16);
                           if (!isFinite(c) || c < 0) {
-                              make('string', str).error("Unterminated string");
+                             error("Unterminated string", make('string', str));
                           }
                           c = String.fromCharCode(c);
                           i += 4;
@@ -258,37 +251,25 @@
       return result;
   };
 
-  var create = Object.create || function (o) {
-    function F() {}
-    F.prototype = o;
-    return new F();
-  };
   
-  // parse.js
-  // Parser for Simplified JavaScript written in Simplified JavaScript
-  // From Top Down Operator Precedence
-  // http://javascript.crockford.com/tdop/index.html
-  // Douglas Crockford
-  // 2010-06-26
-  // Modify by Justan at 2013-11-10
-
   var make_parse = function () {
       var symbol_table = {};
       var token;
       var tokens;
       var token_nr;
+      var getter;
 
       var itself = function () {
           return this;
       };
   
-      var getter = function (n) {
+      var find = function (n) {
         n.nud      = itself;
         n.led      = null;
         n.std      = null;
         n.lbp      = 0;
-        if(token.id !== '.'){
-          locals[n.value] = n;
+        if(!token || token.id !== '.'){
+          getter(n.value, token && token.id === '|' ? 'filter' : 'name');
         }
         return n;
       };
@@ -296,7 +277,7 @@
       var advance = function (id) {
           var a, o, t, v;
           if (id && token.id !== id) {
-              token.error("Expected '" + id + "'.");
+              error("Expected '" + id + "'.", token);
           }
           if (token_nr >= tokens.length) {
               token = symbol_table["(end)"];
@@ -306,18 +287,18 @@
           token_nr += 1;
           v = t.value;
           a = t.type;
-          if (a === "name") {
-              o = getter(t);
-          } else if (a === "operator") {
+          if (a === "operator" || v in symbol_table) {
               o = symbol_table[v];
               if (!o) {
-                  t.error("Unknown operator.");
+                  error("Unknown operator.", t);
               }
+          } else if (a === "name") {
+              o = find(t);
           } else if (a === "string" || a ===  "number") {
               o = symbol_table["(literal)"];
               a = "literal";
           } else {
-              t.error("Unexpected token.");
+              error("Unexpected token.", t);
           }
           token = create(o);
           token.from  = t.from;
@@ -342,16 +323,10 @@
 
       var original_symbol = {
           nud: function () {
-              this.error("Undefined.");
+              error("Undefined.", this);
           },
           led: function (left) {
-              this.error("Missing operator.");
-          },
-          error: function (message, t) {
-              t = t || this;
-              t.name = "SyntaxError";
-              t.message = message;
-              throw t;
+              error("Missing operator.", this);
           }
       };
 
@@ -428,11 +403,18 @@
 
       symbol("(literal)").nud = itself;
 
-      symbol("this").nud = function () {
+      symbol(".").nud = function () {
           this.arity = "this";
+          getter('.')
           return this;
       };
+      // symbol("this").nud = function () {
+          // this.arity = "this";
+          // return this;
+      // };
 
+      //Operator Precedence:
+      //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 
       infix("?", 20, function (left) {
           this.first = left;
@@ -442,8 +424,8 @@
           this.arity = "ternary";
           return this;
       });
-
-      infixr("&&", 30);
+      
+      infixr("&&", 31);
       infixr("||", 30);
 
       infixr("===", 40);
@@ -458,11 +440,12 @@
 
       infix("*", 60);
       infix("/", 60);
+      infix("%", 60);
 
       infix(".", 80, function (left) {
           this.first = left;
           if (token.arity !== "name") {
-              token.error("Expected a property name.");
+              error("Expected a property name.", token);
           }
           token.arity = "literal";
           this.second = token;
@@ -509,6 +492,27 @@
           return this;
       });
 
+      //filter
+      infix("|", 10, function(left) {
+        var a;
+        this.first = left;
+        token.arity = 'filter';
+        this.second = expression(0);
+        this.arity = 'binary';
+        if(token.id === ':'){
+          this.arity = 'ternary';
+          this.third = a = [];
+          while(true){
+            advance(':');
+            a.push(expression(0));
+            if(token.id !== ":"){
+              break;
+            }
+          }
+        }
+        return this;
+      });
+      
 
       prefix("!");
       prefix("-");
@@ -543,7 +547,7 @@
               while (true) {
                   n = token;
                   if (n.arity !== "name" && n.arity !== "literal") {
-                      token.error("Bad property name.");
+                      error("Bad property name.", token);
                   }
                   advance();
                   advance(":");
@@ -562,100 +566,123 @@
           return this;
       });
 
-      var parser = function (source, local) {
+      return function (source, fn) {
           tokens = tokenize(source, '=<>!+-*&|/%^', '=<>&|');
           token_nr = 0;
-          locals = local || {};
+          getter = typeof fn === 'function' ? fn : function () {};
           advance();
           var s = expression(0);
           advance("(end)");
           return s;
       };
-
-      return parser;
   };
 
-  var unaryOperators = {
-    '+': function(v) { return +v; },
-    '-': function(v) { return -v; },
-    '!': function(v) { return !v; }
-  };
-
-  var binaryOperators = {
-    '+': function(l, r) { return l+r; },
-    '-': function(l, r) { return l-r; },
-    '*': function(l, r) { return l*r; },
-    '/': function(l, r) { return l/r; },
-    '%': function(l, r) { return l%r; },
-    '<': function(l, r) { return l<r; },
-    '>': function(l, r) { return l>r; },
-    '<=': function(l, r) { return l<=r; },
-    '>=': function(l, r) { return l>=r; },
-    '==': function(l, r) { return l==r; },
-    '!=': function(l, r) { return l!=r; },
-    '===': function(l, r) { return l===r; },
-    '!==': function(l, r) { return l!==r; },
-    '&&': function(l, r) { return l&&r; },
-    '||': function(l, r) { return l||r; },
+  var operators = {
+    'unary': {
+      '+': function(v) { return +v; }
+    , '-': function(v) { return -v; }
+    , '!': function(v) { return !v; }
+      
+    , '[': function(v){ return v; }
+    , '{': function(v){
+        var r = {};
+        for(var i = 0, l = v.length; i < l; i++) {
+          r[v[i][0]] = v[i][1];
+        }
+        return r;
+      }
+    , 'typeof': function(v){ return typeof v; }
+    }
     
-    '.': function(l, r) { return l[r]; },
-    '[': function(l, r) { return l[r]; }
-  };
-  
-  var ternaryOperators = {
-    '?': function(f, s, t) { return f ? s : t; },
-    '(': function(f, s, t) { return f[s].apply(f, t) }
+  , 'binary': {
+      '+': function(l, r) { return l+r; }
+    , '-': function(l, r) { return l-r; }
+    , '*': function(l, r) { return l*r; }
+    , '/': function(l, r) { return l/r; }
+    , '%': function(l, r) { return l%r; }
+    , '<': function(l, r) { return l<r; }
+    , '>': function(l, r) { return l>r; }
+    , '<=': function(l, r) { return l<=r; }
+    , '>=': function(l, r) { return l>=r; }
+    , '==': function(l, r) { return l==r; }
+    , '!=': function(l, r) { return l!=r; }
+    , '===': function(l, r) { return l===r; }
+    , '!==': function(l, r) { return l!==r; }
+    , '&&': function(l, r) { return l&&r; }
+    , '||': function(l, r) { return l||r; }
+      
+    , '.': function(l, r) { return l[r]; }
+    , '[': function(l, r) { return l[r]; }
+    , '(': function(l, r){ return l.apply(null, r) }
+      
+    , '|': function(l, r){ return r.call(null, l) }//filter. name|filter
+    }
+    
+  , 'ternary': {
+      '?': function(f, s, t) { return f ? s : t; }
+    , '(': function(f, s, t) { return f[s].apply(f, t) }
+      
+    , '|': function(f, s, t){ return s.apply(null, [f].concat(t)); }//filter. name | filter : arg2 : arg3
+    }
   };
 
   var make_eval = function() {
-    var locals;
+    var _locals, _filters
+      , isArray = Array.isArray
+      , argName = ['first', 'second', 'third']
+      ;
+      
     var evaluate = function(tree) {
       var arity = tree.arity
-        , first = tree.first && !Array.isArray(tree.first) && evaluate(tree.first)
-        , second = tree.second && evaluate(tree.second)
-        , third = tree.third && evaluate(tree.third)
-        , isArray, val
         , value = tree.value
+        , args = []
+        , n = 0
+        , arg
         ;
       
-      //Array or Object literal
-      if(Array.isArray(tree.first)){
-        first = tree.first;
-        isArray = value === '[';
-        var val = isArray ? [] : {};
-        for(var i = 0, l = first.length; i < l; i++){
-          isArray ? val.push(evaluate(first[i])) : val[first[i].key] = evaluate(first[i]);
+      for(; n < 3; n++){
+        arg = tree[argName[n]];
+        if(arg){
+          if(isArray(arg)){
+            args[n] = [];
+            for(var i = 0, l = arg.length; i < l; i++){
+              args[n].push(typeof arg[i].key === 'undefined' ? evaluate(arg[i]) : [arg[i].key, evaluate(arg[i])]);
+            }
+          }else{
+            args[n] = evaluate(arg);
+          }
         }
-        return val;
       }
       
       switch(arity){
         case 'unary': 
-          return unaryOperators[value](first);
-        break;
         case 'binary':
-          return binaryOperators[value](first, second);
-        break;
         case 'ternary':
-          return ternaryOperators[value](first, second, third);
+          return getOperator(arity, value)(args[0], args[1], args[2]);
         break;
         case 'literal':
           return value;
         case 'name':
-          return locals[value]
+          return _locals[value];
+        case 'filter':
+          return _filters[value];
+        case 'this':
+          return _locals;
         break;
       }
     };
     
-    return function(tree, local) {
-      locals = local || {};
+    function getOperator(arity, value){
+      return operators[arity][value] || function() { return ''; }
+    }
+    
+    return function(tree, locals, filters) {
+      _locals = typeof locals === 'undefined' ? {} : locals;
+      _filters = filters || {};
       return evaluate(tree);
     }
   };
   
-  var parse = make_parse();
-  
-  parse.evaluate = make_eval();
-  
-  Ant.parse = parse;
+  Ant._eval = make_eval()
+  Ant._parse = make_parse();
 })(Ant);

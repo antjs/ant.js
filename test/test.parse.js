@@ -6,8 +6,8 @@ if(typeof require === 'function' && typeof exports === 'object'){
   typeof console === 'object' && console.log('browser test start');
 }
 
-var parse = Ant.parse;
-var evalu = parse.evaluate;
+var evalu = Ant._eval;
+var parse = Ant._parse;
 
 describe('literal 直接量', function() {
   it('Number: 1', function() {
@@ -21,6 +21,15 @@ describe('literal 直接量', function() {
   });
   it("String: 'ab'", function() {
     expect(evalu(parse("'ab'"))).to.be("ab");
+  });
+  it("String: 'a\"b'", function() {
+    expect(evalu(parse("'a\"b'"))).to.be("a\"b");
+  });
+  it("String: 'a\\'b'", function() {
+    expect(evalu(parse("'a\\\'b'"))).to.be("a\'b");
+  });
+  it('String: "a\\"b"', function() {
+    expect(evalu(parse('"a\\\"b"'))).to.be("a\"b");
   });
   it('Array: []', function() {
     var a = evalu(parse("[]"));
@@ -39,27 +48,86 @@ describe('literal 直接量', function() {
 describe('variable 变量', function() {
   it('parse: a + b', function() {
     var l = {};
-    parse('a + b', l);
+    parse('a + b', function(key, type) {
+      l[key] = type
+    });
     expect(l.a).to.be.ok();
     expect(l.b).to.be.ok();
   });
   it('parse: a.abc', function() {
     var l = {};
-    parse('a.abc', l);
+    parse('a.abc', function(key, type) {
+      l[key] = type
+    });
     expect(l.a).to.be.ok();
     expect(l.abc).to.not.be.ok();
   });
   it('parse: a[abc]', function() {
     var l = {};
-    parse('a[abc]', l);
+    parse('a[abc]', function(key, type) {
+      l[key] = type
+    });
     expect(l.a).to.be.ok();
     expect(l.abc).to.be.ok();
   });
   it('parse: a["abc"]', function() {
     var l = {};
-    parse('a["abc"]', l);
+    parse('a["abc"]', function(key, type) {
+      l[key] = type
+    });
     expect(l.a).to.be.ok();
     expect(l.abc).to.not.be.ok();
   });
 });
 
+describe('expression 表达式', function() {
+  var exps = [
+    '1 + 1'
+  , '-1 + 2'
+  , '1.2 + 500 + 30'
+  , '23 - 12 + -3 - 4'
+  , '1.5 * 3'
+  , '1 + 5 * 2'
+  , '(1 + 3) * 3'
+  , '3 / 4'
+  , '2 * 6 / 3'
+   , '2 % 3'
+  , '2 % 4'
+  , '4 % 2'
+  , '4 % 3'
+  , '"123" - "234"'
+  , '"a" + 1'
+  , '"123" + "234"'
+  , '"123" && "234"'
+  , '1 && "234"'
+  , '1 && 12'
+  , '0 && 12'
+  , '0 || 1'
+  , '0 && 12 || 1'
+  , '1 || 0 && 51'
+  , '0 ? 12 : 4'
+  , '-1 ? 12 : 4'
+  
+  , '"a" - 1'
+  , '"a" + "b"'
+  ];
+  for(var i = 0, l = exps.length; i < l; i++){
+    (function(i){
+      var val = eval(exps[i]);
+      it(exps[i] + ' = ' + val, function() {
+        if(isNaN(val)){
+          expect(isNaN(evalu(parse(exps[i])))).to.be.ok();
+        }else{
+          expect(evalu(parse(exps[i]))).to.be(val);
+        }
+      });
+    })(i)
+  }
+});
+
+describe('filters', function() {
+  it('23 | filter:abc', function() {
+    var tree = parse('23 | filter');
+    ;
+  })
+});
