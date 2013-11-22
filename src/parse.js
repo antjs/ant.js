@@ -1,7 +1,6 @@
-//if (typeof define !== 'function') { var define = require('amdefine')(module) }
+define(function(){
 
-(function(Ant){
-
+"use strict";
   var create = Object.create || function (o) {
     function F() {}
     F.prototype = o;
@@ -683,6 +682,10 @@
     }
   };
   
-  Ant._eval = make_eval()
-  Ant._parse = make_parse();
-})(Ant);
+  var parser = {
+    parse: make_parse()
+  , eval: make_eval()
+  };
+  
+  return parser;
+});

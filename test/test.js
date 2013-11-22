@@ -466,7 +466,7 @@ describe('模板语法', function() {
       expect(content.innerHTML.toLowerCase()).to.be(html.replace('{{title}}', ant.data.title))
     });
     
-    it('Ant 子模板', function() {
+    0 && it('Ant 子模板', function() {
       var Child = Ant.extend({
         getTitle: function() {
           return this.data.title;

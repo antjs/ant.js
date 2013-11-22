@@ -7,8 +7,7 @@
   <!--[if lt IE 9]>
   <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
   <![endif]-->
-  <script type="text/javascript" src="../src/ant.js"></script>
-  <script type="text/javascript" src="../src/parse.js"></script>
+  <script type="text/javascript" src="../dist/ant.js"></script>
   <style>
     fieldset{
       margin:1em;
@@ -35,7 +34,7 @@
       <fieldset>
         <legend>普通文本框: </legend>
         <label>文本框: <input {{password}} type="text" a-model={{text}} /> </label>
-        <label>密码框: <input {{checkbox&&'disabled'}} type="password" a-model={{password}} /> </label>
+        <label>密码框: <input {{checkbox&&"disabled"}} type="password" a-model={{password}} /> </label>
         <label>多行文本: <textarea name=ta a-model={{textarea}}>&ltem&gtwho is your daddy&lt/em&gt</textarea></label>
       </fieldset>
       
@@ -87,7 +86,7 @@
       	<li>多行文本框: {{{textarea}}}</li>
       	<li>下拉框1: <span  a-class='{{select1}}'>{{select1}}</span></li>
       	<li>下拉框2: {{select2}}</li>
-      	<li a-if={{checkbox}}>下拉框3: {{select3}}</li>
+      	<li a-if={{!checkbox}}>下拉框3: {{select3}}</li>
         <li a-style="background-color: {{color}}; width: {{range}}%">范围框/取色框/日期框: <span>{{range}} / {{color}} / {{date}}</span></li>
         <li>子模板: {{> partial}}<!-- {{{> partial}}} --> !</li>
         <li>可编辑文本: {{edit}}</li>

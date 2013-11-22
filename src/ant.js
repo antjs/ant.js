@@ -1,36 +1,6 @@
-/***
- *          .o.                       .           o8o          
- *         .888.                    .o8           `"'          
- *        .8"888.     ooo. .oo.   .o888oo        oooo  .oooo.o 
- *       .8' `888.    `888P"Y88b    888          `888 d88(  "8 
- *      .88ooo8888.    888   888    888           888 `"Y88b.  
- *     .8'     `888.   888   888    888 . .o.     888 o.  )88b 
- *    o88o     o8888o o888o o888o   "888" Y8P     888 8""888P' 
- *                                                888          
- *                                            .o. 88P          
- *                                            `Y888P           
- */               
-
- 
-(function(Ant) {
-  var root = this;
-  if(typeof module === 'object' && module){
-    var doc = root.document || require('jsdom').jsdom();
-    module.exports = Ant(doc);//NodeJs
-  }else{
-    Ant = Ant(root.document);
-    if(typeof define === 'function'){
-      define(function() {
-        return Ant;
-      });
-    }
-    if(!root.Ant){
-      root.Ant = Ant;
-    }
-  }
-})(function(doc) {
-"use strict";
-
+define(function(require){
+var parser = require('./parse.js');
+var doc = document;
 
 var Event = {
   //监听自定义事件.
@@ -86,7 +56,10 @@ function extend(obj) {
   for(var i = 1; i < length; i++) {
     if((opts = arguments[i]) !== null) {
       for(var key in opts) {
-        obj[key] = opts[key]
+        //android 2.3 browser can enum the prototype of constructor...
+        if(opts.hasOwnProperty(key) && key !== 'prototype'){
+          obj[key] = opts[key];
+        }
       }
     }
   }
@@ -267,7 +240,7 @@ setPrefix('a-');
       }
       
       if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
-      vm.$render(data, isExtend);
+      vm.$set(data, isExtend);
       this.trigger('update', attrs);
       return this;
     }
@@ -277,7 +250,7 @@ setPrefix('a-');
      */
   , render: function(data) {
       data && this.set(data, {isExtend: false, silence: true});
-      this._vm.$render(this.data, false);
+      this._vm.$set(this.data, false);
       this.isRendered = true;
       this.trigger('render');
       return this;
@@ -412,7 +385,7 @@ setPrefix('a-');
         }
         
         travelEls(els, vm);
-        this.isRendered && vm.$render(deepGet(path, this.data));
+        this.isRendered && vm.$set(deepGet(path, this.data));
       }
       return this;
     }
@@ -426,10 +399,6 @@ setPrefix('a-');
       ;
       watcher.addKey(keyPath);
       watcher.callback = callback;
-      watcher.update = function(newVal) {
-        callback.call(that, newVal, that.val);
-        that.val = newVal;
-      };
       vm.$watchers.push(watcher);
     }
   , unwatch: function(keyPath, callback) {
@@ -619,11 +588,11 @@ setPrefix('a-');
         return this.$parent.$getData(key);
       }
     }
-  , $render: function (data, isExtend) {
+  , $set: function (data, isExtend) {
       var map = isExtend ? data : this;
       
       for(var i = 0, l = this.$watchers.length; i < l; i++){
-        this.$watchers[i].fn(isExtend);
+        this.$watchers[i].fn();
       }
       
       if(isObject(map)){
@@ -631,34 +600,12 @@ setPrefix('a-');
           if(this.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
           //传入的数据键值不能和 vm 中的自带属性名相同.
           //所以不推荐使用 '$' 作为 JSON 数据键值的开头.
-            this[path].$render(data ? data[path] : void(0), isExtend);
+            this[path].$set(data ? data[path] : void(0), isExtend);
           }
         }
       }
     }
   };
-  
-  //清空 vm 中某个元素及其子元素的 watcher, reperter, conditioner
-  function clearWatchers(vm, el){
-    var watchers = vm.$watchers
-      , watcher
-      ;
-    
-    if(!el){ return }
-    
-    for(var i = watchers.length - 1; i >= 0; i--){
-      watcher = watchers[i];
-      if(watcher.el && el.contains(watcher.el)){
-        watchers.splice(i, 1);
-      }
-    }
-    
-    for(var key in vm){
-      if(!(key in ViewModel.prototype)){
-        clearWatchers(vm[key], el);
-      }
-    }
-  }
   
   //data -> model -> viewModel
   //深度合并对象.
@@ -824,7 +771,7 @@ setPrefix('a-');
           , attr, value = attr = 'value'
           , isSetDefaut = isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
           , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
-          , update = function(val) {
+          , callback = function(val) {
               //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
               var newVal = val || vm.$getData(keyPath) || ''
                 , val = el[attr]
@@ -855,7 +802,7 @@ setPrefix('a-');
               case 'radio':
                 attr = 'checked';
                 if(isIE) { ev += ' click'; }
-                update = function() {
+                callback = function() {
                   el.checked = el.value === vm.$getData(keyPath);
                 };
                 isSetDefaut = el.checked;
@@ -882,7 +829,7 @@ setPrefix('a-');
                 }
                 ant.set(cur.$getKeyPath(), vals);
               };
-              update = function(){
+              callback = function(){
                 var vals = vm.$getData(keyPath);
                 if(vals && vals.length){
                   for(var i = 0, l = el.options.length; i < l; i++){
@@ -902,8 +849,8 @@ setPrefix('a-');
         
         el.removeAttribute(antAttr.MODEL);
         
-        var watcher = new Watcher(cur, token);
-        watcher.update = update;
+        var watcher = new Watcher(vm, token);
+        watcher.callback = callback;
         
         //根据表单元素的初始化默认值设置对应 model 的值
         if(el[value] && isSetDefaut){
@@ -918,7 +865,7 @@ setPrefix('a-');
   var parse = function(path) {
     var that = this;
       
-    this._ast = Ant._parse(path, function(key, type) {
+    this._ast = parser.parse(path, function(key, type) {
       if(type === 'filter'){
         that.filters.push(key);
       }else{
@@ -941,7 +888,7 @@ setPrefix('a-');
     }
     
     this.val = null;
-    this.fn = function(isExtend) {
+    this.fn = function() {
       var vals = {}, key;
       for(var i = 0, l = this.keys.length; i < l; i++){
         key = this.keys[i];
@@ -954,16 +901,16 @@ setPrefix('a-');
       var newVal = this.getValue(vals);
       if(newVal !== this.val){
         try{
-          this.update(newVal, isExtend);
+          this.callback(newVal, this.val);
           this.val = newVal;
         }catch(e){
           console.warn(e);
         }
       }
-      this.state = Watcher.STATE_CALLED;
+      //this.state = Watcher.STATE_CALLED;
     };
     this.el = token.el;
-    this.state = Watcher.STATE_READY
+    //this.state = Watcher.STATE_READY
   }
   
   extend(Watcher, {
@@ -972,7 +919,7 @@ setPrefix('a-');
   }, Class);
   
   extend(Watcher.prototype, {
-    update: function(newVal) {
+    callback: function(newVal) {
       var token = this.token
         , pos = token.position
         , node = token.node
@@ -1048,7 +995,7 @@ setPrefix('a-');
       }
       
       try{
-        val = Ant._eval(this._ast, vals, ant._filters);
+        val = parser.eval(this._ast, vals, ant._filters);
       }catch(e){
         val = '';
       }
@@ -1120,7 +1067,7 @@ setPrefix('a-');
   //处理动态节点(z-repeat, z-if)
   var Generator = Watcher.extend(
     {
-      update: function(data, isExtend) {
+      callback: function(data, old) {
         var that = this
           ;
         if(that.type === antAttr.REPEAT){
@@ -1128,9 +1075,9 @@ setPrefix('a-');
             console.warn('需要一个数组');
             return;
           }
-          if(this.state === 0 || !isExtend){
+          //if(this.state === 0 || !isExtend){
             data && this.splice([0, this.els.length].concat(data));
-          }
+          //}
         }else{
           if(data) {
             if(!that.lastIfState) {
@@ -1191,11 +1138,10 @@ setPrefix('a-');
           el = this.el.cloneNode(true);
           noFixVm || delete this.vm[index + j];
           vm = this.vm.$getChild(index + j)
-          //clearWatchers(vm, els[index + j]);
           el[prefix + 'index'] = index + j;
           frag.appendChild(el);
           travelEl(el, vm);
-          vm.$render(items[j]);
+          vm.$set(items[j]);
           
           newEls.push(el);
           if(arr && isObject(arr[index + j])){
@@ -1217,7 +1163,7 @@ setPrefix('a-');
         els.splice.apply(els, args);
         
         if(n !== m){
-          this.vm.$getChild('length').$render(els.length);
+          this.vm.$getChild('length').$set(els.length);
         }
       }
     , reverse: function(args, arr, noFixVm) {
@@ -1241,7 +1187,7 @@ setPrefix('a-');
       }
     , sort: function(fn){
         //TODO 进行精确高还原的排序?
-        this.update(this.val)
+        this.callback(this.val)
       }
     }
   , function (relativeVm, token){
@@ -1383,19 +1329,7 @@ setPrefix('a-');
     }
   }
   
-  //节点是否在当前 document 中
-  // function inDocument(el) {
-    // if(doc.contains){
-      // return doc.contains(el)
-    // }else{
-      // while(el = el.parentNode){
-        // if(el === doc){
-          // return true;
-        // }
-      // }
-      // return false;
-    // }
-  // }
-  
+  Ant._parse = parser.parse;
+  Ant._eval = parser.eval;
   return Ant;
 });

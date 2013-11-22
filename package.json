@@ -2,7 +2,7 @@
   "name": "ant.js",
   "version": "0.1.3",
   "description": "数据驱动 HTML 模板",
-  "main": "src/ant.js",
+  "main": "dist/ant.js",
   "directories": {
     "example": "examples"
   },
@@ -33,6 +33,7 @@
     "mocha": "~1.13.0",
     "expect.js": "~0.2.0",
     "grunt-mocha": "~0.4.1",
-    "pygmentize-bundled": "~2.1.0"
+    "pygmentize-bundled": "~2.1.0",
+    "requirejs": "~2.1.9"
   }
 }
