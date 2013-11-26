@@ -24,62 +24,50 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
 模板语法
 ----
   
-  类似 [mustache][1] 和 [polymer][2] 的弱逻辑模板, ant.js 的模板只使用少数的几种规则.
-
-  Ant 模板可以是 DOM 对象, 也可以是一段 HTML 字符串. 模板 DOM 对象的根节点不应该包含 `a-if` 和 `a-repeat` 属性.
+  Ant 模板可以是 DOM 对象, 也可以是一段 HTML 字符串. 
   
   一个典型的 ant 模板:
   
 ```html
 <section id="main">
-  <input a-model='completedAll' type="checkbox" a-if="todos.length" />
+  <input a-model="{{completedAll}}" type="checkbox" a-if="{{todos.length}}" />
   <ul id="todo-list">
-    <li a-repeat="todos" a-if="show" class="{{completed: completed}}">
+    <li a-repeat="{{todos}}" a-if="{{show}}" class="{{completed && 'completed'}}">
       <div class="view">
-        <input type="checkbox" class="toggle" a-model="completed" />
+        <input type="checkbox" class="toggle" a-model="{{completed}}" />
         <label>{{{title}}}</label>
         <button class="destroy"></button>
       </div>
-      <input type="text" a-model="title" class="edit"/>
+      <input type="text" a-model="{{title}}" class="edit"/>
     </li>
   </ul>
 </section>
 ```
   
-### 变量占位符
+### 变量
 
   `{{name}}`
 
   两组大括号表示普通变量. 变量占位符只能位于文本节点和属性节点当中, 属性节点包括属性名和属性值. 深度变量用点表示法表示, 如: `{{todos.length}}`
   
-### 条件属性
+### 条件
 
-  `a-if="val"`
+  `a-if="{{val}}"`
 
   有 `a-if` 属性的节点会根据 `a-if` 属性的值对应的数据来决定该节点是否存在于 DOM 树中.
   
   如模板: 
   
 ```html
-<ul a-if="todos.length"><ul>
+<ul a-if="{{todos.length}}"><ul>
 ```
 
   对应数据 `{todos: []}`, 由于 `todos` 数组的长度为零, 所以该 `ul` 将不会出现在 DOM 树中.
   
-  __如果不是__: `^` 标示符和条件属性配合使用时, 值的 true false 与 DOM 的显示与否刚好相反. 
   
-  如:
-  
-```html
-<div a-if="^todos.length">对不起! 没有数据</div>
-```
+### 循环
 
-  对应数据 `{todos: []}`, 当 `todos` 数组的长度为零时该节点将会显示.
-  
-  
-### 循环属性
-
-  `a-repeat="list"`
+  `a-repeat="{{list}}"`
 
   带有 `a-repeat` 属性的元素将根据对应数组的长度而重复. 并且该元素及其子元素的变量占位符的作用域将会切换到数组数据当中. 类似 mustache, 如果想使用数组之外的父辈变量, 直接使用其变量名即可.
   
@@ -89,7 +77,7 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   
 ```html
 <ul>
-  <li a-repeat="todos">
+  <li a-repeat="{{todos}}">
     {{title}}
   <li>
 </ul>
@@ -115,9 +103,9 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
 </ul>
 ```
 
-### 双向绑定属性
+### 双向绑定
 
-  `a-model="val"` 
+  `a-model="{{val}}"` 
   
   而所谓的双向绑定, 即是在数据和表单值中任何一个发生了变化, 都会将该变化自动更新到另一层中.
   
@@ -139,11 +127,11 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   3. 下拉框
   
     ```html
-    <select a-model='select'>
+    <select a-model='{{select}}'>
       <option value='option1'>option1</option>
       <option value='option2'>option2</option>
     </select>
-    <select a-model='selects' multiple='true'>
+    <select a-model='{{selects}}' multiple='true'>
       <option value='option1'>option1</option>
       <option value='option2'>option2</option>
     </select>
@@ -155,15 +143,6 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
     
   4. 对于其他类型的表单元素, 如文本输入框 `input[type=text]`, `textarea` 等, 与 `a-model` 绑定的是其 `value` 属性.
     
-### 条件变量
-  
-  `{{val: str}}`
-
-  条件变量可以根据数据中某个值得真假来决定 DOM 中是否出现另一个字符. 
-  
-  比如对于`{{val: str}}`标记, 如果数据中, `val` 为真的话, 该段标记将显示成 `str` 字符, 如果 `val` 为假, 该段标记则表示一个空字符串.
-  
-  类似于 `a-if` 属性, `^` 标记表示反向. `{{^val: str}}`
   
 ### 非转义 HTML
 

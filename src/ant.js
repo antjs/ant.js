@@ -397,9 +397,7 @@ setPrefix('a-');
         , vm = this._vm.$getChild(keyPath)
         , watcher = new Watcher(vm, {})
       ;
-      watcher.addKey(keyPath);
       watcher.callback = callback;
-      vm.$watchers.push(watcher);
     }
   , unwatch: function(keyPath, callback) {
     
@@ -638,7 +636,7 @@ setPrefix('a-');
     return model;
   }
   
-  var tokenReg = /{{({([^{}\n]+)}|[^{}\n]+)}}/g;
+  var tokenReg = /{{({([^}\n]+)}|[^}\n]+)}}/g;
   
   //字符串中是否包含模板占位符标记
   function isToken(str) {
@@ -881,7 +879,8 @@ setPrefix('a-');
     this.keys = [];
     this.filters = [];
     
-    parse.call(this, token.path);
+    token.path && parse.call(this, token.path);
+    this.el = token.el;
     
     for(var i = 0, l = this.keys.length; i < l; i++){
       relativeVm.$getChild(this.keys[i]).$watchers.push(this);
@@ -909,8 +908,12 @@ setPrefix('a-');
       }
       //this.state = Watcher.STATE_CALLED;
     };
-    this.el = token.el;
     //this.state = Watcher.STATE_READY
+    
+    //When there is no variable in a binding, evaluate it immediately.
+    if(!this.keys.length) {
+      this.fn();
+    }
   }
   
   extend(Watcher, {

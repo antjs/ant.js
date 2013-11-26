@@ -1,4 +1,4 @@
-var Ant = require('../')
+var Ant = require('../dist/ant.js')
   , fs = require('fs')
   , template = '<div>{{name}}</div>'
   ;

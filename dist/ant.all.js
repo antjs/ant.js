@@ -87,6 +87,8 @@ if (!Function.prototype.bind) {
     }
   }
 })(function(document) {
+//Javascript expression parser modified form Crockford's TDOP parser
+
 
 
 "use strict";
@@ -346,6 +348,7 @@ if (!Function.prototype.bind) {
       var tokens;
       var token_nr;
       var getter;
+      var path = '';
 
       var itself = function () {
           return this;
@@ -356,8 +359,15 @@ if (!Function.prototype.bind) {
         n.led      = null;
         n.std      = null;
         n.lbp      = 0;
+        
+        var type;
         if(!token || token.id !== '.'){
-          getter(n.value, token && token.id === '|' ? 'filter' : 'name');
+          if(token && token.id === '|'){
+            type = 'filter';
+          }else{
+            type = 'name';
+          }
+          getter(n.value, type);
         }
         return n;
       };
@@ -434,7 +444,7 @@ if (!Function.prototype.bind) {
           return s;
       };
 
-      var constant = function (s, v) {
+      var constant = function (s, v, a) {
           var x = symbol(s);
           x.nud = function () {
               this.value = symbol_table[this.id].value;
@@ -444,7 +454,7 @@ if (!Function.prototype.bind) {
           x.value = v;
           return x;
       };
-
+      
       var infix = function (id, bp, led) {
           var s = symbol(id, bp);
           s.led = led || function (left) {
@@ -488,6 +498,9 @@ if (!Function.prototype.bind) {
       constant("true", true);
       constant("false", false);
       constant("null", null);
+      
+      constant("Math", Math);
+      constant("Date", Date);
 
       symbol("(literal)").nud = itself;
 
@@ -562,9 +575,9 @@ if (!Function.prototype.bind) {
               this.first = left;
               this.second = a;
               if ((left.arity !== "unary" || left.id !== "function") &&
-                      left.arity !== "name" && left.id !== "(" &&
+                      left.arity !== "name" && left.arity !== "literal" && left.id !== "(" &&
                       left.id !== "&&" && left.id !== "||" && left.id !== "?") {
-                  left.error("Expected a variable name.");
+                  error("Expected a variable name.", left);
               }
           }
           if (token.id !== ")") {
@@ -680,6 +693,7 @@ if (!Function.prototype.bind) {
         return r;
       }
     , 'typeof': function(v){ return typeof v; }
+    , 'new': function(v){ return new v }
     }
     
   , 'binary': {
@@ -1173,9 +1187,7 @@ setPrefix('a-');
         , vm = this._vm.$getChild(keyPath)
         , watcher = new Watcher(vm, {})
       ;
-      watcher.addKey(keyPath);
       watcher.callback = callback;
-      vm.$watchers.push(watcher);
     }
   , unwatch: function(keyPath, callback) {
     
@@ -1414,7 +1426,7 @@ setPrefix('a-');
     return model;
   }
   
-  var tokenReg = /{{({([^{}\n]+)}|[^{}\n]+)}}/g;
+  var tokenReg = /{{({([^}\n]+)}|[^}\n]+)}}/g;
   
   //字符串中是否包含模板占位符标记
   function isToken(str) {
@@ -1657,7 +1669,8 @@ setPrefix('a-');
     this.keys = [];
     this.filters = [];
     
-    parse.call(this, token.path);
+    token.path && parse.call(this, token.path);
+    this.el = token.el;
     
     for(var i = 0, l = this.keys.length; i < l; i++){
       relativeVm.$getChild(this.keys[i]).$watchers.push(this);
@@ -1685,8 +1698,12 @@ setPrefix('a-');
       }
       //this.state = Watcher.STATE_CALLED;
     };
-    this.el = token.el;
     //this.state = Watcher.STATE_READY
+    
+    //When there is no variable in a binding, evaluate it immediately.
+    if(!this.keys.length) {
+      this.fn();
+    }
   }
   
   extend(Watcher, {

@@ -114,6 +114,6 @@ module.exports = function(grunt) {
   });
   
   // Default task(s).
-  grunt.registerTask('default', ['test', 'build', 'concat', 'uglify', 'site']);
+  grunt.registerTask('default', ['build', 'test', 'concat', 'uglify', 'site']);
 
 };

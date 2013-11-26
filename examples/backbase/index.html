@@ -36,16 +36,16 @@
     </p>
   </div>
   <ul class='list-group'>
-  	<li class='list-group-item' a-repeat=comments data-id={{id}}>
+  	<li class='list-group-item' a-repeat={{comments}} data-id={{id}}>
        <span class="label label-default edit">编辑</span>
        <span class="label label-danger close">删除</span>
   		<div>{{{comment}}}</div>
   	</li>
   </ul>
-  <input type="hidden" a-model='newComment.id' />
-  <textarea placeholder='在此输入 markdown 评论' class='form-control' type="text" a-model=newComment.commentMarked></textarea>
+  <input type="hidden" a-model='{{newComment.id}}' />
+  <textarea placeholder='在此输入 markdown 评论' class='form-control' type="text" a-model={{newComment.commentMarked}}></textarea>
   <a id="comment" class='btn btn-primary btn-lg'>提交</a>
-  <a a-if='newComment.id' class='btn btn-default edit-cancel'>取消修改</a>
+  <a a-if='{{newComment.id}}' class='btn btn-default edit-cancel'>取消修改</a>
   <div>{{{newComment.comment}}}</div>
 </div>
 </body>

@@ -1,3 +1,5 @@
+//Javascript expression parser modified form Crockford's TDOP parser
+
 define(function(){
 
 "use strict";
@@ -257,6 +259,7 @@ define(function(){
       var tokens;
       var token_nr;
       var getter;
+      var path = '';
 
       var itself = function () {
           return this;
@@ -267,8 +270,15 @@ define(function(){
         n.led      = null;
         n.std      = null;
         n.lbp      = 0;
+        
+        var type;
         if(!token || token.id !== '.'){
-          getter(n.value, token && token.id === '|' ? 'filter' : 'name');
+          if(token && token.id === '|'){
+            type = 'filter';
+          }else{
+            type = 'name';
+          }
+          getter(n.value, type);
         }
         return n;
       };
@@ -345,7 +355,7 @@ define(function(){
           return s;
       };
 
-      var constant = function (s, v) {
+      var constant = function (s, v, a) {
           var x = symbol(s);
           x.nud = function () {
               this.value = symbol_table[this.id].value;
@@ -355,7 +365,7 @@ define(function(){
           x.value = v;
           return x;
       };
-
+      
       var infix = function (id, bp, led) {
           var s = symbol(id, bp);
           s.led = led || function (left) {
@@ -399,6 +409,9 @@ define(function(){
       constant("true", true);
       constant("false", false);
       constant("null", null);
+      
+      constant("Math", Math);
+      constant("Date", Date);
 
       symbol("(literal)").nud = itself;
 
@@ -473,9 +486,9 @@ define(function(){
               this.first = left;
               this.second = a;
               if ((left.arity !== "unary" || left.id !== "function") &&
-                      left.arity !== "name" && left.id !== "(" &&
+                      left.arity !== "name" && left.arity !== "literal" && left.id !== "(" &&
                       left.id !== "&&" && left.id !== "||" && left.id !== "?") {
-                  left.error("Expected a variable name.");
+                  error("Expected a variable name.", left);
               }
           }
           if (token.id !== ")") {
@@ -591,6 +604,7 @@ define(function(){
         return r;
       }
     , 'typeof': function(v){ return typeof v; }
+    , 'new': function(v){ return new v }
     }
     
   , 'binary': {
