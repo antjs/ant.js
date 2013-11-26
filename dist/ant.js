@@ -1183,12 +1183,18 @@ setPrefix('a-');
     }
   }
   
+  var NODETYPE = {
+    ATTR: 2
+  , TEXT: 3
+  , COMMENT: 8
+  };
+  
   //遍历元素及其子元素的所有属性节点及文本节点
   function travelEl(el, vm) {
-    if(el.nodeType === 8){
+    if(el.nodeType === NODETYPE.COMMENT){
       //注释节点
       return;
-    }else if(el.nodeType === 3){
+    }else if(el.nodeType === NODETYPE.TEXT){
       //文本节点
       checkBinding(vm, el, el.parentNode);
       return;
@@ -1225,7 +1231,8 @@ setPrefix('a-');
     for(var i = el.attributes.length - 1; i >= 0; i--){
       attr = el.attributes[i];
       checkBinding(vm, attr, el);
-      if(attr.nodeName.indexOf(prefix) === 0){
+      //replace prefix and postfix attribute. a-style={{value}}, disabled?={{value}}
+      if(attr.nodeName.indexOf(prefix) === 0 || attrPostReg.test(attr.nodeName)){
         el.removeAttribute(attr.nodeName);
       }
     }
@@ -1237,7 +1244,7 @@ setPrefix('a-');
         , textMap = tokens.textMap
         ;
       //如果绑定内容是在文本中, 则将其分割成单独的文本节点
-      if(node.nodeType === 3 && textMap.length > 1){
+      if(node.nodeType === NODETYPE.TEXT && textMap.length > 1){
         textMap.forEach(function(text) {
           var tn = doc.createTextNode(text);
           el.insertBefore(tn, node);
@@ -1369,6 +1376,7 @@ setPrefix('a-');
   }
   
   var tokenReg = /{{({([^}\n]+)}|[^}\n]+)}}/g;
+  var attrPostReg = /\?$/;
   
   //字符串中是否包含模板占位符标记
   function isToken(str) {
@@ -1378,42 +1386,45 @@ setPrefix('a-');
   
   function parseTokens(node, el) {
     var tokens = []
-      , val, type
+      , val
       , textMap = []
       , start = 0
-      , text = node.nodeValue
+      , value = node.nodeValue
       , nodeName = node.nodeName
+      , isBinAttr
       ;
     
-    if(node.nodeType === 3){//文本节点
-      type = 'text';
-    }else if(node.nodeType === 2){//属性节点
-      type = 'attr';
+    if(node.nodeType === NODETYPE.ATTR){
+      //attribute with prefix
       if(nodeName.indexOf(prefix) === 0 && !isAntAttr(nodeName)){
         nodeName = node.nodeName.slice(prefix.length);
       }
+      //attribute with postfix
+      if(attrPostReg.test(nodeName)){
+        nodeName = nodeName.slice(0, nodeName.length - 1);
+        isBinAttr = true;
+      }
       if(isToken(nodeName)){
-        text = nodeName;//属性名
+        value = nodeName;//属性名
       }
     }
     
     tokenReg.lastIndex = 0;
     
-    while((val = tokenReg.exec(text))){
+    while((val = tokenReg.exec(value))){
       if(tokenReg.lastIndex - start > val[0].length){
-        textMap.push(text.slice(start, tokenReg.lastIndex - val[0].length));
+        textMap.push(value.slice(start, tokenReg.lastIndex - val[0].length));
       }
       
       tokens.push({
         escape: !val[2]
-        //key.value
       , path: (val[2] || val[1]).trim()
       , position: textMap.length
       , el: el
       , node: node
       , nodeName: nodeName
-      , type: type
       , textMap: textMap
+      , isBinAttr: isBinAttr
       });
       
       //一个引用类型(数组)作为节点对象的文本图, 这样当某一个引用改变了一个值后, 其他引用取得的值都会同时更新
@@ -1422,8 +1433,8 @@ setPrefix('a-');
       start = tokenReg.lastIndex;
     }
     
-    if(text.length > start){
-      textMap.push(text.slice(start, text.length));
+    if(value.length > start){
+      textMap.push(value.slice(start, value.length));
     }
     
     tokens.textMap = textMap;
@@ -1459,7 +1470,7 @@ setPrefix('a-');
     //局部模板. {{> anotherant}}
   , function(vm, token) {
       var pName, ant, opts, node;
-      if(token.type === 'text' && pertialReg.test(token.path)){
+      if(token.nodeName === '#text' && pertialReg.test(token.path)){
         pName = token.path.replace(pertialReg, '');
         ant = vm.$root.$ant;
         opts = ant.options;
@@ -1659,16 +1670,15 @@ setPrefix('a-');
         , pos = token.position
         , node = token.node
         , el = token.el
-        , type = token.type
         , textMap = token.textMap
-        , attrName = token.nodeName
+        , nodeName = token.nodeName
         , isAttrNameTpl = isToken(node.nodeName)
         , val
         ;
       if(newVal + '' !== textMap[pos] + '') {
         
         //模板内容被外部程序修改
-        if((isAttrNameTpl ? attrName : node.nodeValue) !== textMap.join('') && token.escape) {
+        if((isAttrNameTpl ? nodeName : node.nodeValue) !== textMap.join('') && token.escape) {
           //什么都不做?
           console.warn('模板内容被修改!');
           return;
@@ -1677,7 +1687,7 @@ setPrefix('a-');
         textMap[pos] = newVal && (newVal + '');
         val = textMap.join('');
         
-        if(!token.escape && type === 'text') {
+        if(!token.escape && nodeName === '#text') {
           //没有转义的 HTML 代码
           var div = doc.createElement('div')
             , nodes
@@ -1704,15 +1714,23 @@ setPrefix('a-');
           if(!isAttrNameTpl){
             node.nodeValue = val;
           }
-          if(type !== 'text'){
+          if(nodeName !== '#text'){
+            if(token.isBinAttr){
+              if(newVal){
+                setAttr(el, nodeName, val)
+              }else{
+                el.removeAttribute(nodeName);
+                return;
+              }
+            }
             if(isAttrNameTpl){
-              if(attrName){
-                el.removeAttribute(attrName)
+              if(nodeName){
+                el.removeAttribute(nodeName)
               }
               val && setAttr(el, val, node.nodeValue);
               token.nodeName = val;
             }else{
-              setAttr(el, attrName, val);
+              setAttr(el, nodeName, val);
             }
           }
         }
