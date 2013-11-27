@@ -105,6 +105,8 @@ if (!Function.prototype.bind) {
       throw t;
   };
   
+  var noop = function() {};
+  
   var tokenize = function (code, prefix, suffix) {
       var c;                      // The current character.
       var from;                   // The index of the start of the token.
@@ -348,8 +350,26 @@ if (!Function.prototype.bind) {
       var tokens;
       var token_nr;
       var getter;
+      
       var path = '';
 
+      var init = function(fn) {
+        var locals = {
+          locals: {},
+          filters: {},
+          paths: {}
+        };
+        
+        fn = fn || noop;
+        
+        getter = function(value, type) {
+          if(!locals[type][value]){
+            fn(value, type);
+            locals[type][value] = true;
+          }
+        };
+      };
+      
       var itself = function () {
           return this;
       };
@@ -363,11 +383,18 @@ if (!Function.prototype.bind) {
         var type;
         if(!token || token.id !== '.'){
           if(token && token.id === '|'){
-            type = 'filter';
+            type = 'filters';
           }else{
-            type = 'name';
+            type = 'locals';
+            path = n.value;
           }
           getter(n.value, type);
+        }else{
+          path += '.' + n.value;
+        }
+        if( path && (!tokens[token_nr] ||tokens[token_nr].value !== '.' && tokens[token_nr].value !== '[')){
+          getter(path, 'paths');
+          path = '';
         }
         return n;
       };
@@ -395,6 +422,9 @@ if (!Function.prototype.bind) {
           } else if (a === "string" || a ===  "number") {
               o = symbol_table["(literal)"];
               a = "literal";
+              if(path){
+                path += '.' + v;
+              }
           } else {
               error("Unexpected token.", t);
           }
@@ -506,7 +536,8 @@ if (!Function.prototype.bind) {
 
       symbol(".").nud = function () {
           this.arity = "this";
-          getter('.')
+          getter('.', 'locals');
+          getter('.', 'paths');
           return this;
       };
       // symbol("this").nud = function () {
@@ -560,6 +591,10 @@ if (!Function.prototype.bind) {
           this.second = expression(0);
           this.arity = "binary";
           advance("]");
+          if(path && token !== '.' && token !== '['){
+            getter(path, 'paths');
+            path = '';
+          }
           return this;
       });
 
@@ -670,7 +705,7 @@ if (!Function.prototype.bind) {
       return function (source, fn) {
           tokens = tokenize(source, '=<>!+-*&|/%^', '=<>&|');
           token_nr = 0;
-          getter = typeof fn === 'function' ? fn : function () {};
+          init(fn);
           advance();
           var s = expression(0);
           advance("(end)");
@@ -1665,11 +1700,7 @@ setPrefix('a-');
     var that = this;
       
     this._ast = parser.parse(path, function(key, type) {
-      if(type === 'filter'){
-        that.filters.push(key);
-      }else{
-        that.keys.push(key);
-      }
+      that[type].push(key);
     });
   };
   
@@ -1677,21 +1708,22 @@ setPrefix('a-');
     this.token = token;
     this.relativeVm = relativeVm;
     this.ant = relativeVm.$root.$ant;
-    this.keys = [];
+    this.locals = [];
     this.filters = [];
+    this.paths = [];
     
     token.path && parse.call(this, token.path);
     this.el = token.el;
     
-    for(var i = 0, l = this.keys.length; i < l; i++){
-      relativeVm.$getChild(this.keys[i]).$watchers.push(this);
+    for(var i = 0, l = this.paths.length; i < l; i++){
+      relativeVm.$getChild(this.paths[i]).$watchers.push(this);
     }
     
     this.val = null;
     this.fn = function() {
       var vals = {}, key;
-      for(var i = 0, l = this.keys.length; i < l; i++){
-        key = this.keys[i];
+      for(var i = 0, l = this.locals.length; i < l; i++){
+        key = this.locals[i];
         if(key === '.'){
           vals = relativeVm.$getData();
         }else{
@@ -1712,7 +1744,7 @@ setPrefix('a-');
     //this.state = Watcher.STATE_READY
     
     //When there is no variable in a binding, evaluate it immediately.
-    if(!this.keys.length) {
+    if(!this.locals.length) {
       this.fn();
     }
   }
@@ -1775,7 +1807,7 @@ setPrefix('a-');
           if(nodeName !== '#text'){
             if(token.isBinAttr){
               if(newVal){
-                setAttr(el, nodeName, val)
+                setAttr(el, nodeName, val);
               }else{
                 el.removeAttribute(nodeName);
                 return;
@@ -1783,7 +1815,7 @@ setPrefix('a-');
             }
             if(isAttrNameTpl){
               if(nodeName){
-                el.removeAttribute(nodeName)
+                el.removeAttribute(nodeName);
               }
               val && setAttr(el, val, node.nodeValue);
               token.nodeName = val;
@@ -2019,7 +2051,7 @@ setPrefix('a-');
       this.relateEl = relateEl;
       
       this.els = [];
-      this.vm = relativeVm.$getChild(this.keys[0]);
+      this.vm = relativeVm.$getChild(this.locals[0]);
       
       if(type === antAttr.IF){
         //if 属性不用切换作用域

@@ -875,11 +875,7 @@ setPrefix('a-');
     var that = this;
       
     this._ast = parser.parse(path, function(key, type) {
-      if(type === 'filter'){
-        that.filters.push(key);
-      }else{
-        that.keys.push(key);
-      }
+      that[type].push(key);
     });
   };
   
@@ -887,21 +883,22 @@ setPrefix('a-');
     this.token = token;
     this.relativeVm = relativeVm;
     this.ant = relativeVm.$root.$ant;
-    this.keys = [];
+    this.locals = [];
     this.filters = [];
+    this.paths = [];
     
     token.path && parse.call(this, token.path);
     this.el = token.el;
     
-    for(var i = 0, l = this.keys.length; i < l; i++){
-      relativeVm.$getChild(this.keys[i]).$watchers.push(this);
+    for(var i = 0, l = this.paths.length; i < l; i++){
+      relativeVm.$getChild(this.paths[i]).$watchers.push(this);
     }
     
     this.val = null;
     this.fn = function() {
       var vals = {}, key;
-      for(var i = 0, l = this.keys.length; i < l; i++){
-        key = this.keys[i];
+      for(var i = 0, l = this.locals.length; i < l; i++){
+        key = this.locals[i];
         if(key === '.'){
           vals = relativeVm.$getData();
         }else{
@@ -922,7 +919,7 @@ setPrefix('a-');
     //this.state = Watcher.STATE_READY
     
     //When there is no variable in a binding, evaluate it immediately.
-    if(!this.keys.length) {
+    if(!this.locals.length) {
       this.fn();
     }
   }
@@ -985,7 +982,7 @@ setPrefix('a-');
           if(nodeName !== '#text'){
             if(token.isBinAttr){
               if(newVal){
-                setAttr(el, nodeName, val)
+                setAttr(el, nodeName, val);
               }else{
                 el.removeAttribute(nodeName);
                 return;
@@ -993,7 +990,7 @@ setPrefix('a-');
             }
             if(isAttrNameTpl){
               if(nodeName){
-                el.removeAttribute(nodeName)
+                el.removeAttribute(nodeName);
               }
               val && setAttr(el, val, node.nodeValue);
               token.nodeName = val;
@@ -1229,7 +1226,7 @@ setPrefix('a-');
       this.relateEl = relateEl;
       
       this.els = [];
-      this.vm = relativeVm.$getChild(this.keys[0]);
+      this.vm = relativeVm.$getChild(this.locals[0]);
       
       if(type === antAttr.IF){
         //if 属性不用切换作用域

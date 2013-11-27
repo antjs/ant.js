@@ -125,9 +125,19 @@ describe('expression 表达式', function() {
   }
 });
 
-describe('filters', function() {
+describe('locals', function() {
   it('23 | filter:abc', function() {
-    var tree = parse('23 | filter');
-    ;
+    var locals = {
+      locals: {a: 1, b: 1, c:1}
+    , filters: {filter: 1, fi: 1}
+    , paths: {'a.b': 1, 'b.c': 1, b: 1, 'a.bc': 1, 'c.0': 1}
+    };
+    var tree = parse('a.b + b["c"] * b | filter:a.bc |fi:[1]:c[0]', function(val, type) {
+      expect(locals[type][val]).to.be.ok();
+      delete locals[type][val];
+    });
+    expect(Object.keys(locals.locals).length).to.be(0);
+    expect(Object.keys(locals.filters).length).to.be(0);
+    expect(Object.keys(locals.paths).length).to.be(0);
   })
 });

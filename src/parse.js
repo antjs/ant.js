@@ -16,6 +16,8 @@ define(function(){
       throw t;
   };
   
+  var noop = function() {};
+  
   var tokenize = function (code, prefix, suffix) {
       var c;                      // The current character.
       var from;                   // The index of the start of the token.
@@ -259,8 +261,26 @@ define(function(){
       var tokens;
       var token_nr;
       var getter;
+      
       var path = '';
 
+      var init = function(fn) {
+        var locals = {
+          locals: {},
+          filters: {},
+          paths: {}
+        };
+        
+        fn = fn || noop;
+        
+        getter = function(value, type) {
+          if(!locals[type][value]){
+            fn(value, type);
+            locals[type][value] = true;
+          }
+        };
+      };
+      
       var itself = function () {
           return this;
       };
@@ -274,11 +294,18 @@ define(function(){
         var type;
         if(!token || token.id !== '.'){
           if(token && token.id === '|'){
-            type = 'filter';
+            type = 'filters';
           }else{
-            type = 'name';
+            type = 'locals';
+            path = n.value;
           }
           getter(n.value, type);
+        }else{
+          path += '.' + n.value;
+        }
+        if( path && (!tokens[token_nr] ||tokens[token_nr].value !== '.' && tokens[token_nr].value !== '[')){
+          getter(path, 'paths');
+          path = '';
         }
         return n;
       };
@@ -306,6 +333,9 @@ define(function(){
           } else if (a === "string" || a ===  "number") {
               o = symbol_table["(literal)"];
               a = "literal";
+              if(path){
+                path += '.' + v;
+              }
           } else {
               error("Unexpected token.", t);
           }
@@ -417,7 +447,8 @@ define(function(){
 
       symbol(".").nud = function () {
           this.arity = "this";
-          getter('.')
+          getter('.', 'locals');
+          getter('.', 'paths');
           return this;
       };
       // symbol("this").nud = function () {
@@ -471,6 +502,10 @@ define(function(){
           this.second = expression(0);
           this.arity = "binary";
           advance("]");
+          if(path && token !== '.' && token !== '['){
+            getter(path, 'paths');
+            path = '';
+          }
           return this;
       });
 
@@ -581,7 +616,7 @@ define(function(){
       return function (source, fn) {
           tokens = tokenize(source, '=<>!+-*&|/%^', '=<>&|');
           token_nr = 0;
-          getter = typeof fn === 'function' ? fn : function () {};
+          init(fn);
           advance();
           var s = expression(0);
           advance("(end)");

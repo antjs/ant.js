@@ -4,9 +4,7 @@
 	<meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>Ant.js</title>
-  <!--[if lt IE 9]>
   <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
-  <![endif]-->
   <script type="text/javascript" src="../dist/ant.js"></script>
   <style>
     fieldset{
@@ -33,7 +31,7 @@
     <form name=form0 action="test" method=get>
       <fieldset>
         <legend>普通文本框: </legend>
-        <label>文本框: <input {{password}} type="text" a-model={{text}} /> </label> <input type="text" value={{text}} />
+        <label>文本框: <input {{password}}={{password}} type="text" a-model={{text}} /> </label> <input type="text" value={{text}} />
         <label>密码框: <input disabled?={{checkbox}} type="password" a-model={{password}} /> </label>
         <label>多行文本: <textarea name=ta a-model={{textarea}}>&ltem&gtwho is your daddy&lt/em&gt</textarea></label>
       </fieldset>
