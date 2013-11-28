@@ -175,7 +175,7 @@ setPrefix('a-');
      */
     this.isRendered = false;
     
-    //TODO
+    //TODO custom binding
     this.bindings = (this.bindings || []).concat(opts.bindings || []);
 
     this._partials = {};
@@ -395,9 +395,10 @@ setPrefix('a-');
   , watch: function(keyPath, callback) {
       var that = this
         , vm = this._vm.$getChild(keyPath)
-        , watcher = new Watcher(vm, {})
-      ;
-      watcher.callback = callback;
+        ;
+        
+      new Watcher(vm, {}, callback);
+      return this;
     }
   , unwatch: function(keyPath, callback) {
     
@@ -407,9 +408,9 @@ setPrefix('a-');
   , setFilter: function(name, filter) {
       this._filters[name] = filter.bind(this);
     }
-  // , getFilter: function(name) {
-      // return this._filters[name]
-    // }
+  , getFilter: function(name) {
+      return this._filters[name]
+    }
   , removeFilter: function(name) {
       delete this._filters[name];
     }
@@ -507,9 +508,14 @@ setPrefix('a-');
   }
   
   function checkBinding(vm, node, el) {
-    if(isToken(node.nodeValue) || isToken(node.nodeName)){
-      var tokens = parseTokens(node, el)
+    var hasTokenName = hasToken(node.nodeName)
+      , hasTokenValue = hasToken(node.nodeValue)
+      ;
+      
+    if(hasTokenValue || hasTokenName){
+      var tokens = parseTokens(node, el, hasTokenName)
         , textMap = tokens.textMap
+        , valTokens
         ;
       //如果绑定内容是在文本中, 则将其分割成单独的文本节点
       if(node.nodeType === NODETYPE.TEXT && textMap.length > 1){
@@ -520,6 +526,14 @@ setPrefix('a-');
         });
         el.removeChild(node);
       }else{
+        //<tag {{attr}}={{value}} />
+        if(hasTokenName && hasTokenValue){
+          valTokens = parseTokens(node, el);
+          valTokens.forEach(function(token){
+            token.baseTokens = tokens;
+            addWatcher(vm, token);
+          });
+        }
         tokens.forEach(function(token){
           addWatcher(vm, token);
         });
@@ -647,19 +661,19 @@ setPrefix('a-');
   var attrPostReg = /\?$/;
   
   //字符串中是否包含模板占位符标记
-  function isToken(str) {
+  function hasToken(str) {
     tokenReg.lastIndex = 0;
     return str && tokenReg.test(str);
   }
   
-  function parseTokens(node, el) {
+  function parseTokens(node, el, parseNodeName) {
     var tokens = []
-      , val
       , textMap = []
       , start = 0
       , value = node.nodeValue
       , nodeName = node.nodeName
-      , isBinAttr
+      , isBinAttr, isAttrName
+      , val, token
       ;
     
     if(node.nodeType === NODETYPE.ATTR){
@@ -672,8 +686,10 @@ setPrefix('a-');
         nodeName = nodeName.slice(0, nodeName.length - 1);
         isBinAttr = true;
       }
-      if(isToken(nodeName)){
+      
+      if(parseNodeName){
         value = nodeName;//属性名
+        isAttrName = true;
       }
     }
     
@@ -684,7 +700,7 @@ setPrefix('a-');
         textMap.push(value.slice(start, tokenReg.lastIndex - val[0].length));
       }
       
-      tokens.push({
+      token = {
         escape: !val[2]
       , path: (val[2] || val[1]).trim()
       , position: textMap.length
@@ -692,8 +708,11 @@ setPrefix('a-');
       , node: node
       , nodeName: nodeName
       , textMap: textMap
-      , isBinAttr: isBinAttr
-      });
+      };
+      if(isBinAttr){ token.isBinAttr = true; }
+      if(isAttrName){ token.isAttrName = true; }
+      
+      tokens.push(token);
       
       //一个引用类型(数组)作为节点对象的文本图, 这样当某一个引用改变了一个值后, 其他引用取得的值都会同时更新
       textMap.push(val[0]);
@@ -729,7 +748,7 @@ setPrefix('a-');
   
   var pertialReg = /^>\s*(?=.+)/;
   
-  //core bindings
+  //buid in bindings
   var baseBindings = [
     function(vm, token){
       return new Watcher(vm, token);
@@ -847,7 +866,7 @@ setPrefix('a-');
                 }
               };
             }
-            isSetDefaut = isSetDefaut && !isToken(el[value]);
+            isSetDefaut = isSetDefaut && !hasToken(el[value]);
           break;
         }
         
@@ -879,21 +898,14 @@ setPrefix('a-');
     });
   };
   
-  function Watcher(relativeVm, token) {
+  function Watcher(relativeVm, token, callback) {
     this.token = token;
     this.relativeVm = relativeVm;
     this.ant = relativeVm.$root.$ant;
     this.locals = [];
     this.filters = [];
     this.paths = [];
-    
-    token.path && parse.call(this, token.path);
     this.el = token.el;
-    
-    for(var i = 0, l = this.paths.length; i < l; i++){
-      relativeVm.$getChild(this.paths[i]).$watchers.push(this);
-    }
-    
     this.val = null;
     this.fn = function() {
       var vals = {}, key;
@@ -916,6 +928,17 @@ setPrefix('a-');
       }
       //this.state = Watcher.STATE_CALLED;
     };
+    
+    if(callback){
+      this.callback = callback;
+    }
+    
+    token.path && parse.call(this, token.path);
+    
+    for(var i = 0, l = this.paths.length; i < l; i++){
+      relativeVm.$getChild(this.paths[i]).$watchers.push(this);
+    }
+    
     //this.state = Watcher.STATE_READY
     
     //When there is no variable in a binding, evaluate it immediately.
@@ -930,6 +953,7 @@ setPrefix('a-');
   }, Class);
   
   extend(Watcher.prototype, {
+    //update the DOMs
     callback: function(newVal) {
       var token = this.token
         , pos = token.position
@@ -937,66 +961,62 @@ setPrefix('a-');
         , el = token.el
         , textMap = token.textMap
         , nodeName = token.nodeName
-        , isAttrNameTpl = isToken(node.nodeName)
+        , isAttrName = token.isAttrName
         , val
         ;
       if(newVal + '' !== textMap[pos] + '') {
         
-        //模板内容被外部程序修改
-        if((isAttrNameTpl ? nodeName : node.nodeValue) !== textMap.join('') && token.escape) {
-          //什么都不做?
-          console.warn('模板内容被修改!');
-          return;
-        }
-
         textMap[pos] = newVal && (newVal + '');
         val = textMap.join('');
         
-        if(!token.escape && nodeName === '#text') {
-          //没有转义的 HTML 代码
-          var div = doc.createElement('div')
-            , nodes
-            ;
-          
-          token.unescapeNodes = token.unescapeNodes || [];
-          
-          div.innerHTML = val;
-          nodes = div.childNodes;
-          
-          token.unescapeNodes.forEach(function(_node) {
-            _node.parentNode && _node.parentNode.removeChild(_node);
-          });
-          token.unescapeNodes = [];
-          for(var i = 0, l = nodes.length; i < l; i++){
-            token.unescapeNodes.push(nodes[i]);
-            node.parentNode.insertBefore(nodes[i], node);
-            i--;
-            l--;
-          }
-          
-          node.nodeValue = '';
-        }else{
-          if(!isAttrNameTpl){
+        if(nodeName === '#text') {
+          if(token.escape){
             node.nodeValue = val;
+          }else{
+            var div = doc.createElement('div')
+              , nodes
+              ;
+            
+            token.unescapeNodes = token.unescapeNodes || [];
+            
+            div.innerHTML = val;
+            nodes = div.childNodes;
+            
+            token.unescapeNodes.forEach(function(_node) {
+              _node.parentNode && _node.parentNode.removeChild(_node);
+            });
+            token.unescapeNodes = [];
+            for(var i = 0, l = nodes.length; i < l; i++){
+              token.unescapeNodes.push(nodes[i]);
+              node.parentNode.insertBefore(nodes[i], node);
+              i--;
+              l--;
+            }
+            
+            node.nodeValue = '';
           }
-          if(nodeName !== '#text'){
-            if(token.isBinAttr){
-              if(newVal){
-                setAttr(el, nodeName, val);
-              }else{
-                el.removeAttribute(nodeName);
-                return;
-              }
-            }
-            if(isAttrNameTpl){
-              if(nodeName){
-                el.removeAttribute(nodeName);
-              }
-              val && setAttr(el, val, node.nodeValue);
-              token.nodeName = val;
-            }else{
+        }else{
+          if(token.isBinAttr){
+            if(newVal){
               setAttr(el, nodeName, val);
+            }else{
+              el.removeAttribute(nodeName);
+              return;
             }
+          }
+          if(isAttrName){
+            if(nodeName){
+              el.removeAttribute(nodeName);
+            }
+            val && setAttr(el, val, node.nodeValue);
+            token.node = el.getAttributeNode(val) || node;
+            token.nodeName = val;
+          }else{
+            if(token.baseTokens){
+              node = token.node = el.getAttributeNode(token.baseTokens.textMap.join('')) || node;
+            }
+            node.nodeValue = val;
+            setAttr(el, nodeName, val);
           }
         }
       }
@@ -1008,7 +1028,7 @@ setPrefix('a-');
       
       for(var i = 0, l = filters.length; i < l; i++){
         if(!ant._filters[filters[i]]){
-          throw new Error('Filter: ' + filters[i] + ' not found!');
+          console.error('Filter: ' + filters[i] + ' not found!');
         }
       }
       
