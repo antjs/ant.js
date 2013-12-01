@@ -1497,21 +1497,22 @@ setPrefix('a-');
       , start = 0
       , value = node.nodeValue
       , nodeName = node.nodeName
-      , isBinAttr, isAttrName
+      , condiAttr, isAttrName
       , val, token
       ;
     
     if(node.nodeType === NODETYPE.ATTR){
-      //attribute with prefix
+      //attribute with prefix.
       if(nodeName.indexOf(prefix) === 0 && !isAntAttr(nodeName)){
         nodeName = node.nodeName.slice(prefix.length);
       }
-      //attribute with postfix
-      if(attrPostReg.test(nodeName)){
-        nodeName = nodeName.slice(0, nodeName.length - 1);
-        isBinAttr = true;
-      }
       
+      if(attrPostReg.test(nodeName)){
+        //attribute with postfix
+        //attr?={{condition}}
+        nodeName = nodeName.slice(0, nodeName.length - 1);
+        condiAttr = true;
+      }
       if(parseNodeName){
         value = nodeName;//属性名
         isAttrName = true;
@@ -1534,7 +1535,7 @@ setPrefix('a-');
       , nodeName: nodeName
       , textMap: textMap
       };
-      if(isBinAttr){ token.isBinAttr = true; }
+      if(condiAttr){ token.condiAttr = true; }
       if(isAttrName){ token.isAttrName = true; }
       
       tokens.push(token);
@@ -1748,7 +1749,7 @@ setPrefix('a-');
           this.callback(newVal, this.val);
           this.val = newVal;
         }catch(e){
-          console.warn(e);
+          console.error(e);
         }
       }
       //this.state = Watcher.STATE_CALLED;
@@ -1821,28 +1822,42 @@ setPrefix('a-');
             node.nodeValue = '';
           }
         }else{
-          if(token.isBinAttr){
+          //{{}} token in attribute value, which nodeName is dynamic
+          if(token.baseTokens){
+            nodeName = token.nodeName = token.baseTokens.textMap.join('');
+            node = token.node = el.getAttributeNode(nodeName) || node;
+          }
+
+          if(!isAttrName){
+            node.nodeValue = val;
+          }
+
+          //conditional attribute just only consider attr's value
+          if(token.condiAttr && !isAttrName){
             if(newVal){
-              setAttr(el, nodeName, val);
+             // delete node._hide_;
             }else{
               el.removeAttribute(nodeName);
+             // node._hide_ = true;
               return;
             }
           }
-          if(isAttrName){
-            if(nodeName){
-              el.removeAttribute(nodeName);
+          //if(!node._hide_){
+            if(isAttrName){
+              if(nodeName){
+                el.removeAttribute(nodeName);
+                el[nodeName] = typeof el[nodeName] === 'boolean' ? false : '';
+              }
+              val && setAttr(el, val, node.nodeValue);
+              token.nodeName = val;
+            }else{
+              setAttr(el, nodeName, val);
+              //node.nodeValue = val;
             }
-            val && setAttr(el, val, node.nodeValue);
             token.node = el.getAttributeNode(val) || node;
-            token.nodeName = val;
-          }else{
-            if(token.baseTokens){
-              node = token.node = el.getAttributeNode(token.baseTokens.textMap.join('')) || node;
-            }
-            node.nodeValue = val;
-            setAttr(el, nodeName, val);
-          }
+          // }else{
+          //   console.log('skip..')
+          // }
         }
       }
     }
@@ -1870,7 +1885,7 @@ setPrefix('a-');
   //这些通过 `el[attr] = value` 设置的属性却能够通过 `removeAttribute` 清除.
   function setAttr(el, attr, val){
     try{
-      if(((attr in el) || attr === 'class')&& isIE){
+      if(((attr in el) || attr === 'class')){
         if(attr === 'style' && el.style.setAttribute){
           el.style.setAttribute('cssText', val);
         }else if(attr === 'class'){
@@ -1878,10 +1893,12 @@ setPrefix('a-');
         }else{
           el[attr] = typeof el[attr] === 'boolean' ? true : val;
         }
-      }else{
-        el.setAttribute(attr, val);
       }
     }catch(e){}
+    try{
+      //chrome setattribute with `{{}}` will throw an error
+      el.setAttribute(attr, val);
+    }catch(e){ console.warn(e) }
   }
   
   
