@@ -8,4 +8,16 @@ ant.js
 
 Ant.js 为 HTML 提供了一种轻量简便的数据绑定方式.
 
-更多的内容请移步至项目主页: http://antjs.org
+项目主页: http://antjs.org
+
+
+### Build
+
+1. `git clone https://github.com/antjs/ant.js.git`
+2. `cd ant.js && npm install`
+3. `grunt build`
+
+### Test
+
+1. 用浏览器打开 `test\index.html` 进行浏览器端测试
+2. 运行 `grunt test` 或者 `npm run-script mocha` 进行 nodeJs 端测试
