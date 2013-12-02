@@ -49,11 +49,18 @@ module.exports = function(grunt) {
           run: true
         }
       }
+    },
+    watch: {
+      scripts: {
+        files: ['src/*.js'],
+        tasks: ['build', 'test']
+      }
     }
   });
 
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-mocha');
 
   grunt.registerTask('site', '生成 HTML', function() {

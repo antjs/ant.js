@@ -1026,9 +1026,10 @@ setPrefix('a-');
               token.nodeName = val;
             }else{
               setAttr(el, nodeName, val);
-              //node.nodeValue = val;
             }
-            token.node = el.getAttributeNode(val) || node;
+            if(val){
+              token.node = el.getAttributeNode(val) || node;
+            }
           // }else{
           //   console.log('skip..')
           // }

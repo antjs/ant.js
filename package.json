@@ -34,6 +34,7 @@
     "expect.js": "~0.2.0",
     "grunt-mocha": "~0.4.1",
     "pygmentize-bundled": "~2.1.0",
-    "requirejs": "~2.1.9"
+    "requirejs": "~2.1.9",
+    "grunt-contrib-watch": "~0.5.3"
   }
 }
