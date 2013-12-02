@@ -24,7 +24,7 @@ module.exports = function(grunt) {
     uglify: {
       all: {
         options: {
-          banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> all */\n'
+          banner: '/*! <%= pkg.name %> all - <%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %> all */\n'
         },
         files: {
           'dist/ant.all.min.js': ['dist/ant.all.js']
@@ -32,7 +32,7 @@ module.exports = function(grunt) {
       },
       core: {
         options: {
-          banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
+          banner: '/*! <%= pkg.name %> - <%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
         },
         files: {
           'dist/ant.min.js': ['dist/ant.js']
@@ -76,6 +76,8 @@ module.exports = function(grunt) {
   });
   
   
+  var version = grunt.config('pkg.version');
+  
   var name = 'ant'
     , config = {
         baseUrl: './src'
@@ -93,7 +95,8 @@ module.exports = function(grunt) {
           }
           contents = contents
             .replace(/(?:(?:var)?\s*[\w-]+\s*)?[^.]\s*require\s*\(\s*["']([^'"\s]+)["']\s*\);?\n?/g, '')
-            .replace(/define\([^{]*?{/, "").replace(/\}\);[^}\w]*$/, '');
+            .replace(/define\([^{]*?{/, "").replace(/\}\);[^}\w]*$/, '')
+            .replace(/%VERSION/g, version);
           return contents;
         }
       }
@@ -101,7 +104,6 @@ module.exports = function(grunt) {
       
   grunt.registerTask('build', 'concatenate source', function(){
     var done = this.async()
-      , version = grunt.config('pkg.version')
       ;
       
     requirejs.optimize(config, function(res) {
