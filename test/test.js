@@ -33,6 +33,71 @@ describe('接口可用性', function() {
   });
 });
 
+describe('Ant.js 的继承', function(){
+  var Bproto = {
+    defaults: {
+      data: {text: 'abc', deep: { path: 'asdfasdf' }}
+    , events: {'render': function(){} }
+    , filters: {}
+    }
+  };
+  var Cproto = {
+    defaults: {
+      data: { greed: 'good' }
+    , filters: { big: function(str){ return str.big() } }
+    }
+  };
+  var btpl = '{{text|honey}}';
+  var ctpl = '{{{greed|big}}}'
+
+  var Bee = Ant.extend(Bproto);
+  var bee = new Bee(btpl, {
+    filters: { honey: function(str){ return str + 'so many'} }
+  , events: { 'update': function() {  } }
+  });
+  var Cicada = Bee.extend(Cproto);
+  var cicada = new Cicada(ctpl, {data:{ashin: 'ness'}});
+
+  it('Ant.extend prototype chain', function() {
+    expect(bee instanceof Ant).to.be.ok();
+    expect(cicada instanceof Ant).to.be.ok();
+    expect(cicada instanceof Bee).to.be.ok();
+  });
+
+  it('__super__', function() {
+    expect(Bee.__super__).to.be(Ant.prototype);
+    expect(Cicada.__super__).to.be(Bee.prototype);
+  });
+
+  it('default data', function() {
+    expect(bee.data.text).to.be(Bproto.defaults.data.text);
+    expect(bee.data.greed).to.be(undefined);
+    expect(cicada.data.text).to.be(undefined);
+    expect(Cicada.prototype.defaults.data.ashin).to.be(undefined);
+    expect(bee.data.deep.path).to.be(Bproto.defaults.data.deep.path);
+  });
+
+  it('default deeppath data', function() {
+    expect(bee.data.deep).to.not.be(Bproto.defaults.data.deep);
+    bee.set('deep.path', '123');
+    expect(Bproto.defaults.data.deep.path).to.not.be('123');
+  });
+
+  it('no opt.data, no auto render', function() {
+    expect(bee.el.innerHTML).to.not.be(btpl);
+    expect(cicada.el.innerHTML).to.not.be(ctpl);
+  });
+
+  it('default filters', function() {
+    expect(bee.filters.big).to.be(undefined);
+    expect(bee.filters.honey).to.be.a('function');
+    expect(Bproto.defaults.filters.honey).to.be(undefined);
+    //expect(cicada.filters.big).to.be(Cproto.defaults.filters.big); //bind
+    expect(cicada.el.innerHTML).to.be(Cproto.defaults.filters.big(cicada.data.greed));
+    expect(bee.el.innerHTML).to.be(bee.filters.honey(bee.data.text));
+  });
+});
+
 describe('实例接口', function(){
   var tpl = '{{person}} - {{person.name}}';
   var ant = new Ant(tpl);
@@ -177,7 +242,7 @@ describe('实例接口', function(){
     // });
     it('ant.removeFilter', function() {
       ant.removeFilter('twice');
-      expect(ant._filters['twice']).to.be(undefined);
+      expect(ant.filters['twice']).to.be(undefined);
     });
   });
 });

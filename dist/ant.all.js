@@ -897,26 +897,18 @@ var Class = {
    * 如: `var Car = Ant.extend({drive: function(){}}); new Car();`
    * @param {Object} [protoProps] 子构造函数的扩展原型对象
    * @param {Object} [staticProps] 子构造函数的扩展静态属性
-   * @param {Function} [constructor] 子构造函数
    * @return {Function} 子构造函数
    */
-  extend: function (protoProps, staticProps, constructor) {
-    if(isFunction(staticProps)){
-      constructor = staticProps;
-      staticProps = {};
-    }
-    if(isFunction(protoProps)){
-      constructor = protoProps;
-      protoProps = {};
-    }
+  extend: function (protoProps, staticProps) {
+    protoProps = protoProps || {};
+    var constructor = protoProps.hasOwnProperty('constructor') ? protoProps.constructor : function(){ return sup.apply(this, arguments); }
     var sup = this;
-    constructor = constructor || function(){ return sup.apply(this, arguments); };
     var Fn = function() { this.constructor = constructor; };
     
     Fn.prototype = sup.prototype;
     constructor.prototype = new Fn();
-    extend(constructor.prototype, protoProps, {__super__: sup});
-    extend(constructor, sup, staticProps);
+    extend(constructor.prototype, protoProps);
+    extend(constructor, sup, staticProps, {__super__: sup.prototype});
     
     return constructor;
   }
@@ -960,7 +952,12 @@ setPrefix('a-');
   function Ant(tpl, opts) {
     opts = opts || {};
     var el
-      , data = opts.data || {}
+      , defaults = this.defaults || {}
+      ;
+
+    opts = modelExtend(modelExtend({}, defaults), opts);
+
+    var data = opts.data || {}
       , events = opts.events || {}
       , filters = opts.filters || {}
       ;
@@ -1003,8 +1000,8 @@ setPrefix('a-');
     //TODO custom binding
     this.bindings = (this.bindings || []).concat(opts.bindings || []);
 
-    this._partials = {};
-    this._filters = {};
+    this.partials = {};
+    this.filters = {};
     
     for(var event in events) {
       this.on(event, events[event]);
@@ -1173,7 +1170,7 @@ setPrefix('a-');
   , setPartial: function(partialInfo) {
       if(!partialInfo){ return; }
       
-      partialInfo = extend({}, this._partials[partialInfo.name], partialInfo);
+      partialInfo = extend({}, this.partials[partialInfo.name], partialInfo);
       
       var els, _els, vm
         , name = partialInfo.name
@@ -1182,7 +1179,7 @@ setPrefix('a-');
         , path = partialInfo.path || ''
         ;
       if(name){
-        this._partials[name] = partialInfo;
+        this.partials[name] = partialInfo;
       }
       if(partial) {
         vm = this._vm.$getChild(path);
@@ -1231,13 +1228,13 @@ setPrefix('a-');
     
     
   , setFilter: function(name, filter) {
-      this._filters[name] = filter.bind(this);
+      this.filters[name] = filter.bind(this);
     }
   , getFilter: function(name) {
-      return this._filters[name]
+      return this.filters[name]
     }
   , removeFilter: function(name) {
-      delete this._filters[name];
+      delete this.filters[name];
     }
   });
   
@@ -1851,9 +1848,10 @@ setPrefix('a-');
               token.nodeName = val;
             }else{
               setAttr(el, nodeName, val);
-              //node.nodeValue = val;
             }
-            token.node = el.getAttributeNode(val) || node;
+            if(val){
+              token.node = el.getAttributeNode(val) || node;
+            }
           // }else{
           //   console.log('skip..')
           // }
@@ -1866,13 +1864,13 @@ setPrefix('a-');
         ;
       
       for(var i = 0, l = filters.length; i < l; i++){
-        if(!ant._filters[filters[i]]){
+        if(!ant.filters[filters[i]]){
           console.error('Filter: ' + filters[i] + ' not found!');
         }
       }
       
       try{
-        val = parser.eval(this._ast, vals, ant._filters);
+        val = parser.eval(this._ast, vals, ant.filters);
       }catch(e){
         val = '';
       }
@@ -2068,34 +2066,34 @@ setPrefix('a-');
         //TODO 进行精确高还原的排序?
         this.callback(this.val)
       }
-    }
-  , function (relativeVm, token){
-      //文档参照节点. 
-      var relateEl = doc.createTextNode('')
-        , el = token.el
-        , type = token.nodeName
-        ;
+    , constructor: function (relativeVm, token){
+        //文档参照节点. 
+        var relateEl = doc.createTextNode('')
+          , el = token.el
+          , type = token.nodeName
+          ;
+          
+        Watcher.apply(this, arguments);
         
-      this.__super__.apply(this, arguments);
-      
-      this.path = token.path;
-      
-      el.removeAttribute(type);
-      
-      this.type = type;
-      
-      this.relateEl = relateEl;
-      
-      this.els = [];
-      this.vm = relativeVm.$getChild(this.locals[0]);
-      
-      if(type === antAttr.IF){
-        //if 属性不用切换作用域
-        travelEl(this.el, relativeVm);
+        this.path = token.path;
+        
+        el.removeAttribute(type);
+        
+        this.type = type;
+        
+        this.relateEl = relateEl;
+        
+        this.els = [];
+        this.vm = relativeVm.$getChild(this.locals[0]);
+        
+        if(type === antAttr.IF){
+          //if 属性不用切换作用域
+          travelEl(this.el, relativeVm);
+        }
+        
+        el.parentNode.insertBefore(relateEl, el);
+        el.parentNode.removeChild(el);
       }
-      
-      el.parentNode.insertBefore(relateEl, el);
-      el.parentNode.removeChild(el);
     }
   )
   
