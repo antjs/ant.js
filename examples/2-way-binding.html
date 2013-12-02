@@ -27,7 +27,7 @@
 </head>
 <body>
 	<div id=template>
-    <h1>Ant.js 的双向绑定: </h1>
+    <h1>Ant.js(V{{version}}) 的双向绑定: </h1>
     <form name=form0 action="test" method=get>
       <fieldset>
         <legend>普通文本框: </legend>
@@ -96,7 +96,7 @@ var ant;
 //一浏览器会刷新后会记住之前表单的内容. IE 浏览器会在 HTML 加载之后, onload 之前的某个时候为这些表单元素加上记住的内容.
 document.body.onload = function(){
   ant = new Ant(document.getElementById('template'), {
-    data: {test:2, select2: ['cicada', 'bee']}
+    data: {test:2, select2: ['cicada', 'bee'], version: Ant.version}
   , partials: {
       partial: '这里是子模板. {{textarea}}'
     }

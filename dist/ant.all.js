@@ -1846,7 +1846,6 @@ setPrefix('a-');
             if(isAttrName){
               if(nodeName){
                 el.removeAttribute(nodeName);
-                el[nodeName] = typeof el[nodeName] === 'boolean' ? false : '';
               }
               val && setAttr(el, val, node.nodeValue);
               token.nodeName = val;
@@ -2211,6 +2210,7 @@ setPrefix('a-');
   
   Ant._parse = parser.parse;
   Ant._eval = parser.eval;
+  Ant.version = '0.2.0-dev';
   return Ant;
 });;
 /**

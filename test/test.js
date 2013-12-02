@@ -259,7 +259,6 @@ describe('模板语法', function() {
         ant.data.list.sort();
         check(ant.el.getElementsByTagName('li'), ant.data.list);
         
-        //TODO
       });
       
       describe('.splice', function() {
@@ -414,7 +413,7 @@ describe('模板语法', function() {
       , html = '...<span>1</span><code>222</code>..'
       ;
     var ant = new Ant(tpl, {data: {unescape: html}});
-    expect(ant.el.innerHTML).to.be(tpl.replace(/{{{unescape}}}/, html));
+    expect(ant.el.innerHTML.toLowerCase()).to.be(tpl.replace(/{{{unescape}}}/, html).toLowerCase());
   });
   
   describe('子模板', function() {
@@ -524,7 +523,6 @@ describe('模板语法', function() {
       var ant = new Ant(getTpl(), {
         data: {title: 'Ant'}
       });
-      //doc.body.appendChild(ant.el);
       ant.setPartial({
         name: 'content'
       , content: content
@@ -532,28 +530,111 @@ describe('模板语法', function() {
       expect(getText(_$('p', ant.el)[0])).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
     })
   });
-  
-  describe('"a-" 前缀属性', function() {
-    var tpl = '<span data-test="{{test}}" a-style="width:{{width}}px" a-class="{{className}}"></span>'
-    it('带有 "a-" 前缀的非 ant 功能属性在渲染后, 将会被转成正常属性', function() {
-      var ant = new Ant(tpl, {
-            data: {
-              test: '测试'
-            , width: 10
-            , className: 'sun'
-            }
-          })
-        , el = (ant.el).children[0]
-        ;
-      
-      expect(el.getAttribute('a-style')).to.not.be.ok();
-      expect(el.getAttribute('style')).to.be.ok();
-      expect(el.getAttribute('a-class')).to.not.be.ok();
-      expect(el.className).to.be.ok();
-      expect(el.getAttribute('data-test')).to.be(ant.data.test);
-      expect(el.style.width).to.be(ant.data.width + 'px');
-      expect(el.className).to.be(ant.data.className);
+
+  describe('属性模板', function(){  
+    describe('普通属性及 "a-" 前缀属性', function() {
+      var tpl = '<span data-test="{{test}}" a-style="width:{{width}}px" a-class="{{className}}"></span>'
+      it('带有 "a-" 前缀的非 ant 功能属性在渲染后, 将会被转成正常属性', function() {
+        var ant = new Ant(tpl, {
+              data: {
+                test: '测试'
+              , width: 10
+              , className: 'sun'
+              }
+            })
+          , el = (ant.el).children[0]
+          ;
+        
+        expect(el.getAttribute('a-style')).to.not.be.ok();
+        expect(el.getAttribute('style')).to.be.ok();
+        expect(el.getAttribute('a-class')).to.not.be.ok();
+        expect(el.className).to.be.ok();
+        expect(el.getAttribute('data-test')).to.be(ant.data.test);
+        expect(el.style.width).to.be(ant.data.width + 'px');
+        expect(el.className).to.be(ant.data.className);
+      })
+    });
+
+    describe('属性名', function(){
+      it('独占属性 <span {{attr}}>{{text}}</span>', function(){
+        var tpl = '<span {{attr}}>{{text}}</span>'
+        var data = {attr: 'attr', text: 'test'};
+        var ant = new Ant(tpl, {
+          data: data
+        });
+        var el = (ant.el).children[0];
+
+        expect(el.getAttribute(ant.data.attr)).to.not.be(null);
+        expect(el.getAttribute('{{attr}}')).to.be(null);
+        expect(el.innerHTML).to.be(ant.data.text);
+
+        ant.set('attr', 'otherattr');
+
+        expect(el.getAttribute(ant.data.attr)).to.not.be(null);
+        expect(el.getAttribute('{{attr}}')).to.be(null);
+        expect(el.innerHTML).to.be(ant.data.text);
+      });
+
+      it('混合属性名 <span data-{{attr}}-attr>{{text}}</span>', function(){
+        var tpl = '<span data-{{attr}}-attr>{{text}}</span>'
+        var data = {attr: 'attr', text: 'test'};
+        var ant = new Ant(tpl, {
+          data: data
+        });
+        var el = (ant.el).children[0];
+
+        expect(el.getAttribute('data-' + ant.data.attr + '-attr')).to.not.be(null);
+        expect(el.getAttribute('data-{{attr}}-attr')).to.be(null);
+        expect(el.innerHTML).to.be(ant.data.text);
+
+        ant.set('attr', 'otherattr');
+
+        expect(el.getAttribute('data-' + ant.data.attr + '-attr')).to.not.be(null);
+        expect(el.getAttribute('data-{{attr}}-attr')).to.be(null);
+        expect(el.innerHTML).to.be(ant.data.text);
+      });
+
+      it('条件属性 <input disabled?={{condition}} />', function(){
+        var tpl = '<input disabled?={{condition}} />'
+        var ant = new Ant(tpl, {
+          data: {
+            condition: true
+          }
+        });
+
+        var el = (ant.el).children[0];
+
+        expect(el.getAttribute('disabled')).to.not.be(null);
+        expect(el.disabled).to.be.ok();
+
+        ant.set('condition', false);
+
+
+        expect(el.disabled).to.not.be.ok();
+        (function(){
+          this.oldIE ||expect(el.getAttributeNode('disabled')).to.be(null);
+        })();
+      });
+
+      it('模板标识同时存在于属性名及属性值中 <div data-{{attr}}={{val}}></div>', function(){
+        var tpl = '<div data-{{attr}}={{val}}></div>'
+        var data = {attr: 'value', val: 'abc'};
+        var ant = new Ant(tpl, {
+          data: data
+        });
+
+        var el = (ant.el).children[0];
+
+        expect(el.getAttribute('data-{{attr}}')).to.be(null);
+        expect(el.getAttribute('data-' + data.attr)).to.be(data.val);
+
+        var data2 = {attr: 'attttt', val: '8888888'};
+        ant.set(data2);
+        expect(el.getAttribute('data-' + data.attr)).to.be(null);        
+        expect(el.getAttribute('data-' + data2.attr)).to.be(data2.val);
+
+      });
     })
-  });
+  })
 
 });

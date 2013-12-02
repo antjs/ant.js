@@ -1,6 +1,6 @@
 {
   "name": "ant.js",
-  "version": "0.1.3",
+  "version": "0.2.0-dev",
   "description": "数据驱动 HTML 模板",
   "main": "dist/ant.js",
   "directories": {
