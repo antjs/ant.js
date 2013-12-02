@@ -25,7 +25,7 @@
       <li>» <a href="https://github.com/antjs/ant.js">Github 上的 ant.js</a></li>
       <!-- <li>» <a href="learn">学习 ant.js</a></li> -->
     </ul>
-    <ul class="sections"><li><h4><a href="#%E5%85%BC%E5%AE%B9%E6%80%A7%E5%92%8C%E4%BE%9D%E8%B5%96">兼容性和依赖</a></h4></li><li><h4><a href="#%E4%B8%8B%E8%BD%BD%E5%92%8C%E5%AE%89%E8%A3%85">下载和安装</a></h4></li><li><h4><a href="#%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</a></h4><ul><li><a href="#%E5%8F%98%E9%87%8F">变量</a></li><li><a href="#%E6%9D%A1%E4%BB%B6">条件</a></li><li><a href="#%E5%BE%AA%E7%8E%AF">循环</a></li><li><a href="#%E5%8F%8C%E5%90%91%E7%BB%91%E5%AE%9A">双向绑定</a></li><li><a href="#%E9%9D%9E%E8%BD%AC%E4%B9%89%20html">非转义 HTML</a></li><li><a href="#%E5%AD%90%E6%A8%A1%E6%9D%BF">子模板</a></li><li><a href="#%E8%BF%87%E6%BB%A4%E5%99%A8">过滤器</a></li><li><a href="#%E8%A1%A8%E8%BE%BE%E5%BC%8F">表达式</a></li></ul></li><li><h4><a href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</a></h4><ul><li><a href="#new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</a></li><li><a href="#ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95%3A">实例方法:</a></h4><ul><li><a href="#.get(keypath)">.get(keypath)</a></li><li><a href="#.set(keypath%5B%2C%20val%2C%20opts%5D)">.set(keypath[, val, opts])</a></li><li><a href="#.render(%5Bdata%5D)">.render([data])</a></li><li><a href="#.update(%5Bkeypath%2C%20data%2C%20isextend%5D)">.update([keyPath, data, isExtend])</a></li><li><a href="#.clone(%5Bopts%5D)">.clone([opts])</a></li><li><a href="#.on(eventname%2C%20callback)">.on(eventName, callback)</a></li><li><a href="#.off(eventname%5B%2C%20callback%5D)">.off(eventName[, callback])</a></li><li><a href="#.trigger(eventname%5B%2C%20extraparameters%20%5D)">.trigger(eventName[, extraParameters ])</a></li><li><a href="#.init(tpl%5B%2C%20options%5D)">.init(tpl[, options])</a></li><li><a href="#.setpartial(info)">.setPartial(info)</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7%3A%20">实例属性: </a></h4><ul><li><a href="#.el">.el</a></li><li><a href="#.tpl">.tpl</a></li><li><a href="#.data">.data</a></li><li><a href="#.options">.options</a></li><li><a href="#.isrendered">.isRendered</a></li></ul></li><li><h4><a href="#%E6%93%8D%E4%BD%9C%E6%95%B0%E7%BB%84">操作数组</a></h4></li><li><h4><a href="#%E4%BA%8B%E4%BB%B6%E5%A7%94%E6%89%98">事件委托</a></h4></li><li><h4><a href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B">使用示例</a></h4></li><li><h4><a href="#%E8%AE%A8%E8%AE%BA">讨论</a></h4></li><li><h4><a href="#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97">更新日志</a></h4></li></ul>
+    <ul class="sections"><li><h4><a href="#%E5%85%BC%E5%AE%B9%E6%80%A7%E5%92%8C%E4%BE%9D%E8%B5%96">兼容性和依赖</a></h4></li><li><h4><a href="#%E4%B8%8B%E8%BD%BD%E5%92%8C%E5%AE%89%E8%A3%85">下载和安装</a></h4></li><li><h4><a href="#%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</a></h4><ul><li><a href="#%E5%8F%98%E9%87%8F">变量</a></li><li><a href="#%E6%9D%A1%E4%BB%B6">条件</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%B1%9E%E6%80%A7">条件属性</a></li><li><a href="#%E5%BE%AA%E7%8E%AF">循环</a></li><li><a href="#%E5%8F%8C%E5%90%91%E7%BB%91%E5%AE%9A">双向绑定</a></li><li><a href="#%E9%9D%9E%E8%BD%AC%E4%B9%89%20html">非转义 HTML</a></li><li><a href="#%E5%AD%90%E6%A8%A1%E6%9D%BF">子模板</a></li><li><a href="#%E8%BF%87%E6%BB%A4%E5%99%A8">过滤器</a></li><li><a href="#%E8%A1%A8%E8%BE%BE%E5%BC%8F">表达式</a></li></ul></li><li><h4><a href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</a></h4><ul><li><a href="#new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</a></li><li><a href="#ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95%3A">实例方法:</a></h4><ul><li><a href="#.get(keypath)">.get(keypath)</a></li><li><a href="#.set(keypath%5B%2C%20val%2C%20opts%5D)">.set(keypath[, val, opts])</a></li><li><a href="#.render(%5Bdata%5D)">.render([data])</a></li><li><a href="#.update(%5Bkeypath%2C%20data%2C%20isextend%5D)">.update([keyPath, data, isExtend])</a></li><li><a href="#.clone(%5Bopts%5D)">.clone([opts])</a></li><li><a href="#.on(eventname%2C%20callback)">.on(eventName, callback)</a></li><li><a href="#.off(eventname%5B%2C%20callback%5D)">.off(eventName[, callback])</a></li><li><a href="#.trigger(eventname%5B%2C%20extraparameters%20%5D)">.trigger(eventName[, extraParameters ])</a></li><li><a href="#.init(tpl%5B%2C%20options%5D)">.init(tpl[, options])</a></li><li><a href="#.setpartial(info)">.setPartial(info)</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7%3A%20">实例属性: </a></h4><ul><li><a href="#.el">.el</a></li><li><a href="#.tpl">.tpl</a></li><li><a href="#.data">.data</a></li><li><a href="#.options">.options</a></li><li><a href="#.isrendered">.isRendered</a></li></ul></li><li><h4><a href="#%E6%93%8D%E4%BD%9C%E6%95%B0%E7%BB%84">操作数组</a></h4></li><li><h4><a href="#%E4%BA%8B%E4%BB%B6%E5%A7%94%E6%89%98">事件委托</a></h4></li><li><h4><a href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B">使用示例</a></h4></li><li><h4><a href="#%E8%AE%A8%E8%AE%BA">讨论</a></h4></li><li><h4><a href="#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97">更新日志</a></h4></li></ul>
   </header>
   <section id="content">
     <h1>Ant.js <span class="version">(0.2.0-dev)</span></h1>
@@ -65,14 +65,18 @@
 <h3 id="%E5%8F%98%E9%87%8F">变量</h3>
 <p>  <code>{{name}}</code></p>
 <p>  两组大括号表示普通变量. 变量占位符只能位于文本节点和属性节点当中, 属性节点包括属性名和属性值. 深度变量可用点表示法和下标及表示法, 如: <code>{{todos.length}}</code>，<code>{{todos['length']}}</code></p>
+<p>  HTML 属性名不能包含空格，所以 <code>{{}}</code> 用在属性名中不能包含空格。</p>
 <h3 id="%E6%9D%A1%E4%BB%B6">条件</h3>
-<p>  <code>a-if="{{val}}"</code></p>
-<p>  有 <code>a-if</code> 属性的节点会根据 <code>{{val}}</code> 的值来决定该节点是否存在于 DOM 树中.</p>
+<p>  <code>a-if="{{condition}}"</code></p>
+<p>  有 <code>a-if</code> 属性的节点会根据 <code>{{condition}}</code> 的值来决定该节点是否存在于 DOM 树中.</p>
 <p>  如模板: </p>
 <pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;ul</span> <span class="na">a-if=</span><span class="s">"{{todos.length}}"</span><span class="nt">&gt;&lt;ul&gt;</span>
 </pre></div>
 </code></pre>
 <p>  对应数据 <code>{todos: []}</code>, 由于 <code>todos</code> 数组的长度为零, 所以该 <code>ul</code> 将不会出现在 DOM 树中.</p>
+<h3 id="%E6%9D%A1%E4%BB%B6%E5%B1%9E%E6%80%A7">条件属性</h3>
+<p>  <code>readonly?={{condition}}</code></p>
+<p>  类似 <code>a-if</code>, 如果 condition 为真，<code>readonly</code> 将出现在该属性对应的节点中。</p>
 <h3 id="%E5%BE%AA%E7%8E%AF">循环</h3>
 <p>  <code>a-repeat="{{list}}"</code></p>
 <p>  带有 <code>a-repeat</code> 属性的元素将根据对应数组而重复. 并且该元素及其子元素的变量占位符的作用域将会切换到数组数据当中. 类似 mustache, 如果想使用数组之外的父辈变量, 直接使用其变量名即可.</p>
@@ -153,6 +157,12 @@
 <li>逻辑运算：<code>{{0 === false}}</code>, <code>{{ 2 &gt;= 1 }}</code>, <code>{{ val &amp;&amp; 1 }}</code>, <code>{{ val || 1 }}</code>, <code>{{ val ? 0 : 1 }}</code>, <code>{{ !val }}</code></li>
 <li>部分函数调用：<code>{{Math.round(num)}}</code>, <code>{{'a'.toUpperCase()}}</code>, <code>{{(Math.random()).toFixed(2)}}</code></li>
 </ul>
+<p>  关于表达式需要注意的一点是，<code>{{}}</code>占位符在不同的位置所允许使用的表达式（包括过滤器）也有所不同。目前分为几种情况：</p>
+<ol>
+<li>文本、属性值（包括条件属性）和 <code>a-if</code> 允许使用所有的表达式。</li>
+<li>属性名在 nodeJs 和现代浏览器（IE 10+）在属性名中也可以使用所有表达式。而在 IE 10 以前的浏览器中表达式中不能使用字符串。</li>
+<li><code>z-model</code>, <code>z-repeat</code> 中不能使用表达式。</li>
+</ol>
 <h2 id="%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</h2>
 <p>  构造一个 Ant 实例. </p>
 <h3 id="new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</h3>
