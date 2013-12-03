@@ -264,6 +264,8 @@ API
 ### Ant.extend(prototypeProperties[, staticProperties])
 
   构造函数的扩展. 可以扩展 Ant 的原型对象来为实例提供属性和方法, 也可以直接扩展构造函数及静态方法.
+
+  通过扩展原型对象的 `defaults` 属性，可以为新构造函数提供一些默认值。包括： `data`, 'filters', 'partials', 'events' 等所有通过构造函数 options 参数提供的参数。
   
   - **prototypeProperties** `Object`
     
@@ -283,7 +285,17 @@ API
     , constructor: function(tpl, opts) {
         Ant.call(this, tpl, opts);
       }
+    , defaults: {
+        data: { name: 'Justan' }
+      , filters: { big: function(str) { return str.big() } }
+      , partials: { header: '<header><h1>Ant.js</h1></header>' }
+      , events: { render: function() { alert('render') } }
+      }
     });
+
+    var comment = new Comment('');
+
+    comment.get('name') //Justan
 
     var CommentAdmin = Comment.extend({
       removeReply: function() {

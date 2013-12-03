@@ -219,6 +219,7 @@
 </ul>
 <h3 id="ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</h3>
 <p>  构造函数的扩展. 可以扩展 Ant 的原型对象来为实例提供属性和方法, 也可以直接扩展构造函数及静态方法.</p>
+<p>  通过扩展原型对象的 <code>defaults</code> 属性，可以为新构造函数提供一些默认值。包括： <code>data</code>, 'filters', 'partials', 'events' 等所有通过构造函数 options 参数提供的参数。</p>
 <ul>
 <li><p><strong>prototypeProperties</strong> <code>Object</code></p>
 <p>扩展的原型对象.</p>
@@ -233,7 +234,17 @@
 <span class="p">,</span> <span class="nx">constructor</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">tpl</span><span class="p">,</span> <span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">Ant</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">tpl</span><span class="p">,</span> <span class="nx">opts</span><span class="p">);</span>
   <span class="p">}</span>
+<span class="p">,</span> <span class="nx">defaults</span><span class="o">:</span> <span class="p">{</span>
+    <span class="nx">data</span><span class="o">:</span> <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">'Justan'</span> <span class="p">}</span>
+  <span class="p">,</span> <span class="nx">filters</span><span class="o">:</span> <span class="p">{</span> <span class="nx">big</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">str</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">str</span><span class="p">.</span><span class="nx">big</span><span class="p">()</span> <span class="p">}</span> <span class="p">}</span>
+  <span class="p">,</span> <span class="nx">partials</span><span class="o">:</span> <span class="p">{</span> <span class="nx">header</span><span class="o">:</span> <span class="s1">'&lt;header&gt;&lt;h1&gt;Ant.js&lt;/h1&gt;&lt;/header&gt;'</span> <span class="p">}</span>
+  <span class="p">,</span> <span class="nx">events</span><span class="o">:</span> <span class="p">{</span> <span class="nx">render</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="nx">alert</span><span class="p">(</span><span class="s1">'render'</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+  <span class="p">}</span>
 <span class="p">});</span>
+
+<span class="kd">var</span> <span class="nx">comment</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Comment</span><span class="p">(</span><span class="s1">''</span><span class="p">);</span>
+
+<span class="nx">comment</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'name'</span><span class="p">)</span> <span class="c1">//Justan</span>
 
 <span class="kd">var</span> <span class="nx">CommentAdmin</span> <span class="o">=</span> <span class="nx">Comment</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
   <span class="nx">removeReply</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
