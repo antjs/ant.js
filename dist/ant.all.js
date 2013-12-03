@@ -2285,7 +2285,11 @@ setPrefix('a-');
       /**
        * 开始监听 hash 变化
        */
-    , start: function() {
+    , start: function(routes) {
+        routes = routes || {};
+        for(var path in routes){
+          this.route(path, routes[path]);
+        }
         this.stop();
         $root.on('hashchange', listener);
         $root.trigger('hashchange');
@@ -2326,9 +2330,12 @@ setPrefix('a-');
               }
             }
             
-            route.handler.call(router, hashInfo, function (){
+            try{
+              //handler return false will prevent nexts handlers
+              route.handler.call(router, hashInfo) !== false && next(++index);
+            }catch(e){
               next(++index);
-            });
+            }
           }else {
             next(++index);
           }

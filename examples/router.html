@@ -19,9 +19,8 @@
 <script>
 var router = Ant.router;
 
-router.route(':path', function(info, next) {
+router.route(':path', function(info) {
   log(info.path);
-  next();
 });
 
 router.route('path2', function(info) {
