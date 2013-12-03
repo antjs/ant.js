@@ -172,7 +172,7 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
 
   `{{val | filter1:arg1:arg2 | filter2}}`
 
-  过滤器是实际上一些可以接受参数的方法。
+  过滤器是实际上一些可以接受参数的函数。
 
 ### 表达式
 
@@ -194,14 +194,13 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   3. `z-model`, `z-repeat` 中不能使用表达式。
 
 
-构造函数 Ant
+API
 ---
-
-  构造一个 Ant 实例. 
 
 ### new Ant(template[, options])
 
-  返回值: `ant` 实例
+  构造一个 Ant 实例. 
+
 
 - **template** `String | HTMLElement`
 
@@ -214,7 +213,26 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   + **options.data** `Object`   
   
     与模板绑定的数据对象. Data 如果缺省, 可以在稍后用 `ant.render(data)` 传入.
+        
+  + **options.el** `String|Object`
+  
+    模板在 DOM 的目标对象. 如果是字符串则表示一个新的标签元素名(如: `div, p, ul` 等). 该参数和模板有 6 种组合情况: 
     
+    1. 模板是一个 DOM 对象, `options.el` 为空, 则 `ant.el` 就是模板对象
+    2. 模板是一个 DOM 对象, `options.el` 为另一个 DOM 节点, 则 `ant.el` 表示 `options.el`, 并且模板对象将被插入 到 `options.el` 中
+    3. 模板是一个 DOM 对象, `options.el` 为一个字符串, 则新建一个标签名为 `options.el` 的标签元素, 并将模板对象插入到 `options.el` 中.
+    4. 模板是字符串, `options.el` 为空, 则会新建一个 div 表示 `ant.el`, 其 innerHTML 是模板字符串
+    5. 模板是字符串, `options.el` 是一个 DOM 元素, 则 `options.el` 表示 `ant.el`, 其 innerHTML 是模板字符串
+    6. 模板是字符串, `options.el` 也是一个字符串, 则会新建一个标签名为 `options.el` 的元素与表示 `ant.el`, 其 innnerHTML 是模板字符串
+
+  + **options.filters** `Object`
+
+    自定义 filter.
+
+  + **options.events** `Object`
+
+    预定义事件处理函数. 除了 ant.js 的自带事件, DOM 事件也可以在这里监听.
+
   + **options.partials** `Object`
   
     子模板集合. 一个子模板同样可以是字符串或 DOM 对象. 并且没有 `a-repeat` 和 `a-if` 属性的限制.
@@ -241,22 +259,11 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   + **options.lazy** `Boolean` 
   
     默认值为 false. 表单元素与数据双向绑定时, 该参数决定了用户更改表单元素的值时更新到数据层的时机. 值为 `false` 时, 用户在 `input textarea` 中输入时会立即更新到数据层, 监听的是元素的 `input` 事件. 为 `true` 时, 用户的输入只有在表单元素丢失焦点是才会更新到数据层, 即监听的是 `change` 事件.
-    
-  + **options.el** `String|Object`
-  
-    模板在 DOM 的目标对象. 如果是字符串则表示一个新的标签元素名(如: `div, p, ul` 等). 该参数和模板有 6 种组合情况: 
-    
-    1. 模板是一个 DOM 对象, `options.el` 为空, 则 `ant.el` 就是模板对象
-    2. 模板是一个 DOM 对象, `options.el` 为另一个 DOM 节点, 则 `ant.el` 表示 `options.el`, 并且模板对象将被插入 到 `options.el` 中
-    3. 模板是一个 DOM 对象, `options.el` 为一个字符串, 则新建一个标签名为 `options.el` 的标签元素, 并将模板对象插入到 `options.el` 中.
-    4. 模板是字符串, `options.el` 为空, 则会新建一个 div 表示 `ant.el`, 其 innerHTML 是模板字符串
-    5. 模板是字符串, `options.el` 是一个 DOM 元素, 则 `options.el` 表示 `ant.el`, 其 innerHTML 是模板字符串
-    6. 模板是字符串, `options.el` 也是一个字符串, 则会新建一个标签名为 `options.el` 的元素与表示 `ant.el`, 其 innnerHTML 是模板字符串
 
     
 ### Ant.extend(prototypeProperties[, staticProperties])
 
-  构造函数的扩展. 可以扩展 Ant 的原型对象来为实例提供属性和方法, 也可以直接扩展构造函数的静态方法.
+  构造函数的扩展. 可以扩展 Ant 的原型对象来为实例提供属性和方法, 也可以直接扩展构造函数及静态方法.
   
   - **prototypeProperties** `Object`
     
@@ -280,7 +287,9 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
         //...
       }
     });
-```
+  ```
+
+
 
 实例方法:
 ----

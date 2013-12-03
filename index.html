@@ -25,7 +25,7 @@
       <li>» <a href="https://github.com/antjs/ant.js">Github 上的 ant.js</a></li>
       <!-- <li>» <a href="learn">学习 ant.js</a></li> -->
     </ul>
-    <ul class="sections"><li><h4><a href="#%E5%85%BC%E5%AE%B9%E6%80%A7%E5%92%8C%E4%BE%9D%E8%B5%96">兼容性和依赖</a></h4></li><li><h4><a href="#%E4%B8%8B%E8%BD%BD%E5%92%8C%E5%AE%89%E8%A3%85">下载和安装</a></h4></li><li><h4><a href="#%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</a></h4><ul><li><a href="#%E5%8F%98%E9%87%8F">变量</a></li><li><a href="#%E6%9D%A1%E4%BB%B6">条件</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%B1%9E%E6%80%A7">条件属性</a></li><li><a href="#%E5%BE%AA%E7%8E%AF">循环</a></li><li><a href="#%E5%8F%8C%E5%90%91%E7%BB%91%E5%AE%9A">双向绑定</a></li><li><a href="#%E9%9D%9E%E8%BD%AC%E4%B9%89%20html">非转义 HTML</a></li><li><a href="#%E5%AD%90%E6%A8%A1%E6%9D%BF">子模板</a></li><li><a href="#%E8%BF%87%E6%BB%A4%E5%99%A8">过滤器</a></li><li><a href="#%E8%A1%A8%E8%BE%BE%E5%BC%8F">表达式</a></li></ul></li><li><h4><a href="#%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</a></h4><ul><li><a href="#new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</a></li><li><a href="#ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95%3A">实例方法:</a></h4><ul><li><a href="#.get(keypath)">.get(keypath)</a></li><li><a href="#.set(keypath%5B%2C%20val%2C%20opts%5D)">.set(keypath[, val, opts])</a></li><li><a href="#.render(%5Bdata%5D)">.render([data])</a></li><li><a href="#.update(%5Bkeypath%2C%20data%2C%20isextend%5D)">.update([keyPath, data, isExtend])</a></li><li><a href="#.clone(%5Bopts%5D)">.clone([opts])</a></li><li><a href="#.on(eventname%2C%20callback)">.on(eventName, callback)</a></li><li><a href="#.off(eventname%5B%2C%20callback%5D)">.off(eventName[, callback])</a></li><li><a href="#.trigger(eventname%5B%2C%20extraparameters%20%5D)">.trigger(eventName[, extraParameters ])</a></li><li><a href="#.init(tpl%5B%2C%20options%5D)">.init(tpl[, options])</a></li><li><a href="#.setpartial(info)">.setPartial(info)</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7%3A%20">实例属性: </a></h4><ul><li><a href="#.el">.el</a></li><li><a href="#.tpl">.tpl</a></li><li><a href="#.data">.data</a></li><li><a href="#.options">.options</a></li><li><a href="#.isrendered">.isRendered</a></li></ul></li><li><h4><a href="#%E6%93%8D%E4%BD%9C%E6%95%B0%E7%BB%84">操作数组</a></h4></li><li><h4><a href="#%E4%BA%8B%E4%BB%B6%E5%A7%94%E6%89%98">事件委托</a></h4></li><li><h4><a href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B">使用示例</a></h4></li><li><h4><a href="#%E8%AE%A8%E8%AE%BA">讨论</a></h4></li><li><h4><a href="#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97">更新日志</a></h4></li></ul>
+    <ul class="sections"><li><h4><a href="#%E5%85%BC%E5%AE%B9%E6%80%A7%E5%92%8C%E4%BE%9D%E8%B5%96">兼容性和依赖</a></h4></li><li><h4><a href="#%E4%B8%8B%E8%BD%BD%E5%92%8C%E5%AE%89%E8%A3%85">下载和安装</a></h4></li><li><h4><a href="#%E6%A8%A1%E6%9D%BF%E8%AF%AD%E6%B3%95">模板语法</a></h4><ul><li><a href="#%E5%8F%98%E9%87%8F">变量</a></li><li><a href="#%E6%9D%A1%E4%BB%B6">条件</a></li><li><a href="#%E6%9D%A1%E4%BB%B6%E5%B1%9E%E6%80%A7">条件属性</a></li><li><a href="#%E5%BE%AA%E7%8E%AF">循环</a></li><li><a href="#%E5%8F%8C%E5%90%91%E7%BB%91%E5%AE%9A">双向绑定</a></li><li><a href="#%E9%9D%9E%E8%BD%AC%E4%B9%89%20html">非转义 HTML</a></li><li><a href="#%E5%AD%90%E6%A8%A1%E6%9D%BF">子模板</a></li><li><a href="#%E8%BF%87%E6%BB%A4%E5%99%A8">过滤器</a></li><li><a href="#%E8%A1%A8%E8%BE%BE%E5%BC%8F">表达式</a></li></ul></li><li><h4><a href="#api">API</a></h4><ul><li><a href="#new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</a></li><li><a href="#ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E6%96%B9%E6%B3%95%3A">实例方法:</a></h4><ul><li><a href="#.get(keypath)">.get(keypath)</a></li><li><a href="#.set(keypath%5B%2C%20val%2C%20opts%5D)">.set(keypath[, val, opts])</a></li><li><a href="#.render(%5Bdata%5D)">.render([data])</a></li><li><a href="#.update(%5Bkeypath%2C%20data%2C%20isextend%5D)">.update([keyPath, data, isExtend])</a></li><li><a href="#.clone(%5Bopts%5D)">.clone([opts])</a></li><li><a href="#.on(eventname%2C%20callback)">.on(eventName, callback)</a></li><li><a href="#.off(eventname%5B%2C%20callback%5D)">.off(eventName[, callback])</a></li><li><a href="#.trigger(eventname%5B%2C%20extraparameters%20%5D)">.trigger(eventName[, extraParameters ])</a></li><li><a href="#.init(tpl%5B%2C%20options%5D)">.init(tpl[, options])</a></li><li><a href="#.setpartial(info)">.setPartial(info)</a></li></ul></li><li><h4><a href="#%E5%AE%9E%E4%BE%8B%E5%B1%9E%E6%80%A7%3A%20">实例属性: </a></h4><ul><li><a href="#.el">.el</a></li><li><a href="#.tpl">.tpl</a></li><li><a href="#.data">.data</a></li><li><a href="#.options">.options</a></li><li><a href="#.isrendered">.isRendered</a></li></ul></li><li><h4><a href="#%E6%93%8D%E4%BD%9C%E6%95%B0%E7%BB%84">操作数组</a></h4></li><li><h4><a href="#%E4%BA%8B%E4%BB%B6%E5%A7%94%E6%89%98">事件委托</a></h4></li><li><h4><a href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B">使用示例</a></h4></li><li><h4><a href="#%E8%AE%A8%E8%AE%BA">讨论</a></h4></li><li><h4><a href="#%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97">更新日志</a></h4></li></ul>
   </header>
   <section id="content">
     <h1>Ant.js <span class="version">(0.2.0-dev)</span></h1>
@@ -147,7 +147,7 @@
 <p>  子模板可以通过 <code>ant.setPartial</code> 方法延时添加.</p>
 <h3 id="%E8%BF%87%E6%BB%A4%E5%99%A8">过滤器</h3>
 <p>  <code>{{val | filter1:arg1:arg2 | filter2}}</code></p>
-<p>  过滤器是实际上一些可以接受参数的方法。</p>
+<p>  过滤器是实际上一些可以接受参数的函数。</p>
 <h3 id="%E8%A1%A8%E8%BE%BE%E5%BC%8F">表达式</h3>
 <p>  <code>{{ val1 + val2 }}</code></p>
 <p>  Ant 的表达式是 javascript 表达式的严格子集。</p>
@@ -163,10 +163,9 @@
 <li>属性名在 nodeJs 和现代浏览器（IE 10+）在属性名中也可以使用所有表达式。而在 IE 10 以前的浏览器中表达式中不能使用字符串。</li>
 <li><code>z-model</code>, <code>z-repeat</code> 中不能使用表达式。</li>
 </ol>
-<h2 id="%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%20ant">构造函数 Ant</h2>
-<p>  构造一个 Ant 实例. </p>
+<h2 id="api">API</h2>
 <h3 id="new%20ant(template%5B%2C%20options%5D)">new Ant(template[, options])</h3>
-<p>  返回值: <code>ant</code> 实例</p>
+<p>  构造一个 Ant 实例. </p>
 <ul>
 <li><p><strong>template</strong> <code>String | HTMLElement</code></p>
 <p>模板必须是 DOM 对象或者是一段字符串. 如果是一个 DOM 对象, 则该元素不应包含 <code>a-repeat</code> 或 <code>a-if</code> 属性.</p>
@@ -176,6 +175,23 @@
 <ul>
 <li><p><strong>options.data</strong> <code>Object</code>   </p>
 <p>与模板绑定的数据对象. Data 如果缺省, 可以在稍后用 <code>ant.render(data)</code> 传入.</p>
+</li>
+<li><p><strong>options.el</strong> <code>String|Object</code></p>
+<p>模板在 DOM 的目标对象. 如果是字符串则表示一个新的标签元素名(如: <code>div, p, ul</code> 等). 该参数和模板有 6 种组合情况: </p>
+<ol>
+<li>模板是一个 DOM 对象, <code>options.el</code> 为空, 则 <code>ant.el</code> 就是模板对象</li>
+<li>模板是一个 DOM 对象, <code>options.el</code> 为另一个 DOM 节点, 则 <code>ant.el</code> 表示 <code>options.el</code>, 并且模板对象将被插入 到 <code>options.el</code> 中</li>
+<li>模板是一个 DOM 对象, <code>options.el</code> 为一个字符串, 则新建一个标签名为 <code>options.el</code> 的标签元素, 并将模板对象插入到 <code>options.el</code> 中.</li>
+<li>模板是字符串, <code>options.el</code> 为空, 则会新建一个 div 表示 <code>ant.el</code>, 其 innerHTML 是模板字符串</li>
+<li>模板是字符串, <code>options.el</code> 是一个 DOM 元素, 则 <code>options.el</code> 表示 <code>ant.el</code>, 其 innerHTML 是模板字符串</li>
+<li>模板是字符串, <code>options.el</code> 也是一个字符串, 则会新建一个标签名为 <code>options.el</code> 的元素与表示 <code>ant.el</code>, 其 innnerHTML 是模板字符串</li>
+</ol>
+</li>
+<li><p><strong>options.filters</strong> <code>Object</code></p>
+<p>自定义 filter.</p>
+</li>
+<li><p><strong>options.events</strong> <code>Object</code></p>
+<p>预定义事件处理函数. 除了 ant.js 的自带事件, DOM 事件也可以在这里监听.</p>
 </li>
 <li><p><strong>options.partials</strong> <code>Object</code></p>
 <p>子模板集合. 一个子模板同样可以是字符串或 DOM 对象. 并且没有 <code>a-repeat</code> 和 <code>a-if</code> 属性的限制.</p>
@@ -198,22 +214,11 @@
 <li><p><strong>options.lazy</strong> <code>Boolean</code> </p>
 <p>默认值为 false. 表单元素与数据双向绑定时, 该参数决定了用户更改表单元素的值时更新到数据层的时机. 值为 <code>false</code> 时, 用户在 <code>input textarea</code> 中输入时会立即更新到数据层, 监听的是元素的 <code>input</code> 事件. 为 <code>true</code> 时, 用户的输入只有在表单元素丢失焦点是才会更新到数据层, 即监听的是 <code>change</code> 事件.</p>
 </li>
-<li><p><strong>options.el</strong> <code>String|Object</code></p>
-<p>模板在 DOM 的目标对象. 如果是字符串则表示一个新的标签元素名(如: <code>div, p, ul</code> 等). 该参数和模板有 6 种组合情况: </p>
-<ol>
-<li>模板是一个 DOM 对象, <code>options.el</code> 为空, 则 <code>ant.el</code> 就是模板对象</li>
-<li>模板是一个 DOM 对象, <code>options.el</code> 为另一个 DOM 节点, 则 <code>ant.el</code> 表示 <code>options.el</code>, 并且模板对象将被插入 到 <code>options.el</code> 中</li>
-<li>模板是一个 DOM 对象, <code>options.el</code> 为一个字符串, 则新建一个标签名为 <code>options.el</code> 的标签元素, 并将模板对象插入到 <code>options.el</code> 中.</li>
-<li>模板是字符串, <code>options.el</code> 为空, 则会新建一个 div 表示 <code>ant.el</code>, 其 innerHTML 是模板字符串</li>
-<li>模板是字符串, <code>options.el</code> 是一个 DOM 元素, 则 <code>options.el</code> 表示 <code>ant.el</code>, 其 innerHTML 是模板字符串</li>
-<li>模板是字符串, <code>options.el</code> 也是一个字符串, 则会新建一个标签名为 <code>options.el</code> 的元素与表示 <code>ant.el</code>, 其 innnerHTML 是模板字符串</li>
-</ol>
-</li>
 </ul>
 </li>
 </ul>
 <h3 id="ant.extend(prototypeproperties%5B%2C%20staticproperties%5D)">Ant.extend(prototypeProperties[, staticProperties])</h3>
-<p>  构造函数的扩展. 可以扩展 Ant 的原型对象来为实例提供属性和方法, 也可以直接扩展构造函数的静态方法.</p>
+<p>  构造函数的扩展. 可以扩展 Ant 的原型对象来为实例提供属性和方法, 也可以直接扩展构造函数及静态方法.</p>
 <ul>
 <li><p><strong>prototypeProperties</strong> <code>Object</code></p>
 <p>扩展的原型对象.</p>
