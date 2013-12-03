@@ -280,6 +280,9 @@ API
       addReply: function(reply){
         this.get('replys').push(reply)
       }
+    , constructor: function(tpl, opts) {
+        Ant.call(this, tpl, opts);
+      }
     });
 
     var CommentAdmin = Comment.extend({
@@ -288,7 +291,6 @@ API
       }
     });
   ```
-
 
 
 实例方法:

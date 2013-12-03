@@ -995,9 +995,9 @@ setPrefix('a-');
           }
         }else{
           //{{}} token in attribute value, which nodeName is dynamic
+          //baseTokens is about attribute name
           if(token.baseTokens){
             nodeName = token.nodeName = token.baseTokens.textMap.join('');
-            node = token.node = el.getAttributeNode(nodeName) || node;
           }
 
           if(!isAttrName){
@@ -1019,13 +1019,11 @@ setPrefix('a-');
               if(nodeName){
                 el.removeAttribute(nodeName);
               }
-              val && setAttr(el, val, node.nodeValue);
-              token.nodeName = val;
-            }else{
-              setAttr(el, nodeName, val);
+              nodeName = token.nodeName = val;
+              val = node.nodeValue;
             }
-            if(val){
-              token.node = el.getAttributeNode(val) || node;
+            if(nodeName){
+              setAttr(el, nodeName, val);
             }
           // }else{
           //   console.log('skip..')

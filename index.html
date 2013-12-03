@@ -230,6 +230,9 @@
   <span class="nx">addReply</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">reply</span><span class="p">){</span>
     <span class="k">this</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'replys'</span><span class="p">).</span><span class="nx">push</span><span class="p">(</span><span class="nx">reply</span><span class="p">)</span>
   <span class="p">}</span>
+<span class="p">,</span> <span class="nx">constructor</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">tpl</span><span class="p">,</span> <span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">Ant</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">tpl</span><span class="p">,</span> <span class="nx">opts</span><span class="p">);</span>
+  <span class="p">}</span>
 <span class="p">});</span>
 
 <span class="kd">var</span> <span class="nx">CommentAdmin</span> <span class="o">=</span> <span class="nx">Comment</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
