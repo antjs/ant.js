@@ -437,7 +437,15 @@ ant.set({newObj: {}, title: 'Matrix'}, false)//完全替换原有 'ant.data'. an
   - **[info.node]** `HTMLElement` 子模板的目标节点. 对于预定义好的子模板, 该项可省略.
   - **[info.escape]** `Boolean` 是否转义字符串子模板
   - **[info.path]** `String` 指定子模板中变量在数据中的作用域
+
+### .watch(keyPath, callback)
+
+  添加自定义监控.
+
+### .unwatch(keyPath, callback)
   
+  删除自定义监控.
+
  
 实例属性: 
 ----

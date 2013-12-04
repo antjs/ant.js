@@ -9,7 +9,7 @@ ant.js
 Ant.js 为 HTML 提供了一种轻量简便的数据绑定方式.
 
 
-- [项目主页](http://antjs.org)
+- [主页](http://antjs.org)
 - [文档](docs/doc.md)
 
 

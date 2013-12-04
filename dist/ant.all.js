@@ -1213,17 +1213,22 @@ setPrefix('a-');
     }
   , init: noop
   
-    //TODO 
   , watch: function(keyPath, callback) {
-      var that = this
-        , vm = this._vm.$getChild(keyPath)
-        ;
-        
-      new Watcher(vm, {}, callback);
+      if(keyPath && callback){
+        new Watcher(this._vm, {path: keyPath}, callback);
+      }
       return this;
     }
   , unwatch: function(keyPath, callback) {
-    
+      var vm = this._vm.$getChild(keyPath, true);
+      if(vm){
+        for(var i = vm.$watchers.length - 1; i >= 0; i--){
+          if(vm.$watchers[i].callback === callback){
+            vm.$watchers.splice(i, 1);
+          }
+        }
+      }
+      return this;
     }
     
     
