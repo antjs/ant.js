@@ -10,8 +10,8 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
 下载和安装
 ----
 
-  - [开发完整版](dist/ant.all.js)
-  - [核心压缩版](dist/ant.min.js) (6kb Packed and gziped)
+  - [开发版](dist/ant.js)
+  - [压缩版](dist/ant.min.js) (9kb Packed and gziped)
 
   
 在 NodeJs 中可以使用 npm 直接安装:
