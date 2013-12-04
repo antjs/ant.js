@@ -39,16 +39,14 @@ var ant = new Ant($('#container')[0], {
   , 'render': function(){
       document.body.className = 'loaded';
     }
-  , 'update': function(e, info){
-      var that = this;
-      if(info && info.newComment && typeof info.newComment.commentMarked !== 'undefined'){
-        marked(this.data.newComment.commentMarked, {}, function(err, comment){
-          that.set('newComment.comment', comment);
-        })
-      }
-    }
   }
 });
+
+ant.watch('newComment.commentMarked', function(str) {
+  marked(str, {}, function(err, comment){
+    ant.set('newComment.comment', comment);
+  })
+})
 
 antData.on('value', function(shot) {
   var val = shot.val();
