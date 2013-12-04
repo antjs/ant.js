@@ -1,14 +1,18 @@
 更新日志
 ----
+Version **[0.2.0-alpha]** -- 2013-12-4
 
-* All of ant attribute(a-model, a-repeat, a-if) must use `{{}}` to binding.
-* Change `.setParital` argument `opts.node` to `opts.target`.
+* 所有的 ant 属性(a-model, a-repeat, a-if) 都要使用 `{{}}` 去绑定了.
+* 子模板方法 `.setParital` 的参数变更: `opts.node` --> `opts.target`.
+* 表达式支持.
+* HTML 元素属性可以作为绑定目标了.
+* 条件属性支持.
 
 Version **[0.1.3]** -- 2013-10-24
 
-* More Tests.
-* Tests can run in node now, not only phantom.js.
-* Two way binding for all editable element.
+* 更多测试用例.
+* 测试不光跑在 phantom.js 中了, 可以真正的在 nodeJs 环境中跑了.
+* 为可编辑 HTML 元素添加双向绑定功能.
 
 Version **[0.1.2]** -- 2013-09-02
 

@@ -56,7 +56,7 @@ function build(callback) {
 }
 
 function genHistroyLinks(md){
-  return md.replace(/\[(\d+\.\d+\.\d+)\]/g, function(all, ver){
+  return md.replace(/\[(.+?)\]/g, function(all, ver){
     return all + '(https://rawgithub.com/antjs/ant.js/v' + ver + '/index.html)'
   });
 }
