@@ -17,7 +17,7 @@ module.exports = function(grunt) {
         separator: ';'
       },
       all: {
-        src: ['src/ant-es5-shim.js', 'dist/ant.js', 'src/event.js', 'src/router.js'],
+        src: ['dist/ant.js', 'extensions/event.js', 'extensions/router.js'],
         dest: 'dist/ant.all.js'
       }
     },
@@ -93,7 +93,7 @@ module.exports = function(grunt) {
       , optimize: 'none'
       , useStrict: true
       , wrap: {
-          startFile: './src/intro.js'
+          startFile: ['src/ant-es5-shim.js', './src/intro.js']
         , endFile: './src/outro.js'
         }
       , onBuildWrite: function(name, path, contents) {

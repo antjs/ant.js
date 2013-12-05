@@ -56,7 +56,8 @@ if (!Function.prototype.bind) {
     return fBound;
   };
 }
-;/***
+
+/***
  *          .o.                       .           o8o          
  *         .888.                    .o8           `"'          
  *        .8"888.     ooo. .oo.   .o888oo        oooo  .oooo.o 
@@ -87,11 +88,11 @@ if (!Function.prototype.bind) {
     }
   }
 })(function(document) {
-//Javascript expression parser modified form Crockford's TDOP parser
-
 
 
 "use strict";
+
+//Javascript expression parser modified form Crockford's TDOP parser
   var create = Object.create || function (o) {
     function F() {}
     F.prototype = o;

@@ -1,8 +1,8 @@
-//Javascript expression parser modified form Crockford's TDOP parser
-
 define(function(){
 
 "use strict";
+
+//Javascript expression parser modified form Crockford's TDOP parser
   var create = Object.create || function (o) {
     function F() {}
     F.prototype = o;
