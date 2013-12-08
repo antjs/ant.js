@@ -1,12 +1,13 @@
 更新日志
 ----
-Version **[0.2.0-alpha]** -- 2013-12-4
+Version **[0.2.0-beta]** -- 2013-12-8
 
 * 所有的 ant 属性(a-model, a-repeat, a-if) 都要使用 `{{}}` 去绑定了.
 * 子模板方法 `.setParital` 的参数变更: `opts.node` --> `opts.target`.
 * 表达式支持.
 * HTML 元素属性可以作为绑定目标了.
 * 条件属性支持.
+* 循环的索引用 `$index` 表示了.
 
 Version **[0.1.3]** -- 2013-10-24
 
