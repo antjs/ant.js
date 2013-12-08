@@ -1,4 +1,4 @@
-//Add some filters
+//Some filters
 (function(Ant){
   window.Ant = Ant.extend({
     defaults: {

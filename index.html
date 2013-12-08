@@ -80,11 +80,11 @@
 <h3 id="%E5%BE%AA%E7%8E%AF">循环</h3>
 <p>  <code>a-repeat="{{list}}"</code></p>
 <p>  带有 <code>a-repeat</code> 属性的元素将根据对应数组而重复. 并且该元素及其子元素的变量占位符的作用域将会切换到数组数据当中. 类似 mustache, 如果想使用数组之外的父辈变量, 直接使用其变量名即可.</p>
-<p>  每个列表节点对象生成的时候会被添加一个名为 <code>a-index</code> 的对象属性(property), 其值是元素在数组中的索引.</p>
+<p>  列表生成后, 循环的元素会被添加一个名为 <code>$index</code> 的属性(property), 其值是元素在数组中的索引. 同时 <code>$index</code> 也作为一个虚拟变量可以列表的模板中使用.</p>
 <p>  如对于模板:</p>
 <pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;ul&gt;</span>
   <span class="nt">&lt;li</span> <span class="na">a-repeat=</span><span class="s">"{{todos}}"</span><span class="nt">&gt;</span>
-    {{title}}
+    {{$index + 1}}. {{title}}
   <span class="nt">&lt;li&gt;</span>
 <span class="nt">&lt;/ul&gt;</span>
 </pre></div>
@@ -100,8 +100,8 @@
 </code></pre>
 <p>  最终将会渲染成:</p>
 <pre><code class="lang-html"><div class="highlight"><pre><span class="nt">&lt;ul&gt;</span>
-  <span class="nt">&lt;li&gt;</span>下片<span class="nt">&lt;/li&gt;</span>
-  <span class="nt">&lt;li&gt;</span>看片<span class="nt">&lt;/li&gt;</span>
+  <span class="nt">&lt;li&gt;</span>1. 下片<span class="nt">&lt;/li&gt;</span>
+  <span class="nt">&lt;li&gt;</span>2. 看片<span class="nt">&lt;/li&gt;</span>
 <span class="nt">&lt;/ul&gt;</span>
 </pre></div>
 </code></pre>

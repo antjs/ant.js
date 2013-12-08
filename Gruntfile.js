@@ -17,7 +17,7 @@ module.exports = function(grunt) {
         separator: ';'
       },
       all: {
-        src: ['dist/ant.js', 'extensions/event.js', 'extensions/router.js'],
+        src: ['dist/ant.js', 'extensions/*.js'],
         dest: 'dist/ant.all.js'
       }
     },

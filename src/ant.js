@@ -546,7 +546,7 @@ setPrefix('a-');
   var isIE = !!doc.attachEvent;
   
   function ViewModel() {
-    this.$path = '';
+    this.$key = '';
     this.$watchers = [];
   }
   
@@ -554,7 +554,8 @@ setPrefix('a-');
     $root: null
   , $parent: null
   , $ant: null
-  , $path: null
+  , $key: null
+  , $repeat: false
   
   , $watchers: null
     
@@ -576,7 +577,7 @@ setPrefix('a-');
             vm = new ViewModel();
             vm.$parent = cur;
             vm.$root = cur.$root || cur;
-            vm.$path = key;
+            vm.$key = key;
             cur[key] = vm;
           }
           
@@ -587,12 +588,12 @@ setPrefix('a-');
     }
     
   , $getKeyPath: function() {
-      var keyPath = this.$path
+      var keyPath = this.$key
         , cur = this
         ;
       while(cur = cur.$parent){
-        if(cur.$path){
-          keyPath = cur.$path + '.' + keyPath;
+        if(cur.$key){
+          keyPath = cur.$key + '.' + keyPath;
         }else{
           break;
         }
@@ -602,6 +603,9 @@ setPrefix('a-');
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
   , $getData: function(key, isStrict) {
+      if(key === '$index' && this.$parent && this.$parent.$repeat){
+        return this.$key * 1;
+      }
       var curVal = deepGet(key, this.$root.$ant.get(this.$getKeyPath()));
       if(isStrict || !this.$parent || !isUndefined(curVal)){
         return curVal;
@@ -612,7 +616,7 @@ setPrefix('a-');
   , $set: function (data, isExtend) {
       var map = isExtend ? data : this
         , parent = this
-        , end = true
+        //, end = true
         ;
       
       for(var i = 0, l = this.$watchers.length; i < l; i++){
@@ -625,7 +629,7 @@ setPrefix('a-');
           //传入的数据键值不能和 vm 中的自带属性名相同.
           //所以不推荐使用 '$' 作为 JSON 数据键值的开头.
             this[path].$set(data ? data[path] : void(0), isExtend);
-            end = false;
+            //end = false;
           }
         }
       }
@@ -1158,11 +1162,10 @@ setPrefix('a-');
         if(type === antAttr.IF){
           //if 属性不用切换作用域
           travelEl(this.el, relativeVm);
+        }else{
+          this.vm.$repeat = true;
         }
         
-      }
-    , setRepeat: function() {
-          
       }
     , callback: function(data, old) {
         var that = this
@@ -1219,10 +1222,10 @@ setPrefix('a-');
             if(n || m){
               //维护索引
               var j = i - (n - m);
-              els[i][prefix + 'index'] = j;
+              els[i]['$index'] = j;
               if(!noFixVm){
                 vm = this.vm[j] = this.vm[i];
-                vm.$path = j + '';
+                vm.$key = j + '';
               }
             }else{
               break;
@@ -1235,7 +1238,7 @@ setPrefix('a-');
           el = this.el.cloneNode(true);
           noFixVm || delete this.vm[index + j];
           vm = this.vm.$getChild(index + j)
-          el[prefix + 'index'] = index + j;
+          el['$index'] = index + j;
           frag.appendChild(el);
           travelEl(el, vm);
           vm.$set(items[j]);
@@ -1268,11 +1271,11 @@ setPrefix('a-');
           if((!noFixVm) && i < 1/2){
             vm = vms[i];
             vms[i] = vms[l - i - 1];
-            vms[i].$path = i + '';
-            vm.$path = l - i - 1 + '';
+            vms[i].$key = i + '';
+            vm.$key = l - i - 1 + '';
             vms[l - i - 1] = vm;
           }
-          this.els[i][prefix + 'index'] = l - i - 1;
+          this.els[i]['$index'] = l - i - 1;
           frag.appendChild(this.els[l - i - 1]);
         }
         el.parentNode.insertBefore(frag, el);

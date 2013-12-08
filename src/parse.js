@@ -64,7 +64,7 @@ define(function(){
           if (c <= ' ') {// Ignore whitespace.
               i += 1;
               c = code.charAt(i);
-          } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {// name.
+          } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '$' || c === '_') {// name.
               str = c;
               i += 1;
               for (;;) {
