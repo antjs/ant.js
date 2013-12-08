@@ -1,0 +1,28 @@
+{
+  "name": "ant.js",
+  "version": "0.2.0-beta",
+  "homepage": "http://antjs.org",
+  "authors": [
+    "Justan <ckr189@gmail.com>"
+  ],
+  "description": "Data driven HTML",
+  "main": "dist/ant.js",
+  "keywords": [
+    "template",
+    "data-binding"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "learn",
+    "src",
+    "Gruntfile.js",
+    "CNAME",
+    "third-part",
+    "index.html"
+  ]
+}
