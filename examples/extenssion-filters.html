@@ -13,14 +13,13 @@
     <input type='text' a-model={{text}} />
     <p>Input: {{text | capitalize}}</p>
     <p>encodedURL: {{url|urlEncode}}</p>
-     <p>JSON: {{.|json}}</p>
   </div>
 <script type="text/javascript">
 var ant;
 //一浏览器会刷新后会记住之前表单的内容. IE 浏览器会在 HTML 加载之后, onload 之前的某个时候为这些表单元素加上记住的内容.
 document.body.onload = function(){
   ant = new Ant(document.getElementById('template'), {
-    data: {url: location.href}
+    data: {url: location.href, arr: []}
   });
 }
 </script>

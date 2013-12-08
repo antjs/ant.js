@@ -248,6 +248,39 @@ describe('实例接口', function(){
 });
 
 describe('模板语法', function() {
+  describe('a-if', function() {
+    var tpl = '<span a-if={{true}}>{{val}}</span>'
+      ;
+    var Bee = Ant.extend({defaults: { data: {key: true, val: 1234} }});
+
+    it('单个变量', function() {
+      var tpl = '<span a-if={{key}}>{{val}}</span>';
+      var b = new Bee(tpl);
+      expect(b.el.innerHTML).to.be.ok();
+      b.set('key', false);
+      expect(b.el.innerHTML).to.not.be.ok();
+
+      b.set('key', 123);
+      expect(b.el.innerHTML).to.be.ok();
+    });
+    it('直接量', function() {
+      var b = new Bee(tpl);
+      expect(b.el.innerHTML).to.be.ok();
+    });
+    it('表达式', function() {
+      var tpl = '<span a-if="{{key && key2 || key3}}">{{val}}</span>';
+      var b = new Bee(tpl);
+      expect(b.el.innerHTML).to.not.be.ok();
+      b.set('key2', true);
+      expect(b.el.innerHTML).to.be.ok();
+
+      b.set('key2', 0);
+      expect(b.el.innerHTML).to.not.be.ok();
+      b.set('key3', 1);
+      expect(b.el.innerHTML).to.be.ok();
+    });
+  });
+  
   describe('a-repeat 属性', function() {
     var tpl = '<li a-repeat={{list}}>{{.}}</li>'
       , data = {list: ['ant', 'bee']}
@@ -472,7 +505,7 @@ describe('模板语法', function() {
       
     });
   });
-  
+
   it('非转义模板 {{{token}}}', function() {
     var tpl = 'This is a unescape code: <span>{{{unescape}}}</span> !!'
       , html = '...<span>1</span><code>222</code>..'
@@ -703,3 +736,17 @@ describe('模板语法', function() {
   })
 
 });
+
+// describe('ant.watch', function() {
+//   var ant = new Ant('', {data: {}})
+//     , flag = false
+//     ;
+
+//   ant.watch('parent', function(val) {
+//     flag = val;
+//   });
+//   it('bubbling', function(){
+//     ant.set('parent.child', 'abc');
+//     expect(flag).to.be('abc');
+//   });
+// });

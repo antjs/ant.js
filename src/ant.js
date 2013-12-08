@@ -610,7 +610,10 @@ setPrefix('a-');
       }
     }
   , $set: function (data, isExtend) {
-      var map = isExtend ? data : this;
+      var map = isExtend ? data : this
+        , parent = this
+        , end = true
+        ;
       
       for(var i = 0, l = this.$watchers.length; i < l; i++){
         this.$watchers[i].fn();
@@ -622,9 +625,19 @@ setPrefix('a-');
           //传入的数据键值不能和 vm 中的自带属性名相同.
           //所以不推荐使用 '$' 作为 JSON 数据键值的开头.
             this[path].$set(data ? data[path] : void(0), isExtend);
+            end = false;
           }
         }
       }
+
+      //bubbling 
+      // if(end){
+      //   while(parent = parent.$parent){
+      //     for(var i = 0, l = parent.$watchers.length; i < l; i++){
+      //       parent.$watchers[i].fn();
+      //     }
+      //   }
+      // }
     }
   };
   
@@ -1087,6 +1100,7 @@ setPrefix('a-');
         noFixVm = true;
       }
     }
+    vmArray.__ant__.$getChild('length').$set(vmArray.length);
     vmArray.__ant__.$root.$ant.trigger('update');
   }
   var arrayMethods = {
@@ -1122,7 +1136,35 @@ setPrefix('a-');
   //处理动态节点(z-repeat, z-if)
   var Generator = Watcher.extend(
     {
-      callback: function(data, old) {
+      constructor: function (relativeVm, token){
+        //文档参照节点. 
+        var anchor = doc.createTextNode('')
+          , el = token.el
+          , type = token.nodeName
+          ;
+
+        this.type = type;
+        this.anchor = anchor;
+        el.parentNode.insertBefore(anchor, el);
+        el.parentNode.removeChild(el);
+          
+        Watcher.apply(this, arguments);
+        
+        el.removeAttribute(type);
+                
+        this.els = [];
+        this.vm = relativeVm.$getChild(this.locals[0]);
+        
+        if(type === antAttr.IF){
+          //if 属性不用切换作用域
+          travelEl(this.el, relativeVm);
+        }
+        
+      }
+    , setRepeat: function() {
+          
+      }
+    , callback: function(data, old) {
         var that = this
           ;
         if(that.type === antAttr.REPEAT){
@@ -1136,7 +1178,7 @@ setPrefix('a-');
         }else{
           if(data) {
             if(!that.lastIfState) {
-              that.relateEl.parentNode.insertBefore(that.el, that.relateEl);
+              that.anchor.parentNode.insertBefore(that.el, that.anchor);
             }
           }else{
             if(that.lastIfState) {
@@ -1159,7 +1201,7 @@ setPrefix('a-');
           , m = items.length
           , newEls = []
           , frag = doc.createDocumentFragment()
-          , pn = this.relateEl.parentNode
+          , pn = this.anchor.parentNode
           , el, vm
           ;
         
@@ -1204,7 +1246,7 @@ setPrefix('a-');
           }
         }
         if(newEls.length){
-          pn.insertBefore(frag, els[index + n] || this.relateEl);
+          pn.insertBefore(frag, els[index + n] || this.anchor);
         }
         
         //需要清除缩短后多出的部分
@@ -1216,14 +1258,10 @@ setPrefix('a-');
         
         args = args.slice(0, 2).concat(newEls);
         els.splice.apply(els, args);
-        
-        if(n !== m){
-          this.vm.$getChild('length').$set(els.length);
-        }
       }
     , reverse: function(args, arr, noFixVm) {
         var vms = this.vm, vm
-          , el = this.relateEl
+          , el = this.anchor
           , frag = doc.createDocumentFragment()
           ;
         for(var i = 0, l = this.els.length; i < l; i++){
@@ -1243,34 +1281,6 @@ setPrefix('a-');
     , sort: function(fn){
         //TODO 进行精确高还原的排序?
         this.callback(this.val)
-      }
-    , constructor: function (relativeVm, token){
-        //文档参照节点. 
-        var relateEl = doc.createTextNode('')
-          , el = token.el
-          , type = token.nodeName
-          ;
-          
-        Watcher.apply(this, arguments);
-        
-        this.path = token.path;
-        
-        el.removeAttribute(type);
-        
-        this.type = type;
-        
-        this.relateEl = relateEl;
-        
-        this.els = [];
-        this.vm = relativeVm.$getChild(this.locals[0]);
-        
-        if(type === antAttr.IF){
-          //if 属性不用切换作用域
-          travelEl(this.el, relativeVm);
-        }
-        
-        el.parentNode.insertBefore(relateEl, el);
-        el.parentNode.removeChild(el);
       }
     }
   )
