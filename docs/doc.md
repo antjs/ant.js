@@ -514,7 +514,7 @@ var ant = new Ant(element, {
 
 - [双向绑定的例子](examples/2-way-binding.html)
 - [noBackend 的实时评论系统](examples/backbase/)
-- [Tutorials.js](http://justan.github.io/tutorials.js)
+- [Tutorials.js](http://antjs.github.io/tutorials.js)
 
 
 讨论
