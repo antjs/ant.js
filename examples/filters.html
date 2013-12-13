@@ -4,25 +4,35 @@
 	<meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>Filters in ant.js</title>
-  <!--[if lt IE 9]>
-  <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
-  <![endif]-->
   <script type="text/javascript" src="../dist/ant.js"></script>
+  <script type="text/javascript" src="../extensions/filters.js"></script>
 </head>
 <body>
-	<div id=template a-style='{{money | color}}'>
-    <h1>Filters in ant.js: </h1>
+	<div id=template>
     <div>
-      You got {{ money | rmb : type }} !!  
+      <h1>常用的 filters: </h1>
+      <p>首字母大写: {{text | capitalize}} 
+        <br />
+        <input type='text' value='antjs' a-model={{text}} />
+      </p>
+      <p>EncodedURL: {{url|urlEncode}}</p>
+      <p>默认值: {{undefined | defaults:'Default value'}}</p>
     </div>
-    <div><input value=50 type="range" a-model={{money}} min=0 max=100 autofocus /> 
-      <label>$: <input type="radio" name=type a-model='{{type }}' value='dol' checked /></label>
-      <label>￥: <input type="radio" name=type a-model='{{ type }}' value='rmb' /></label>
+    <div a-style='{{money | color}}'>
+      <h2>自定义 filters : </h2>
+      <div>
+        You got {{ money | rmb : type }} !!  
+      </div>
+      <div>
+        <input value=50 type="range" a-model={{money}} min=0 max=100 autofocus /> 
+        <label>$: <input type="radio" name=type a-model='{{type }}' value='dol' checked /></label>
+        <label>￥: <input type="radio" name=type a-model='{{ type }}' value='rmb' /></label>
+      </div>
     </div>
   </div>
 <script type="text/javascript">
   var ant = new Ant(document.getElementById('template'), {
-      data: { rate: 6.084 }
+      data: { rate: 6.084, url: location.href }
     //You can write filters here, just like events
     , filters: {
         rmb: function(money, type){

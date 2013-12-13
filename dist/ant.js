@@ -1384,6 +1384,8 @@ setPrefix('a-');
   , $repeat: false
   
   , $watchers: null
+
+  , $value: null
     
   //获取子 vm, 不存在的话将新建一个.
   , $getChild: function(path, strict) {
@@ -1442,12 +1444,15 @@ setPrefix('a-');
   , $set: function (data, isExtend) {
       var map = isExtend ? data : this
         , parent = this
-        //, end = true
         ;
       
+      
       for(var i = 0, l = this.$watchers.length; i < l; i++){
-        this.$watchers[i].fn();
+        if(this.$value !== data || this.$watchers[i].state === Watcher.STATE_READY){
+          this.$watchers[i].fn();
+        }
       }
+      this.$value = data;
       
       if(isObject(map)){
         for(var path in map) {
@@ -1455,19 +1460,10 @@ setPrefix('a-');
           //传入的数据键值不能和 vm 中的自带属性名相同.
           //所以不推荐使用 '$' 作为 JSON 数据键值的开头.
             this[path].$set(data ? data[path] : void(0), isExtend);
-            //end = false;
           }
         }
       }
 
-      //bubbling 
-      // if(end){
-      //   while(parent = parent.$parent){
-      //     for(var i = 0, l = parent.$watchers.length; i < l; i++){
-      //       parent.$watchers[i].fn();
-      //     }
-      //   }
-      // }
     }
   };
   
@@ -1772,7 +1768,7 @@ setPrefix('a-');
           console.error(e);
         }
       }
-      //this.state = Watcher.STATE_CALLED;
+      this.state = Watcher.STATE_CALLED;
     };
     
     if(callback){
@@ -1785,7 +1781,7 @@ setPrefix('a-');
       relativeVm.$getChild(this.paths[i]).$watchers.push(this);
     }
     
-    //this.state = Watcher.STATE_READY
+    this.state = Watcher.STATE_READY
     
     //When there is no variable in a binding, evaluate it immediately.
     if(!this.locals.length) {

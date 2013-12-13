@@ -24,7 +24,7 @@ module.exports = function(grunt) {
     uglify: {
       all: {
         options: {
-          banner: '/*! <%= pkg.name %> all - <%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %> all */\n'
+          banner: '/*! <%= pkg.name %> all - v<%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %> all */\n'
         },
         files: {
           'dist/ant.all.min.js': ['dist/ant.all.js']
@@ -32,7 +32,7 @@ module.exports = function(grunt) {
       },
       core: {
         options: {
-          banner: '/*! <%= pkg.name %> - <%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
+          banner: '/*! <%= pkg.name %> - v<%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
         },
         files: {
           'dist/ant.min.js': ['dist/ant.js']
