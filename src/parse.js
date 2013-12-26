@@ -473,6 +473,10 @@ define(function(){
 
       infixr("===", 40);
       infixr("!==", 40);
+
+      infixr("==", 40);
+      infixr("!=", 40);
+
       infixr("<", 40);
       infixr("<=", 40);
       infixr(">", 40);

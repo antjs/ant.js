@@ -110,6 +110,12 @@ describe('expression 表达式', function() {
   
   , '"a" - 1'
   , '"a" + "b"'
+  
+  , '"2" == 2'
+  , '"a" === 2'
+  
+  , '"0" !== 0'
+  , '"0" != 2'
   ];
   for(var i = 0, l = exps.length; i < l; i++){
     (function(i){

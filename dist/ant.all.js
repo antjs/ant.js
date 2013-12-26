@@ -563,6 +563,10 @@ if (!Function.prototype.bind) {
 
       infixr("===", 40);
       infixr("!==", 40);
+
+      infixr("==", 40);
+      infixr("!=", 40);
+
       infixr("<", 40);
       infixr("<=", 40);
       infixr(">", 40);
