@@ -1153,7 +1153,7 @@ setPrefix('a-');
         el.removeAttribute(type);
                 
         this.els = [];
-        this.vm = relativeVm.$getChild(this.locals[0]);
+        this.vm = relativeVm.$getChild(this.paths[0]);
         
         if(type === antAttr.IF){
           //if 属性不用切换作用域

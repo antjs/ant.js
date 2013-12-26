@@ -504,6 +504,15 @@ describe('模板语法', function() {
       })
       
     });
+
+    it('深度变量', function() {
+      var tpl = '<li a-repeat={{path.list}}>{{.}}</li>'
+        , data = {path: {list: ['ant', 'bee']}}
+        , ant = new Ant(tpl, {data: data})
+        ;
+
+        check(ant.el.getElementsByTagName('li'), data.path.list);
+    })
   });
 
   it('非转义模板 {{{token}}}', function() {
