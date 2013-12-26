@@ -266,9 +266,9 @@ define(function(){
 
       var init = function(fn) {
         var locals = {
-          locals: {},
-          filters: {},
-          paths: {}
+          locals: {},//表达式中用到的变量
+          filters: {},//用到的 filter
+          paths: {}//用到的监控路径
         };
         
         fn = fn || noop;
@@ -502,7 +502,7 @@ define(function(){
           this.second = expression(0);
           this.arity = "binary";
           advance("]");
-          if(path && token !== '.' && token !== '['){
+          if(path && token.value !== '.' && token.value !== '['){
             getter(path, 'paths');
             path = '';
           }
