@@ -2225,6 +2225,6 @@ setPrefix('a-');
   
   Ant._parse = parser.parse;
   Ant._eval = parser.eval;
-  Ant.version = '0.2.1';
+  Ant.version = '0.2.2';
   return Ant;
 });
