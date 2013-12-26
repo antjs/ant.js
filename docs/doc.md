@@ -48,9 +48,9 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
 
   `{{name}}`
 
-  两组大括号表示普通变量. 变量占位符只能位于文本节点和属性节点当中, 属性节点包括属性名和属性值. 深度变量可用点表示法和下标及表示法, 如: `{{todos.length}}`，`{{todos['length']}}`
+  两组大括号表示普通变量. 变量占位符只能位于文本节点和属性节点当中, 属性节点包括属性名和属性值. 深度变量可用点表示法和下标及表示法, 如: `{{todos.length}}`, `{{todos['length']}}`
 
-  HTML 属性名不能包含空格，所以 `{{}}` 用在属性名中不能包含空格。
+  HTML 属性名不能包含空格, 所以 `{{}}` 用在属性名中不能包含空格. 
   
 ### 条件
 
@@ -70,7 +70,7 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
 
   `readonly?={{condition}}`
 
-  类似 `a-if`, 如果 condition 为真，`readonly` 将出现在该属性对应的节点中。
+  类似 `a-if`, 如果 condition 为真, `readonly` 将出现在该属性对应的节点中. 
   
   
 ### 循环
@@ -168,30 +168,32 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   
   子模板可以通过 `ant.setPartial` 方法延时添加.
   
-### 过滤器
+### Filter (过滤器)
 
   `{{val | filter1:arg1:arg2 | filter2}}`
 
-  过滤器是实际上一些可以接受参数的函数。
+  Filter 是实际上一些可以接受参数的函数. 每个 Filter 都以前面表达式的值为第一个参数, 其他的参数可以用 `:` 表示. Filter 可以同其他表达式混合使用.
+
+  如: `{{(val | filter1:arg1:arg2 | filter2) + " -- " + (val2 * val4 | filter3)}}`
 
 ### 表达式
 
   `{{ val1 + val2 }}`
 
-  Ant 的表达式是 javascript 表达式的严格子集。
+  Ant 的表达式是 javascript 表达式的严格子集.
 
-  - 字符串操作： `{{'String'}}`, `{{'String ' + "concat"}}`
-  - 数学运算：`{{ 1 + 2}}`, `{{ (1 - 2) * 4 / 2 }}`
-  - 逻辑运算：`{{0 === false}}`, `{{ 2 >= 1 }}`, `{{ val && 1 }}`, `{{ val || 1 }}`, `{{ val ? 0 : 1 }}`, `{{ !val }}`
-  - 部分函数调用：`{{Math.round(num)}}`, `{{'a'.toUpperCase()}}`, `{{(Math.random()).toFixed(2)}}`
+  - 字符串操作:  `{{'String'}}`, `{{'String ' + "concat"}}`
+  - 数学运算: `{{ 1 + 2}}`, `{{ (1 - 2) * 4 / 2 }}`
+  - 逻辑运算: `{{0 === false}}`, `{{ 2 >= 1 }}`, `{{ val && 1 }}`, `{{ val || 1 }}`, `{{ val ? 0 : 1 }}`, `{{ !val }}`
+  - 部分函数调用: `{{Math.round(num)}}`, `{{'a'.toUpperCase()}}`, `{{(Math.random()).toFixed(2)}}`
 
 
-  关于表达式需要注意的一点是，`{{}}`占位符在不同的位置所允许使用的表达式（包括过滤器）也有所不同。目前分为几种情况：
+  关于表达式需要注意的一点是, `{{}}`占位符在不同的位置所允许使用的表达式 (包括过滤器) 也有所不同. 目前分为几种情况: 
   
 
-  1. 文本、属性值（包括条件属性）和 `a-if` 允许使用所有的表达式。
-  2. 属性名在 nodeJs 和现代浏览器（IE 10+）在属性名中也可以使用所有表达式。而在 IE 10 以前的浏览器中表达式中不能使用字符串。
-  3. `z-model`, `z-repeat` 中不能使用表达式。
+  1. 文本、属性值 (包括条件属性) 和 `a-if` 允许使用所有的表达式. 
+  2. 属性名在 nodeJs 和现代浏览器 (IE 10+) 在属性名中也可以使用所有表达式. 而在 IE 10 以前的浏览器中表达式中不能使用字符串. 
+  3. `z-model`, `z-repeat` 中不能使用表达式. 
 
 
 API
@@ -265,7 +267,7 @@ API
 
   构造函数的扩展. 可以扩展 Ant 的原型对象来为实例提供属性和方法, 也可以直接扩展构造函数及静态方法.
 
-  通过扩展原型对象的 `defaults` 属性，可以为新构造函数提供一些默认值。包括： `data`, 'filters', 'partials', 'events' 等所有通过构造函数 options 参数提供的参数。
+  通过扩展原型对象的 `defaults` 属性, 可以为新构造函数提供一些默认值. 包括:  `data`, 'filters', 'partials', 'events' 等所有通过构造函数 options 参数提供的参数. 
   
   - **prototypeProperties** `Object`
     
@@ -438,6 +440,10 @@ ant.set({newObj: {}, title: 'Matrix'}, false)//完全替换原有 'ant.data'. an
   - **[info.escape]** `Boolean` 是否转义字符串子模板
   - **[info.path]** `String` 指定子模板中变量在数据中的作用域
 
+### .setFilter(filterName, handler)
+
+  添加自定义 filter.
+
 ### .watch(keyPath, callback)
 
   添加自定义监控.
@@ -520,7 +526,7 @@ var ant = new Ant(element, {
 讨论
 ----
 - [Github issue](https://github.com/antjs/ant.js/issues)
-- 邮件讨论组：[antjs@librelist.com](mailto:antjs@librelist.com)
+- 邮件讨论组: [antjs@librelist.com](mailto:antjs@librelist.com)
  
   
 [0]: http://documentcloud.github.io/backbone/#View-delegateEvents

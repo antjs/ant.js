@@ -132,7 +132,7 @@
       return new RegExp('^' + path + '$', sensitive ? '' : 'i');
     }
     
-    var urlParse = (function() {
+    var urlParse = router.urlParse = (function() {
       var reg = /^(?:(\w+\:)\/\/([^\/]+)?)?((\/?[^?#]*)(\?[^#]*)?(#.*)?)$/
         , map = ['href', 'protocal', 'host', 'path', 'pathname', 'search', 'hash']
         ;
@@ -183,7 +183,7 @@
     return router;
   }();
   
-  window.Ant = window.Ant.extend({}, {
-    router: router
-  });
+  if(window.Ant){
+    Ant.router = router;
+  };
 })(this, jQuery);
