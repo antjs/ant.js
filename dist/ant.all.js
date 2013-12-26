@@ -1072,6 +1072,7 @@ setPrefix('a-');
      * 渲染模板
      */
   , render: function(data) {
+      data = data || this.data;
       this.set(data, {isExtend: false});
       this.isRendered = true;
       this.trigger('render');
@@ -2411,7 +2412,7 @@ setPrefix('a-');
       return new RegExp('^' + path + '$', sensitive ? '' : 'i');
     }
     
-    var urlParse = (function() {
+    var urlParse = router.urlParse = (function() {
       var reg = /^(?:(\w+\:)\/\/([^\/]+)?)?((\/?[^?#]*)(\?[^#]*)?(#.*)?)$/
         , map = ['href', 'protocal', 'host', 'path', 'pathname', 'search', 'hash']
         ;
@@ -2462,7 +2463,7 @@ setPrefix('a-');
     return router;
   }();
   
-  window.Ant = window.Ant.extend({}, {
-    router: router
-  });
+  if(window.Ant){
+    Ant.router = router;
+  };
 })(this, jQuery);

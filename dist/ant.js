@@ -1072,6 +1072,7 @@ setPrefix('a-');
      * 渲染模板
      */
   , render: function(data) {
+      data = data || this.data;
       this.set(data, {isExtend: false});
       this.isRendered = true;
       this.trigger('render');

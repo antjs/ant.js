@@ -29,7 +29,7 @@ var ant = new Ant($('#container')[0], {
       antData.child($(e.target.parentNode).data('id')).remove();
     }
   , 'click .edit': function(e) {
-      var index = e.target.parentNode['a-index'];
+      var index = e.target.parentNode['$index'];
       this.set('newComment', this.data.comments[index]);
     }
   , 'click .edit-cancel': function(){
