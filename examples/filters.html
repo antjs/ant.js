@@ -48,6 +48,11 @@
             json (json)
           </h2>{{.|json}}
         </div>
+        <div>
+          <h2>
+            时间日期格式化 (dateFormat)
+          </h2>{{time|dateFormat:'yyyy-mm-dd HH:MM:ss'}}
+        </div>
       </div>
       <div a-style='{{money | color}}'>
         <h1>
@@ -81,9 +86,13 @@
         }
       }
     });
+    
+    setInterval(function() {
+      ant.set('time', (new Date).getTime())
+    }, 1000);
 
     function prefixO(str) {
-    return str.length < 2 ? ('0' + str) : str;
+      return str.length < 2 ? ('0' + str) : str;
     }
     </script>
   </body>
