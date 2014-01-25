@@ -1641,7 +1641,7 @@ setPrefix('a-');
         
         var ant = vm.$root.$ant
           , cur = keyPath === '.' ? vm : vm.$getChild(keyPath)
-          , ev = 'change'
+          , ev = 'change blur'
           , attr, value = attr = 'value'
           , isSetDefaut = isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
           , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
@@ -1664,7 +1664,7 @@ setPrefix('a-');
         switch(el.tagName) {
           default:
             value = attr = 'innerHTML';
-            ev += ' blur';
+            //ev += ' blur';
           case 'INPUT':
           case 'TEXTAREA':
             switch(el.type) {
