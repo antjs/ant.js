@@ -2002,7 +2002,7 @@ setPrefix('a-');
             return;
           }
           //if(this.state === 0 || !isExtend){
-            data && this.splice([0, this.els.length].concat(data));
+            data && this.splice([0, this.els.length].concat(data), data);
           //}
         }else{
           if(data) {
@@ -2083,6 +2083,10 @@ setPrefix('a-');
           for(var k = l - n + m; k < l; k++){
             delete this.vm[k];
           }
+        }
+        
+        if(arr.__ant__ !== this.vm) {
+          arr.__ant__ = this.vm;
         }
         
         args = args.slice(0, 2).concat(newEls);

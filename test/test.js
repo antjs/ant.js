@@ -512,6 +512,21 @@ describe('模板语法', function() {
         ;
 
         check(ant.el.getElementsByTagName('li'), data.path.list);
+    });
+    
+    describe('多层数组', function() {
+      var tpl = '\
+          <li a-repeat={{province}}><span>{{name}}</span>\
+            <ul>\
+              <li a-repeat={{city}}><span>{{name}}</span>\
+            </ul>\
+          </li>\
+          '
+        , data = {province: [{name: '天际', city: [{name: '独孤城'}]}]}
+        , ant = new Ant(tpl, {data: data})
+        ;
+        
+      //TODO
     })
   });
 
