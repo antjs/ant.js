@@ -15,6 +15,11 @@
       , defaults: function(val, defaults) {
           return typeof val === 'undefined' ? (typeof defaults === 'undefined' ? '' : defaults) : val;
         }
+      , ellipsis: function(str, maxLength, tail) {
+          maxLength = maxLength || 80;
+          tail = tail || '...';
+          return str.length > maxLength ? (str.slice(0, maxLength - tail.length) + tail) : str;
+        }
       }
     }
   })

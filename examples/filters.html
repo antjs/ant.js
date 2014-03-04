@@ -15,8 +15,10 @@
         <br />
         <input type='text' value='antjs' a-model={{text}} />
       </p>
-      <p>EncodedURL: {{url|urlEncode}}</p>
+      <p>EncodedURL: {{url|urlEncode|ellipsis:5}}</p>
       <p>默认值: {{undefined | defaults:'Default value'}}</p>
+      <!-- <p>补充字符串省略号: {{longStr | ellipsis : 7}}</p> -->
+      <input type="text" value="这里是一大段文字" a-model={{longStr}}>
     </div>
     <div a-style='{{money | color}}'>
       <h2>自定义 filters : </h2>
