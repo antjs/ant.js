@@ -1,3 +1,4 @@
+
 define(function(require){
 var parser = require('./parse.js');
 var doc = document;
@@ -220,9 +221,10 @@ setPrefix('a-');
               为 true 时, 是扩展式更新, 原有的数据不变
               为 false 时, 为替换更新, 不在 data 中的变量, 将在 DOM 中被清空.
      */
-    update: function(keyPath, data, isExtend) {
+    update: function(keyPath, data, isExtend, isBubble) {
       var attrs, vm = this._vm;
       if(isObject(keyPath)){
+        isBubble = isExtend;
         isExtend = data;
         attrs = data = keyPath;
       }else if(typeof keyPath === 'string'){
@@ -237,7 +239,7 @@ setPrefix('a-');
       }
       
       if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
-      vm.$set(data, isExtend);
+      vm.$set(data, isExtend, isBubble !== false);
       this.trigger('update', attrs);
       return this;
     }
@@ -329,7 +331,7 @@ setPrefix('a-');
           }
         }
       }
-      changed && (!opt.silence) && (isObject(key) ? this.update(key, isExtend) : this.update(key, val, isExtend));
+      changed && (!opt.silence) && (isObject(key) ? this.update(key, isExtend, opt.isBubble) : this.update(key, val, isExtend, opt.isBubble));
       return this;
     }
     /**
@@ -382,7 +384,7 @@ setPrefix('a-');
         }
         
         travelEls(els, vm);
-        this.isRendered && vm.$set(deepGet(path, this.data));
+        this.isRendered && vm.$set(deepGet(path, this.data), false, true);
       }
       return this;
     }
@@ -559,7 +561,7 @@ setPrefix('a-');
   
   , $watchers: null
 
-  , $value: null
+  , $value: NaN
     
   //获取子 vm, 不存在的话将新建一个.
   , $getChild: function(path, strict) {
@@ -605,7 +607,7 @@ setPrefix('a-');
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
   , $getData: function(key, isStrict) {
-      if(key === '$index' && this.$parent && this.$parent.$repeat){
+      if(key === '_index' && this.$parent && this.$parent.$repeat){
         return this.$key * 1;
       }
       var curVal = deepGet(key, this.$root.$ant.get(this.$getKeyPath()));
@@ -615,7 +617,7 @@ setPrefix('a-');
         return this.$parent.$getData(key);
       }
     }
-  , $set: function (data, isExtend) {
+  , $set: function (data, isExtend, isBubble) {
       var map = isExtend ? data : this
         , parent = this
         ;
@@ -638,6 +640,13 @@ setPrefix('a-');
         }
       }
 
+      if(isBubble){
+        while(parent = parent.$parent){
+          for(var i = 0, l = parent.$watchers.length; i < l; i++){
+            parent.$watchers[i].fn();
+          }
+        }
+      }
     }
   };
   
@@ -817,17 +826,23 @@ setPrefix('a-');
           , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
           , callback = function(val) {
               //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
-              var newVal = val || vm.$getData(keyPath) || ''
+              var newVal = (val || vm.$getData(keyPath) || '') + ''
                 , val = el[attr]
                 ;
               val && val.replace && (val = val.replace(crlf, '\n'));
               if(newVal !== val){ el[attr] = newVal; }
             }
-          , handler = function() {
+          , handler = function(isInit) {
               var val = el[value];
               
               val.replace && (val = val.replace(crlf, '\n'));
-              ant.set(cur.$getKeyPath(), val);
+              ant.set(cur.$getKeyPath(), val, {isBubble: isInit !== true});
+            }
+          , callHandler = function(e) {
+              if(e && e.propertyName && e.propertyName !== attr) {
+                return;
+              }
+              handler.apply(this, arguments)
             }
           ;
         
@@ -847,7 +862,7 @@ setPrefix('a-');
                 attr = 'checked';
                 if(isIE) { ev += ' click'; }
                 callback = function() {
-                  el.checked = el.value === vm.$getData(keyPath);
+                  el.checked = el.value === vm.$getData(keyPath) + '';
                 };
                 isSetDefaut = el.checked;
               break;
@@ -866,12 +881,12 @@ setPrefix('a-');
           break;
           case 'SELECT':
             if(el.multiple){
-              handler = function() {
+              handler = function(isInit) {
                 var vals = [];
                 for(var i = 0, l = el.options.length; i < l; i++){
                   if(el.options[i].selected){ vals.push(el.options[i].value) }
                 }
-                ant.set(cur.$getKeyPath(), vals);
+                ant.set(cur.$getKeyPath(), vals, {isBubble: isInit !== true});
               };
               callback = function(){
                 var vals = vm.$getData(keyPath);
@@ -887,8 +902,8 @@ setPrefix('a-');
         }
         
         ev.split(/\s+/g).forEach(function(e){
-          removeEvent(el, e, handler);
-          addEvent(el, e, handler);
+          removeEvent(el, e, callHandler);
+          addEvent(el, e, callHandler);
         });
         
         el.removeAttribute(antAttr.MODEL);
@@ -898,7 +913,7 @@ setPrefix('a-');
         
         //根据表单元素的初始化默认值设置对应 model 的值
         if(el[value] && isSetDefaut){
-           handler(); 
+           handler(true); 
         }
         
         return watcher;
@@ -922,7 +937,7 @@ setPrefix('a-');
     this.filters = [];
     this.paths = [];
     this.el = token.el;
-    this.val = null;
+    this.val = NaN;
     this.fn = function() {
       var vals = {}, key;
       for(var i = 0, l = this.locals.length; i < l; i++){
@@ -1100,7 +1115,7 @@ setPrefix('a-');
         noFixVm = true;
       }
     }
-    vmArray.__ant__.$getChild('length').$set(vmArray.length);
+    vmArray.__ant__.$getChild('length').$set(vmArray.length, false, true);
     vmArray.__ant__.$root.$ant.trigger('update');
   }
   var arrayMethods = {
@@ -1217,11 +1232,19 @@ setPrefix('a-');
           }else{
             if(n || m){
               //维护索引
-              var j = i - (n - m);
-              els[i]['$index'] = j;
+              var newI = i - (n - m)
+                , oldI = i
+                ;
+              
+              if(newI > oldI) {
+                newI = l - (i - index);
+                oldI = newI + (n - m);
+              }
+              
+              els[oldI]['$index'] = newI;
               if(!noFixVm){
-                vm = this.vm[j] = this.vm[i];
-                vm.$key = j + '';
+                vm = this.vm[newI] = this.vm[oldI];
+                vm.$key = newI + '';
               }
             }else{
               break;
