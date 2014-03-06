@@ -607,7 +607,7 @@ setPrefix('a-');
   
   //获取对象的某个值, 没有的话查找父节点, 直到顶层.
   , $getData: function(key, isStrict) {
-      if(key === '_index' && this.$parent && this.$parent.$repeat){
+      if(key === '$index' && this.$parent && this.$parent.$repeat){
         return this.$key * 1;
       }
       var curVal = deepGet(key, this.$root.$ant.get(this.$getKeyPath()));
