@@ -20,7 +20,7 @@
         </h1>
         <div>
           <h2>
-            首字母大写:
+            首字母大写 (capitalize):
           </h2>
           <p>
             {{text | capitalize}}<br>
@@ -29,7 +29,7 @@
         </div>
         <div>
           <h2>
-            EncodedURL:
+            url 编码 (urlEncode):
           </h2>
           <p>
             {{url|urlEncode|ellipsis:50}}
@@ -37,15 +37,7 @@
         </div>
         <div>
           <h2>
-            默认值:
-          </h2>
-          <p>
-            {{undefined | defaults:'Default value'}}
-          </p>
-        </div>
-        <div>
-          <h2>
-            补充字符串省略号:
+            补充字符串省略号(ellipsis):
           </h2>
           <p>
             {{longStr | ellipsis : 7}}
@@ -53,7 +45,7 @@
         </div>
         <div>
           <h2>
-            json
+            json (json)
           </h2>{{.|json}}
         </div>
       </div>
