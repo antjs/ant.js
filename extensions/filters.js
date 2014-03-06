@@ -9,9 +9,9 @@
       , urlEncode: function(str) {
           return encodeURIComponent(str);
         }
-      // , json: function(obj) {
-      //     return JSON.stringify(obj);
-      //   }
+      , json: function(obj) {
+          return JSON.stringify(obj);
+        }
       , defaults: function(val, defaults) {
           return typeof val === 'undefined' ? (typeof defaults === 'undefined' ? '' : defaults) : val;
         }

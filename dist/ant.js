@@ -638,7 +638,7 @@ if (!Function.prototype.bind) {
         var a;
         this.first = left;
         token.arity = 'filter';
-        this.second = expression(0);
+        this.second = expression(10);
         this.arity = 'binary';
         if(token.id === ':'){
           this.arity = 'ternary';
