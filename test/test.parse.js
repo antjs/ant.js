@@ -43,6 +43,15 @@ describe('literal 直接量', function() {
     expect(a[1]).to.be("2");
     expect(a.length).to.be(2);
   });
+  
+  describe('字符串中的符号', function() {
+    var symbols = ["+", "-", "*", "/", "true", "false", "%"]
+    symbols.forEach(function(s) {
+      it('String: ' + s, function() {
+        expect(evalu(parse('"' + s + '"'))).to.be(s);
+      })
+    })
+  })
 });
 
 describe('variable 变量', function() {

@@ -323,7 +323,8 @@ define(function(){
           token_nr += 1;
           v = t.value;
           a = t.type;
-          if (a === "operator" || v in symbol_table) {
+          if ((a === "operator" || a !== 'string') && v in symbol_table) {
+              //true, false 等直接量也会进入此分支
               o = symbol_table[v];
               if (!o) {
                   error("Unknown operator.", t);
