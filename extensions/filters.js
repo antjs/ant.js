@@ -13,9 +13,6 @@
       , json: function(obj) {
           return JSON.stringify(obj);
         }
-      , defaults: function(val, defaults) {
-          return typeof val === 'undefined' ? (typeof defaults === 'undefined' ? '' : defaults) : val;
-        }
       , ellipsis: function(str, maxLength, tail) {
           maxLength = maxLength || 80;
           tail = tail || '...';

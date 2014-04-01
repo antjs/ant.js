@@ -5,24 +5,24 @@
 	<title>Ant.js测试页面</title>
   <link rel="stylesheet" type="text/css" href="../node_modules/mocha/mocha.css" media="all"/>
   <script type="text/javascript" src="../node_modules/mocha/mocha.js"></script>
-  <script type="text/javascript" src="../node_modules/expect.js/index.js"></script>
+  <script type="text/javascript" src="../node_modules/expect.js/expect.js"></script>
   <script type="text/javascript">
     mocha.setup('bdd');
   </script>
-  <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
   <!--[if lt IE 9]>
-  <script type="text/javascript" src="../third-part/jquery.min.js"></script>
+  <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
   <![endif]-->
+  <script type="text/javascript" src="../third-part/jquery.min.js"></script>
   <script type="text/javascript" src="../dist/ant.js"></script>
+  <script type="text/javascript" src="../extenstions/filters.js"></script>
   <!--[if lt IE 8]>
-  <script>window.oldIE = true;</script>
   <script type="text/javascript" src="../third-part/json2.js"></script>
   <![endif]-->
 </head>
 <body>
 	<div id="mocha"></div>
 </body>
-<script type="text/javascript" src="test.js"></script>
+<script type="text/javascript" src="test.filters.js"></script>
 <script type="text/javascript">
 mocha.run();
 </script>

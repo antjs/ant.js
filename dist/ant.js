@@ -351,22 +351,24 @@ if (!Function.prototype.bind) {
       var tokens;
       var token_nr;
       var getter;
+      var context;
       
       var path = '';
 
       var init = function(fn) {
-        var locals = {
-          locals: {},//表达式中用到的变量
+        var summary = {
+          locals: {},//表达式中的变量
           filters: {},//用到的 filter
-          paths: {}//用到的监控路径
+          paths: {},//用到的监控路径
+          assignments: {}
         };
         
         fn = fn || noop;
         
         getter = function(value, type) {
-          if(!locals[type][value]){
+          if(!summary[type][value]){
             fn(value, type);
-            locals[type][value] = true;
+            summary[type][value] = true;
           }
         };
       };
@@ -572,6 +574,17 @@ if (!Function.prototype.bind) {
       infixr("<=", 40);
       infixr(">", 40);
       infixr(">=", 40);
+      
+      infix("in", 45, function (left) {
+          this.first = left;
+          this.second = expression(0);
+          this.arity = "binary";
+          if(repeat){
+            // `in` at repeat block
+            this.assignment = true;
+          }
+          return this;
+      });
 
       infix("+", 50);
       infix("-", 50);
@@ -708,10 +721,14 @@ if (!Function.prototype.bind) {
           return this;
       });
 
-      return function (source, fn) {
-          tokens = tokenize(source, '=<>!+-*&|/%^', '=<>&|');
+      //_source: 表达式代码字符串
+      //_fn: 接收表达式语法摘要函数
+      //_context: 表达式的语句环境
+      return function (_source, _fn, _context) {
+          tokens = tokenize(_source, '=<>!+-*&|/%^', '=<>&|');
           token_nr = 0;
-          init(fn);
+          context = _context;
+          init(_fn);
           advance();
           var s = expression(0);
           advance("(end)");
@@ -1757,7 +1774,7 @@ setPrefix('a-');
       
     this._ast = parser.parse(path, function(key, type) {
       that[type].push(key);
-    });
+    }, this.type);
   };
   
   function Watcher(relativeVm, token, callback) {

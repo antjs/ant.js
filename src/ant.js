@@ -926,7 +926,7 @@ setPrefix('a-');
       
     this._ast = parser.parse(path, function(key, type) {
       that[type].push(key);
-    });
+    }, this.type);
   };
   
   function Watcher(relativeVm, token, callback) {
