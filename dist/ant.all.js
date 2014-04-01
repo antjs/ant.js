@@ -413,7 +413,8 @@ if (!Function.prototype.bind) {
           token_nr += 1;
           v = t.value;
           a = t.type;
-          if (a === "operator" || v in symbol_table) {
+          if ((a === "operator" || a !== 'string') && v in symbol_table) {
+              //true, false 等直接量也会进入此分支
               o = symbol_table[v];
               if (!o) {
                   error("Unknown operator.", t);
@@ -638,7 +639,7 @@ if (!Function.prototype.bind) {
         var a;
         this.first = left;
         token.arity = 'filter';
-        this.second = expression(0);
+        this.second = expression(10);
         this.arity = 'binary';
         if(token.id === ':'){
           this.arity = 'ternary';
@@ -829,6 +830,7 @@ if (!Function.prototype.bind) {
     parse: make_parse()
   , eval: make_eval()
   };
+
 
 var doc = document;
 
@@ -1050,9 +1052,10 @@ setPrefix('a-');
               为 true 时, 是扩展式更新, 原有的数据不变
               为 false 时, 为替换更新, 不在 data 中的变量, 将在 DOM 中被清空.
      */
-    update: function(keyPath, data, isExtend) {
+    update: function(keyPath, data, isExtend, isBubble) {
       var attrs, vm = this._vm;
       if(isObject(keyPath)){
+        isBubble = isExtend;
         isExtend = data;
         attrs = data = keyPath;
       }else if(typeof keyPath === 'string'){
@@ -1067,7 +1070,7 @@ setPrefix('a-');
       }
       
       if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
-      vm.$set(data, isExtend);
+      vm.$set(data, isExtend, isBubble !== false);
       this.trigger('update', attrs);
       return this;
     }
@@ -1159,7 +1162,7 @@ setPrefix('a-');
           }
         }
       }
-      changed && (!opt.silence) && (isObject(key) ? this.update(key, isExtend) : this.update(key, val, isExtend));
+      changed && (!opt.silence) && (isObject(key) ? this.update(key, isExtend, opt.isBubble) : this.update(key, val, isExtend, opt.isBubble));
       return this;
     }
     /**
@@ -1212,7 +1215,7 @@ setPrefix('a-');
         }
         
         travelEls(els, vm);
-        this.isRendered && vm.$set(deepGet(path, this.data));
+        this.isRendered && vm.$set(deepGet(path, this.data), false, true);
       }
       return this;
     }
@@ -1389,7 +1392,7 @@ setPrefix('a-');
   
   , $watchers: null
 
-  , $value: null
+  , $value: NaN
     
   //获取子 vm, 不存在的话将新建一个.
   , $getChild: function(path, strict) {
@@ -1445,7 +1448,7 @@ setPrefix('a-');
         return this.$parent.$getData(key);
       }
     }
-  , $set: function (data, isExtend) {
+  , $set: function (data, isExtend, isBubble) {
       var map = isExtend ? data : this
         , parent = this
         ;
@@ -1468,6 +1471,13 @@ setPrefix('a-');
         }
       }
 
+      if(isBubble){
+        while(parent = parent.$parent){
+          for(var i = 0, l = parent.$watchers.length; i < l; i++){
+            parent.$watchers[i].fn();
+          }
+        }
+      }
     }
   };
   
@@ -1641,30 +1651,36 @@ setPrefix('a-');
         
         var ant = vm.$root.$ant
           , cur = keyPath === '.' ? vm : vm.$getChild(keyPath)
-          , ev = 'change'
+          , ev = 'change blur'
           , attr, value = attr = 'value'
           , isSetDefaut = isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
           , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
           , callback = function(val) {
               //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
-              var newVal = val || vm.$getData(keyPath) || ''
+              var newVal = (val || vm.$getData(keyPath) || '') + ''
                 , val = el[attr]
                 ;
               val && val.replace && (val = val.replace(crlf, '\n'));
               if(newVal !== val){ el[attr] = newVal; }
             }
-          , handler = function() {
+          , handler = function(isInit) {
               var val = el[value];
               
               val.replace && (val = val.replace(crlf, '\n'));
-              ant.set(cur.$getKeyPath(), val);
+              ant.set(cur.$getKeyPath(), val, {isBubble: isInit !== true});
+            }
+          , callHandler = function(e) {
+              if(e && e.propertyName && e.propertyName !== attr) {
+                return;
+              }
+              handler.apply(this, arguments)
             }
           ;
         
         switch(el.tagName) {
           default:
             value = attr = 'innerHTML';
-            ev += ' blur';
+            //ev += ' blur';
           case 'INPUT':
           case 'TEXTAREA':
             switch(el.type) {
@@ -1677,7 +1693,7 @@ setPrefix('a-');
                 attr = 'checked';
                 if(isIE) { ev += ' click'; }
                 callback = function() {
-                  el.checked = el.value === vm.$getData(keyPath);
+                  el.checked = el.value === vm.$getData(keyPath) + '';
                 };
                 isSetDefaut = el.checked;
               break;
@@ -1696,12 +1712,12 @@ setPrefix('a-');
           break;
           case 'SELECT':
             if(el.multiple){
-              handler = function() {
+              handler = function(isInit) {
                 var vals = [];
                 for(var i = 0, l = el.options.length; i < l; i++){
                   if(el.options[i].selected){ vals.push(el.options[i].value) }
                 }
-                ant.set(cur.$getKeyPath(), vals);
+                ant.set(cur.$getKeyPath(), vals, {isBubble: isInit !== true});
               };
               callback = function(){
                 var vals = vm.$getData(keyPath);
@@ -1717,8 +1733,8 @@ setPrefix('a-');
         }
         
         ev.split(/\s+/g).forEach(function(e){
-          removeEvent(el, e, handler);
-          addEvent(el, e, handler);
+          removeEvent(el, e, callHandler);
+          addEvent(el, e, callHandler);
         });
         
         el.removeAttribute(antAttr.MODEL);
@@ -1728,7 +1744,7 @@ setPrefix('a-');
         
         //根据表单元素的初始化默认值设置对应 model 的值
         if(el[value] && isSetDefaut){
-           handler(); 
+           handler(true); 
         }
         
         return watcher;
@@ -1752,7 +1768,7 @@ setPrefix('a-');
     this.filters = [];
     this.paths = [];
     this.el = token.el;
-    this.val = null;
+    this.val = NaN;
     this.fn = function() {
       var vals = {}, key;
       for(var i = 0, l = this.locals.length; i < l; i++){
@@ -1930,7 +1946,7 @@ setPrefix('a-');
         noFixVm = true;
       }
     }
-    vmArray.__ant__.$getChild('length').$set(vmArray.length);
+    vmArray.__ant__.$getChild('length').$set(vmArray.length, false, true);
     vmArray.__ant__.$root.$ant.trigger('update');
   }
   var arrayMethods = {
@@ -2002,7 +2018,7 @@ setPrefix('a-');
             return;
           }
           //if(this.state === 0 || !isExtend){
-            data && this.splice([0, this.els.length].concat(data));
+            data && this.splice([0, this.els.length].concat(data), data);
           //}
         }else{
           if(data) {
@@ -2047,11 +2063,19 @@ setPrefix('a-');
           }else{
             if(n || m){
               //维护索引
-              var j = i - (n - m);
-              els[i]['$index'] = j;
+              var newI = i - (n - m)
+                , oldI = i
+                ;
+              
+              if(newI > oldI) {
+                newI = l - (i - index);
+                oldI = newI + (n - m);
+              }
+              
+              els[oldI]['$index'] = newI;
               if(!noFixVm){
-                vm = this.vm[j] = this.vm[i];
-                vm.$key = j + '';
+                vm = this.vm[newI] = this.vm[oldI];
+                vm.$key = newI + '';
               }
             }else{
               break;
@@ -2083,6 +2107,10 @@ setPrefix('a-');
           for(var k = l - n + m; k < l; k++){
             delete this.vm[k];
           }
+        }
+        
+        if(arr.__ant__ !== this.vm) {
+          arr.__ant__ = this.vm;
         }
         
         args = args.slice(0, 2).concat(newEls);
@@ -2225,7 +2253,7 @@ setPrefix('a-');
   
   Ant._parse = parser.parse;
   Ant._eval = parser.eval;
-  Ant.version = '0.2.2';
+  Ant.version = '0.2.3';
   return Ant;
 });;
 /**
@@ -2267,21 +2295,205 @@ setPrefix('a-');
   window.Ant = Ant.extend({
     defaults: {
       filters: {
+        //capitalize ����ĸ��д
         capitalize: function(str) {
           return (str || '').charAt(0).toUpperCase() + str.slice(1);
         }
       , urlEncode: function(str) {
           return encodeURIComponent(str);
         }
-      // , json: function(obj) {
-      //     return JSON.stringify(obj);
-      //   }
+      , json: function(obj) {
+          return JSON.stringify(obj);
+        }
       , defaults: function(val, defaults) {
           return typeof val === 'undefined' ? (typeof defaults === 'undefined' ? '' : defaults) : val;
         }
+      , ellipsis: function(str, maxLength, tail) {
+          maxLength = maxLength || 80;
+          tail = tail || '...';
+          return str.length > maxLength ? (str.slice(0, maxLength - tail.length) + tail) : str;
+        }
+      , dateFormat: function(date, mask, utc) {
+          return dateFormat(date, mask, utc)
+        }
       }
     }
-  })
+  });
+  
+  //���ڸ�ʽ��
+  //����: http://blog.stevenlevithan.com/archives/date-time-format
+  /*
+   * Date Format 1.2.3
+   * (c) 2007-2009 Steven Levithan <stevenlevithan.com>
+   * MIT license
+   *
+   * Includes enhancements by Scott Trenda <scott.trenda.net>
+   * and Kris Kowal <cixar.com/~kris.kowal/>
+   *
+   * Accepts a date, a mask, or a date and a mask.
+   * Returns a formatted version of the given date.
+   * The date defaults to the current date/time.
+   * The mask defaults to dateFormat.masks.default.
+   */
+
+  var dateFormat = function () {
+    var	token = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZWN]|"[^"]*"|'[^']*'/g,
+      timezone = /\b(?:[PMCEA][SDP]T|(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time|(?:GMT|UTC)(?:[-+]\d{4})?)\b/g,
+      timezoneClip = /[^-+\dA-Z]/g,
+      pad = function (val, len) {
+        val = String(val);
+        len = len || 2;
+        while (val.length < len) val = "0" + val;
+        return val;
+      },
+      /**
+       * Get the ISO 8601 week number
+       * Based on comments from
+       * http://techblog.procurios.nl/k/n618/news/view/33796/14863/Calculate-ISO-8601-week-and-year-in-javascript.html
+       */
+      getWeek = function (date) {
+        // Remove time components of date
+        var targetThursday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+        // Change date to Thursday same week
+        targetThursday.setDate(targetThursday.getDate() - ((targetThursday.getDay() + 6) % 7) + 3);
+
+        // Take January 4th as it is always in week 1 (see ISO 8601)
+        var firstThursday = new Date(targetThursday.getFullYear(), 0, 4);
+
+        // Change date to Thursday same week
+        firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3);
+
+        // Check if daylight-saving-time-switch occured and correct for it
+        var ds = targetThursday.getTimezoneOffset() - firstThursday.getTimezoneOffset();
+        targetThursday.setHours(targetThursday.getHours() - ds);
+
+        // Number of weeks between target Thursday and first Thursday
+        var weekDiff = (targetThursday - firstThursday) / (86400000*7);
+        return 1 + Math.floor(weekDiff);
+      },
+
+      /**
+       * Get ISO-8601 numeric representation of the day of the week
+       * 1 (for Monday) through 7 (for Sunday)
+       */
+
+      getDayOfWeek = function(date){
+        var dow = date.getDay();
+        if(dow === 0) dow = 7;
+        return dow;
+      };
+
+    // Regexes and supporting functions are cached through closure
+    return function (date, mask, utc, gmt) {
+      var dF = dateFormat;
+
+      // You can't provide utc if you skip other args (use the "UTC:" mask prefix)
+      if (arguments.length == 1 && Object.prototype.toString.call(date) == "[object String]" && !/\d/.test(date)) {
+        mask = date;
+        date = undefined;
+      }
+
+      date = date || new Date;
+
+      if(!(date instanceof Date)) {
+        date = new Date(date);
+      }
+
+      if (isNaN(date)) {
+        throw TypeError("Invalid date");
+      }
+
+      mask = String(dF.masks[mask] || mask || dF.masks["default"]);
+
+      // Allow setting the utc/gmt argument via the mask
+      var maskSlice = mask.slice(0, 4);
+      if (maskSlice == "UTC:" || maskSlice == "GMT:") {
+        mask = mask.slice(4);
+        utc = true;
+        if (maskSlice == "GMT:") {
+          gmt = true;
+        }
+      }
+
+      var	_ = utc ? "getUTC" : "get",
+        d = date[_ + "Date"](),
+        D = date[_ + "Day"](),
+        m = date[_ + "Month"](),
+        y = date[_ + "FullYear"](),
+        H = date[_ + "Hours"](),
+        M = date[_ + "Minutes"](),
+        s = date[_ + "Seconds"](),
+        L = date[_ + "Milliseconds"](),
+        o = utc ? 0 : date.getTimezoneOffset(),
+        W = getWeek(date),
+        N = getDayOfWeek(date),
+        flags = {
+          d:    d,
+          dd:   pad(d),
+          ddd:  dF.i18n.dayNames[D],
+          dddd: dF.i18n.dayNames[D + 7],
+          m:    m + 1,
+          mm:   pad(m + 1),
+          mmm:  dF.i18n.monthNames[m],
+          mmmm: dF.i18n.monthNames[m + 12],
+          yy:   String(y).slice(2),
+          yyyy: y,
+          h:    H % 12 || 12,
+          hh:   pad(H % 12 || 12),
+          H:    H,
+          HH:   pad(H),
+          M:    M,
+          MM:   pad(M),
+          s:    s,
+          ss:   pad(s),
+          l:    pad(L, 3),
+          L:    pad(L > 99 ? Math.round(L / 10) : L),
+          t:    H < 12 ? "a"  : "p",
+          tt:   H < 12 ? "am" : "pm",
+          T:    H < 12 ? "A"  : "P",
+          TT:   H < 12 ? "AM" : "PM",
+          Z:    gmt ? "GMT" : utc ? "UTC" : (String(date).match(timezone) || [""]).pop().replace(timezoneClip, ""),
+          o:    (o > 0 ? "-" : "+") + pad(Math.floor(Math.abs(o) / 60) * 100 + Math.abs(o) % 60, 4),
+          S:    ["th", "st", "nd", "rd"][d % 10 > 3 ? 0 : (d % 100 - d % 10 != 10) * d % 10],
+          W:    W,
+          N:    N
+        };
+
+      return mask.replace(token, function ($0) {
+        return $0 in flags ? flags[$0] : $0.slice(1, $0.length - 1);
+      });
+    };
+  }();
+
+  // Some common format strings
+  dateFormat.masks = {
+    "default":      "ddd mmm dd yyyy HH:MM:ss",
+    shortDate:      "m/d/yy",
+    mediumDate:     "mmm d, yyyy",
+    longDate:       "mmmm d, yyyy",
+    fullDate:       "dddd, mmmm d, yyyy",
+    shortTime:      "h:MM TT",
+    mediumTime:     "h:MM:ss TT",
+    longTime:       "h:MM:ss TT Z",
+    isoDate:        "yyyy-mm-dd",
+    isoTime:        "HH:MM:ss",
+    isoDateTime:    "yyyy-mm-dd'T'HH:MM:ss",
+    isoUtcDateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'",
+    expiresHeaderFormat: "ddd, dd mmm yyyy HH:MM:ss Z"
+  };
+
+  // Internationalization strings
+  dateFormat.i18n = {
+    dayNames: [
+      "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
+      "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+    ],
+    monthNames: [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+    ]
+  };
 })(window.Ant);;(function(window, $, undefined){
   "use strict";
   var $root = $(window);

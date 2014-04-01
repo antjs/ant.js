@@ -1,6 +1,6 @@
 {
   "name": "ant.js",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "数据驱动 HTML 模板",
   "main": "dist/ant.js",
   "directories": {
@@ -24,14 +24,14 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
-    "jsdom": "~0.8.2"
+    "jsdom": "~0.10.4"
   },
   "devDependencies": {
     "grunt-contrib-concat": "~0.3.0",
     "grunt-contrib-uglify": "~0.2.2",
     "grunt": "~0.4.1",
     "mocha": "~1.13.0",
-    "expect.js": "~0.2.0",
+    "expect.js": "~0.3.1",
     "grunt-mocha": "~0.4.1",
     "pygmentize-bundled": "~2.1.0",
     "requirejs": "~2.1.9",
