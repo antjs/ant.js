@@ -711,7 +711,12 @@ define(function(){
         case 'unary': 
         case 'binary':
         case 'ternary':
-          return getOperator(arity, value)(args[0], args[1], args[2]);
+          try{
+            return getOperator(arity, value)(args[0], args[1], args[2]);
+          }catch(e){
+            //console.debug(e);
+            return '';
+          }
         break;
         case 'literal':
           return value;
