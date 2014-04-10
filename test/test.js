@@ -761,16 +761,45 @@ describe('模板语法', function() {
 
 });
 
-// describe('ant.watch', function() {
-//   var ant = new Ant('', {data: {}})
-//     , flag = false
-//     ;
+describe('ant.watch / ant.unwatch', function() {
+  var ant = new Ant('', {data: {}})
+    , val1, val2
+    ;
 
-//   ant.watch('parent', function(val) {
-//     flag = val;
-//   });
-//   it('bubbling', function(){
-//     ant.set('parent.child', 'abc');
-//     expect(flag).to.be('abc');
-//   });
-// });
+  var watcher = function(newVal, oldVal) {
+    val1 = newVal;
+    val2 = oldVal;
+  };
+   
+  ant.watch('key', watcher);
+  it('base watch', function(){
+    ant.set('key', 'abc');
+    expect(val1).to.be('abc');
+  });
+  it('deep watch', function() {
+    ant.watch('path.val', function(newVal, oldVal) {
+      val1 = newVal;
+      val2 = oldVal;
+    });
+    ant.set('path.val', '123');
+    expect(val1).to.be('123');
+  });
+  it('bubbling', function() {
+    ant.watch('path', function(newVal, oldVal) {
+      val1 = newVal;
+      val2 = oldVal;
+    });
+    
+    ant.set('path.val2', 'Zz');
+    expect(val1.val2).to.be('Zz');
+  });
+  
+  it('unwatch', function() {
+    ant.set('key', 'ant');
+    expect(val1).to.be('ant');
+    ant.unwatch('key', watcher);
+    ant.set('key', 'Zz');
+    expect(val1).to.be('ant');
+  });
+});
+

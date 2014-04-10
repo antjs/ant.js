@@ -31,7 +31,7 @@
     <form name=form0 action="test" method=get>
       <fieldset>
         <legend>普通文本框: </legend>
-        <label>文本框: <input type="text" a-model={{text}} /> </label> <input type="text" {{password}}={{text}}  />
+        <label>文本框: <input type="text" a-model={{text}} /> </label> <input type="text" {{password}}={{text}}  /> {{text.length || 0}}
         <label>密码框: <input disabled?={{checkbox}} type="password" a-model={{password}} /> </label>
         <label>多行文本: <textarea name=ta a-model={{textarea}}>&ltem&gtwho is your daddy&lt/em&gt</textarea></label>
       </fieldset>

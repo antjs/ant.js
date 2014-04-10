@@ -818,7 +818,12 @@ if (!Function.prototype.bind) {
         case 'unary': 
         case 'binary':
         case 'ternary':
-          return getOperator(arity, value)(args[0], args[1], args[2]);
+          try{
+            return getOperator(arity, value)(args[0], args[1], args[2]);
+          }catch(e){
+            //console.debug(e);
+            return '';
+          }
         break;
         case 'literal':
           return value;
@@ -2270,6 +2275,6 @@ setPrefix('a-');
   
   Ant._parse = parser.parse;
   Ant._eval = parser.eval;
-  Ant.version = '0.2.2';
+  Ant.version = '0.2.3';
   return Ant;
 });
