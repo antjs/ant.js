@@ -1,0 +1,45 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Simple markdown editor</title>
+  <style type="text/css">
+  #main{ max-width: 1200px; margin: auto; }
+  .left, .right{float:left; width: 48%;  margin: 1%; }
+  .left textarea{ width: 100%; min-height: 300px;}
+  .output{ border: 1px dashed #ccc; min-height: 300px; padding: 0 1em;}
+  </style>
+</head>
+<body>
+	<div id="main">
+		<h1>Simple Markdown editor</h1>
+		<div class="left">
+      <textarea a-model="{{md}}" autofocus placeholder="Input markdown here."></textarea>
+      <a a-if="{{h5.download}}" href="data:text/x-markdown;charset=UTF-8,{{md|urlEncode}}" download>Download this markdown</a>
+    </div>
+		<div class="right">
+      <div class="output">
+        {{{md|marked}}}
+      </div>
+    </div>
+	</div>
+  <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
+  <script type="text/javascript" src="../dist/ant.js"></script>
+  <script type="text/javascript" src="../extensions/filters.js"></script>
+  <script type="text/javascript" src="../third-part/marked.js"></script>
+  <script type="text/javascript">
+    var ant = new Ant(document.getElementById('main'), {
+      data: {
+        h5: {
+          download: 'download' in document.createElement('a')
+        }
+      }
+    , filters: {
+        marked: function(md) {
+          return marked(md)
+        }
+      }
+    })
+  </script>
+</body>
+</html>
