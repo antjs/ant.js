@@ -383,21 +383,28 @@ if (!Function.prototype.bind) {
         n.std      = null;
         n.lbp      = 0;
         
-        var type;
-        if(!token || token.id !== '.'){
-          if(token && token.id === '|'){
-            type = 'filters';
-          }else{
-            type = 'locals';
-            path = n.value;
-          }
-          getter(n.value, type);
+        var type
+          , next = tokens[token_nr]
+          ;
+          
+        if(context === Ant.PREFIX + 'repeat' && next && next.value === 'in') {
+          getter(n.value, 'assignments');
         }else{
-          path += '.' + n.value;
-        }
-        if( path && (!tokens[token_nr] ||tokens[token_nr].value !== '.' && tokens[token_nr].value !== '[')){
-          getter(path, 'paths');
-          path = '';
+          if(!token || token.id !== '.'){
+            if(token && token.id === '|'){
+              type = 'filters';
+            }else{
+              type = 'locals';
+              path = n.value;
+            }
+            getter(n.value, type);
+          }else{
+            path += '.' + n.value;
+          }
+          if( path && (!next || next.value !== '.' && next.value !== '[')){
+            getter(path, 'paths');
+            path = '';
+          }
         }
         return n;
       };
@@ -579,7 +586,7 @@ if (!Function.prototype.bind) {
           this.first = left;
           this.second = expression(0);
           this.arity = "binary";
-          if(repeat){
+          if(context === Ant.PREFIX + 'repeat'){
             // `in` at repeat block
             this.assignment = true;
           }
@@ -776,6 +783,14 @@ if (!Function.prototype.bind) {
     , '(': function(l, r){ return l.apply(null, r) }
       
     , '|': function(l, r){ return r.call(null, l) }//filter. name|filter
+    , 'in': function(l, r){
+        if(this.assignment) {
+          //repeat
+          return r;
+        }else{
+          return l in r;
+        }
+      }
     }
     
   , 'ternary': {
@@ -819,7 +834,7 @@ if (!Function.prototype.bind) {
         case 'binary':
         case 'ternary':
           try{
-            return getOperator(arity, value)(args[0], args[1], args[2]);
+            return getOperator(arity, value).apply(tree, args);
           }catch(e){
             //console.debug(e);
             return '';
@@ -841,9 +856,10 @@ if (!Function.prototype.bind) {
       return operators[arity][value] || function() { return ''; }
     }
     
-    return function(tree, locals, filters) {
-      _locals = typeof locals === 'undefined' ? {} : locals;
-      _filters = filters || {};
+    return function(tree, context) {
+      context = context || {};
+      _locals = context.locals || {};
+      _filters = context.filters || {};
       return evaluate(tree);
     }
   };
@@ -1364,6 +1380,7 @@ setPrefix('a-');
     }
   }
   
+  //el: 该节点的所属元素. 
   function checkBinding(vm, node, el) {
     var hasTokenName = hasToken(node.nodeName)
       , hasTokenValue = hasToken(node.nodeValue)
@@ -1374,7 +1391,7 @@ setPrefix('a-');
         , textMap = tokens.textMap
         , valTokens
         ;
-      //如果绑定内容是在文本中, 则将其分割成单独的文本节点
+      //如果绑定内容是在文本中, 则将{{key}}分割成单独的文本节点
       if(node.nodeType === NODETYPE.TEXT && textMap.length > 1){
         textMap.forEach(function(text) {
           var tn = doc.createTextNode(text);
@@ -1388,14 +1405,30 @@ setPrefix('a-');
           valTokens = parseTokens(node, el);
           valTokens.forEach(function(token){
             token.baseTokens = tokens;
-            addWatcher(vm, token);
+            addBinding(vm, token);
           });
         }
         tokens.forEach(function(token){
-          addWatcher(vm, token);
+          addBinding(vm, token);
         });
       }
     }
+  }
+  
+  function addBinding(vm, token) {
+    var binding = getBinding(vm.$root.$ant.bindings);
+    binding(vm, token);
+  }
+  
+  function getBinding(bindings) {
+    bindings = baseBindings.concat(bindings);
+    var binding = bindings[0];
+    for(var i = 1, l = bindings.length; i < l; i++){
+      binding = beforeFn(binding, bindings[i], function(ret) {
+        return (ret instanceof Watcher) || ret === false;
+      })
+    }
+    return binding;
   }
   
   var isIE = !!doc.attachEvent;
@@ -1416,7 +1449,8 @@ setPrefix('a-');
 
   , $value: NaN
     
-  //获取子 vm, 不存在的话将新建一个.
+  //获取子 vm
+  //strict: false(default)不存在的话将新建一个
   , $getChild: function(path, strict) {
       var key, vm
         , cur = this
@@ -1607,23 +1641,6 @@ setPrefix('a-');
     return tokens;
   }
   
-  
-  function addWatcher(vm, token) {
-    var binding = getBinding(vm.$root.$ant.bindings);
-    binding(vm, token);
-  }
-  
-  function getBinding(bindings) {
-    bindings = baseBindings.concat(bindings);
-    var binding = bindings[0];
-    for(var i = 1, l = bindings.length; i < l; i++){
-      binding = beforeFn(binding, bindings[i], function(ret) {
-        return (ret instanceof Watcher) || ret === false;
-      })
-    }
-    return binding;
-  }
-  
   var pertialReg = /^>\s*(?=.+)/;
   
   //buid in bindings
@@ -1789,29 +1806,10 @@ setPrefix('a-');
     this.locals = [];
     this.filters = [];
     this.paths = [];
+    this.assignments = [];
+    
     this.el = token.el;
     this.val = NaN;
-    this.fn = function() {
-      var vals = {}, key;
-      for(var i = 0, l = this.locals.length; i < l; i++){
-        key = this.locals[i];
-        if(key === '.'){
-          vals = relativeVm.$getData();
-        }else{
-          vals[key] = relativeVm.$getData(key)
-        }
-      }
-      var newVal = this.getValue(vals);
-      if(newVal !== this.val){
-        try{
-          this.callback(newVal, this.val);
-          this.val = newVal;
-        }catch(e){
-          console.error(e);
-        }
-      }
-      this.state = Watcher.STATE_CALLED;
-    };
     
     if(callback){
       this.callback = callback;
@@ -1837,8 +1835,29 @@ setPrefix('a-');
   }, Class);
   
   extend(Watcher.prototype, {
+    fn: function() {
+      var vals = {}, key;
+      for(var i = 0, l = this.locals.length; i < l; i++){
+        key = this.locals[i];
+        if(key === '.'){
+          vals = this.relativeVm.$getData();
+        }else{
+          vals[key] = this.relativeVm.$getData(key)
+        }
+      }
+      var newVal = this.getValue(vals);
+      if(newVal !== this.val){
+        try{
+          this.callback(newVal, this.val);
+          this.val = newVal;
+        }catch(e){
+          console.error(e);
+        }
+      }
+      this.state = Watcher.STATE_CALLED;
+    }
     //update the DOMs
-    callback: function(newVal) {
+  , callback: function(newVal) {
       var token = this.token
         , pos = token.position
         , node = token.node
@@ -1929,7 +1948,7 @@ setPrefix('a-');
       }
       
       try{
-        val = parser.eval(this._ast, vals, ant.filters);
+        val = parser.eval(this._ast, {locals: vals, filters: ant.filters});
       }catch(e){
         val = '';
       }
