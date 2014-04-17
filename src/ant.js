@@ -51,20 +51,108 @@ var Event = {
   }
 };
 
-function extend(obj) {
-  var length = arguments.length, opts, src, copy;
-  obj = obj || {};
-  for(var i = 1; i < length; i++) {
-    if((opts = arguments[i]) !== null) {
-      for(var key in opts) {
+function extend() {
+  var options
+    , name, src, copy, copyIsArray, clone
+    , target = arguments[0] || {}
+    , i = 1
+    , length = arguments.length
+    , deep = false
+    , callback
+    ;
+
+  // Handle a deep copy situation
+  if (typeof target === "boolean") {
+    deep = target;
+
+    // skip the boolean and the target
+    target = arguments[ i ] || {};
+    i++;
+  }
+  
+  if(isFunction(arguments[length - 1])) {
+    callback = arguments[length - 1];
+    length--;
+  }
+
+  // Handle case when target is a string or something (possible in deep copy)
+  if (typeof target !== "object" && !isFunction(target)) {
+    target = {};
+  }
+
+  for ( ; i < length; i++ ) {
+    // Only deal with non-null/undefined values
+    if ( (options = arguments[ i ]) != null ) {
+      // Extend the base object
+      for ( name in options ) {
         //android 2.3 browser can enum the prototype of constructor...
-        if(opts.hasOwnProperty(key) && key !== 'prototype'){
-          obj[key] = opts[key];
+        if(options.hasOwnProperty(name) && name !== 'prototype'){
+          src = target[ name ];
+          copy = options[ name ];
+          
+          // Prevent never-ending loop
+          if ( target === copy ) {
+            continue;
+          }
+
+          // Recurse if we're merging plain objects or arrays
+          if ( deep && copy && ( isPlainObject(copy) || (copyIsArray = isArray(copy)) ) ) {
+            if ( copyIsArray ) {
+              copyIsArray = false;
+              clone = src && isArray(src) ? src : [];
+
+            } else {
+              clone = src && isPlainObject(src) ? src : {};
+            }
+
+            if(callback) {
+              copy = callback(clone, copy, name);
+            }
+
+            // Never move original objects, clone them
+            target[ name ] = extend( deep, clone, copy, callback);
+
+            // Don't bring in undefined values
+          } else if ( !isUndefined(copy) ) {
+
+            if(callback) {
+              copy = callback(src, copy, name);
+            }
+            target[ name ] = copy;
+          }
         }
       }
     }
   }
-  return obj;
+
+  // Return the modified object
+  return target;
+}
+
+//构建修饰 model
+function modelExtend(model, data, vm) {
+  buildArray(model, vm);
+  return extend(true, model, data, function(a, b, name) {
+    var res;
+    if(name !== '__ant__') {
+      res = b;
+    }
+    
+    buildArray(a, vm);
+    
+    return res;
+  });
+}
+
+//修饰数组
+function buildArray(arr, vm) {
+  if(vm && isArray(arr)){
+    arr.__ant__ = vm;
+    if(arr.push !== arrayMethods.push){
+      extend(arr, arrayMethods)
+    }
+  }
+  return arr;
 }
 
 var Class = {
@@ -131,7 +219,7 @@ setPrefix('a-');
       , defaults = this.defaults || {}
       ;
 
-    opts = modelExtend(modelExtend({}, defaults), opts);
+    opts = extend(true, {}, defaults, opts);
 
     var data = opts.data || {}
       , events = opts.events || {}
@@ -261,9 +349,9 @@ setPrefix('a-');
      * @return {TemplateObject} 一个新 `Ant` 实例
      */
   , clone: function(opts) {
-      var options = modelExtend({}, this.options);
+      var options = extend(true, {}, this.options);
       if(opts && opts.data){ options.data = null; }
-      return new this.constructor(this.tpl, modelExtend(options, opts));
+      return new this.constructor(this.tpl, extend(true, options, opts));
     }
     
   , get: function(key) {
@@ -323,7 +411,7 @@ setPrefix('a-');
                 path = 'data';
               }
             }
-            parent[path] = isObject(val) ? modelExtend(Array.isArray(val) ? [] : {}, val, this._vm.$getChild(key, !Array.isArray(val))) : val;
+            parent[path] = isObject(val) ? modelExtend(isArray(val) ? [] : {}, val, this._vm.$getChild(key, !isArray(val))) : val;
             isExtend = false;
           }else{
             modelExtend(this.data, deepSet(key, val, {}), this._vm);
@@ -668,36 +756,6 @@ setPrefix('a-');
     }
   };
   
-  //data -> model -> viewModel
-  //深度合并对象.
-  function modelExtend(model, data, vm){
-    var src, copy, clone;
-    for(var key in data){
-      src = model[key];
-      copy = data[key];
-      if(model === copy || key === '__ant__'){ continue; }
-      if(isPlainObject(copy) || Array.isArray(copy)){
-        if(Array.isArray(copy)){
-          clone = src && Array.isArray(src) ? src : [];
-        }else{
-          clone = src || {};
-        }
-        model[key] = modelExtend(clone, copy, vm && vm.$getChild(key));
-      }else{
-        model[key] = copy;
-      }
-    }
-    
-    if(vm){
-      if(Array.isArray(model)){
-        model.__ant__ = vm;
-        if(model.push !== arrayMethods.push){
-          modelExtend(model, arrayMethods)
-        }
-      }
-    }
-    return model;
-  }
   
   var tokenReg = /{{({([^}\n]+)}|[^}\n]+)}}/g;
   var attrPostReg = /\?$/;
@@ -1185,7 +1243,7 @@ setPrefix('a-');
         var that = this
           ;
         if(that.type === antAttr.REPEAT){
-          if(data && !Array.isArray(data)){
+          if(data && !isArray(data)){
             console.warn('需要一个数组');
             return;
           }
@@ -1267,7 +1325,7 @@ setPrefix('a-');
           
           newEls.push(el);
           if(arr && isObject(arr[index + j])){
-            arr[index + j] = modelExtend(Array.isArray(arr[index + j]) ? []: {}, arr[index + j], vm);
+            arr[index + j] = modelExtend(isArray(arr[index + j]) ? []: {}, arr[index + j], vm);
           }
         }
         if(newEls.length){
@@ -1328,6 +1386,10 @@ setPrefix('a-');
   
   function isFunction(val){
     return typeof val === 'function';
+  }
+  
+  function isArray(val) {
+    return Array.isArray(val);
   }
   
   //简单对象的简易判断
