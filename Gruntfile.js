@@ -55,6 +55,10 @@ module.exports = function(grunt) {
         files: ['src/*.js'],
         tasks: ['build', 'test']
       }
+    , build: {
+        files: ['src/*.js'],
+        tasks: ['build']
+      }
     }
   });
 

@@ -90,13 +90,14 @@ function extend() {
           src = target[ name ];
           copy = options[ name ];
           
-          // Prevent never-ending loop
-          if ( target === copy ) {
-            continue;
-          }
 
           // Recurse if we're merging plain objects or arrays
           if ( deep && copy && ( isPlainObject(copy) || (copyIsArray = isArray(copy)) ) ) {
+          
+            // Prevent never-ending loop
+            if ( target === copy ) {
+              continue;
+            }
             if ( copyIsArray ) {
               copyIsArray = false;
               clone = src && isArray(src) ? src : [];
@@ -527,9 +528,10 @@ setPrefix('a-');
   }
   
   function buildViewModel(ant) {
-    var vm = new ViewModel();
-    vm.$root = vm;
-    vm.$ant = ant;
+    var vm = new ViewModel({
+      $ant: ant
+    });
+    
     ant._vm = vm;
     travelEls(ant.el, vm);
   }
@@ -652,9 +654,13 @@ setPrefix('a-');
   
   var isIE = !!doc.attachEvent;
   
-  function ViewModel() {
-    this.$key = '';
-    this.$watchers = [];
+  function ViewModel(opts) {
+    extend(this, {
+      $key: ''
+    , $root: this
+    , $watchers: []
+    , $$assignment: {}
+    }, opts);
   }
   
   ViewModel.prototype = {
@@ -663,6 +669,7 @@ setPrefix('a-');
   , $ant: null
   , $key: null
   , $repeat: false
+  , $$assignment: null
   
   , $watchers: null
 
@@ -677,17 +684,26 @@ setPrefix('a-');
         ;
         
       path = path + '';
+      
+      keyChain = path.split(/(?!^)\.(?!$)/);
+      
+      if(keyChain[0] in this.$$assignment) {
+        cur = this.$$assignment[keyChain[0]];
+        keyChain.shift();
+      }
       if(path && path !== '.'){
-        keyChain = path.split(/(?!^)\.(?!$)/);
         for(var i = 0, l = keyChain.length; i < l; i++){
           key = keyChain[i];
           
           if(!cur[key]){
             if(strict){ return null; }
-            vm = new ViewModel();
-            vm.$parent = cur;
-            vm.$root = cur.$root || cur;
-            vm.$key = key;
+            vm = new ViewModel({
+              $parent: cur
+            , $root: cur.$root || cur
+            , $$assignment: cur.$$assignment
+            , $key: key
+            });
+            
             cur[key] = vm;
           }
           
@@ -1028,7 +1044,9 @@ setPrefix('a-');
       var vals = {}, key;
       for(var i = 0, l = this.locals.length; i < l; i++){
         key = this.locals[i];
-        if(key === '.'){
+        if(key in this.relativeVm.$$assignment){
+          vals[key] = this.relativeVm.$$assignment[key].$getData();
+        }else if(key === '.'){
           vals = this.relativeVm.$getData();
         }else{
           vals[key] = this.relativeVm.$getData(key)
@@ -1317,7 +1335,12 @@ setPrefix('a-');
         for(var j = 0; j < m; j++){
           el = this.el.cloneNode(true);
           noFixVm || delete this.vm[index + j];
-          vm = this.vm.$getChild(index + j)
+          vm = this.vm.$getChild(index + j);
+          
+          for(var a = 0; a < this.assignments.length; a++) {
+            vm.$$assignment[this.assignments[a]] = vm;
+          }
+          
           el['$index'] = index + j;
           frag.appendChild(el);
           travelEl(el, vm);
