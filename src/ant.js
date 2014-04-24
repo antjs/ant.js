@@ -1412,7 +1412,12 @@ setPrefix('a-');
   }
   
   function isArray(val) {
-    return Array.isArray(val);
+    if(isIE){
+      //IE 9 及以下 IE 跨窗口检测数组
+      return val && val.constructor + '' === Array + '';
+    }else{
+      return Array.isArray(val);
+    }
   }
   
   //简单对象的简易判断
