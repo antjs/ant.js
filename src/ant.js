@@ -700,7 +700,7 @@ setPrefix('a-');
             vm = new ViewModel({
               $parent: cur
             , $root: cur.$root || cur
-            , $$assignment: cur.$$assignment
+            , $$assignment: extend({}, cur.$$assignment)
             , $key: key
             });
             
@@ -746,7 +746,7 @@ setPrefix('a-');
       
       
       for(var i = 0, l = this.$watchers.length; i < l; i++){
-        if(this.$value !== data || this.$watchers[i].state === Watcher.STATE_READY){
+        if((this.$value !== data && !this.$repeat) || this.$watchers[i].state === Watcher.STATE_READY){
           this.$watchers[i].fn();
         }
       }
@@ -1395,6 +1395,7 @@ setPrefix('a-');
     }
   )
   
+  //util
   //---
   
   function noop(){}
