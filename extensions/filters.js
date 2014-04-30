@@ -3,7 +3,7 @@
   window.Ant = Ant.extend({
     defaults: {
       filters: {
-        //capitalize Ê××ÖÄ¸´óĞ´
+        //capitalize é¦–å­—æ¯å¤§å†™
         capitalize: function(str) {
           return (str || '').charAt(0).toUpperCase() + str.slice(1);
         }
@@ -25,8 +25,8 @@
     }
   });
   
-  //ÈÕÆÚ¸ñÊ½»¯
-  //À´×Ô: http://blog.stevenlevithan.com/archives/date-time-format
+  //æ—¥æœŸæ ¼å¼åŒ–
+  //æ¥è‡ª: http://blog.stevenlevithan.com/archives/date-time-format
   /*
    * Date Format 1.2.3
    * (c) 2007-2009 Steven Levithan <stevenlevithan.com>

@@ -12,20 +12,3 @@
  */               
 
  
-(function(factory) {
-  var root = this;
-  if(typeof module === 'object' && module){
-    var doc = root.document || require('jsdom').jsdom();
-    module.exports = factory(doc);//NodeJs
-  }else{
-    var Ant = factory(root.document);
-    if(typeof define === 'function'){
-      define(function() {
-        return Ant;
-      });
-    }
-    if(!root.Ant){
-      root.Ant = Ant;
-    }
-  }
-})(function(document) {

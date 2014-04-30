@@ -1,134 +1,30 @@
+(function(root){
+"use strict";
 
-define(function(require){
-var parser = require('./parse.js');
-var doc = document;
+var doc = root.document || require('jsdom').jsdom()
 
-var Event = {
-  //监听自定义事件.
-  on: function(name, handler, context) {
-    var ctx = context || this
-      ;
-      
-    ctx._handlers = ctx._handlers || {};
-    ctx._handlers[name] = ctx._handlers[name] || [];
-    
-    ctx._handlers[name].push({handler: handler, context: context, ctx: ctx});
-    return this;
-  },
-  //移除监听事件.
-  off: function(name, handler, context) {
-    var ctx = context || this
-      , handlers = ctx._handlers
-      ;
-      
-    if(name && handlers[name]){
-      if(isFunction(handler)){
-        for(var i = handlers[name].length - 1; i >=0; i--) {
-          if(handlers[name][i].handler === handler){
-            handlers[name].splice(i, 1);
-          }
-        }
-      }else{
-        handlers[name] = [];
-      }
-    }
-    return this;
-  },
-  //触发自定义事件. 
-  //该方法没有提供静态化的 context 参数. 如要静态化使用, 应该: `Event.trigger.call(context, name, data)`
-  trigger: function(name, data) {
-    var that = this
-      , args = [].slice.call(arguments, 1)
-      , handlers = that._handlers
-      ;
-      
-    if(handlers && handlers[name]){
-      handlers[name].forEach(function(e) {
-        e.handler.apply(that, args)
-      });
-    }
-    return this;
-  }
-};
+  , parser = require('./parse.js')
+  , utils = require('./utils.js')
+  , Event = require('./event.js')
+  , Class = require('./class.js')
+  ;
 
-function extend() {
-  var options
-    , name, src, copy, copyIsArray, clone
-    , target = arguments[0] || {}
-    , i = 1
-    , length = arguments.length
-    , deep = false
-    , callback
-    ;
 
-  // Handle a deep copy situation
-  if (typeof target === "boolean") {
-    deep = target;
+var isObject = utils.isObject
+  , isUndefined = utils.isUndefined
+  , isFunction = utils.isFunction
+  , isArray = utils.isArray
+  , isPlainObject = utils.isPlainObject
+  , beforeFn = utils.beforeFn
+  , afterFn = utils.afterFn
+  , parseKeyPath = utils.parseKeyPath
+  , deepSet = utils.deepSet
+  , deepGet = utils.deepGet
+  , extend = utils.extend
+  , ie = utils.ie
+  ;
 
-    // skip the boolean and the target
-    target = arguments[ i ] || {};
-    i++;
-  }
-  
-  if(isFunction(arguments[length - 1])) {
-    callback = arguments[length - 1];
-    length--;
-  }
 
-  // Handle case when target is a string or something (possible in deep copy)
-  if (typeof target !== "object" && !isFunction(target)) {
-    target = {};
-  }
-
-  for ( ; i < length; i++ ) {
-    // Only deal with non-null/undefined values
-    if ( (options = arguments[ i ]) != null ) {
-      // Extend the base object
-      for ( name in options ) {
-        //android 2.3 browser can enum the prototype of constructor...
-        if(options.hasOwnProperty(name) && name !== 'prototype'){
-          src = target[ name ];
-          copy = options[ name ];
-          
-
-          // Recurse if we're merging plain objects or arrays
-          if ( deep && copy && ( isPlainObject(copy) || (copyIsArray = isArray(copy)) ) ) {
-          
-            // Prevent never-ending loop
-            if ( target === copy ) {
-              continue;
-            }
-            if ( copyIsArray ) {
-              copyIsArray = false;
-              clone = src && isArray(src) ? src : [];
-
-            } else {
-              clone = src && isPlainObject(src) ? src : {};
-            }
-
-            if(callback) {
-              copy = callback(clone, copy, name);
-            }
-
-            // Never move original objects, clone them
-            target[ name ] = extend( deep, clone, copy, callback);
-
-            // Don't bring in undefined values
-          } else if ( !isUndefined(copy) ) {
-
-            if(callback) {
-              copy = callback(src, copy, name);
-            }
-            target[ name ] = copy;
-          }
-        }
-      }
-    }
-  }
-
-  // Return the modified object
-  return target;
-}
 
 //构建修饰 model
 function modelExtend(model, data, vm) {
@@ -155,29 +51,6 @@ function buildArray(arr, vm) {
   }
   return arr;
 }
-
-var Class = {
-  /** 
-   * 构造函数继承. 
-   * 如: `var Car = Ant.extend({drive: function(){}}); new Car();`
-   * @param {Object} [protoProps] 子构造函数的扩展原型对象
-   * @param {Object} [staticProps] 子构造函数的扩展静态属性
-   * @return {Function} 子构造函数
-   */
-  extend: function (protoProps, staticProps) {
-    protoProps = protoProps || {};
-    var constructor = protoProps.hasOwnProperty('constructor') ? protoProps.constructor : function(){ return sup.apply(this, arguments); }
-    var sup = this;
-    var Fn = function() { this.constructor = constructor; };
-    
-    Fn.prototype = sup.prototype;
-    constructor.prototype = new Fn();
-    extend(constructor.prototype, protoProps);
-    extend(constructor, sup, staticProps, {__super__: sup.prototype});
-    
-    return constructor;
-  }
-};
 
 var prefix, antAttr = {};
 
@@ -477,7 +350,7 @@ setPrefix('a-');
       }
       return this;
     }
-  , init: noop
+  , init: utils.noop
   
   , watch: function(keyPath, callback) {
       if(keyPath && callback){
@@ -651,8 +524,6 @@ setPrefix('a-');
     }
     return binding;
   }
-  
-  var isIE = !!doc.attachEvent;
   
   function ViewModel(opts) {
     extend(this, {
@@ -931,11 +802,11 @@ setPrefix('a-');
               case 'checkbox':
                 value = attr = 'checked';
                 //IE6, IE7 下监听 propertychange 会挂?
-                if(isIE) { ev += ' click'; }
+                if(ie) { ev += ' click'; }
               break;
               case 'radio':
                 attr = 'checked';
-                if(isIE) { ev += ' click'; }
+                if(ie) { ev += ' click'; }
                 callback = function() {
                   el.checked = el.value === vm.$getData(keyPath) + '';
                 };
@@ -947,7 +818,7 @@ setPrefix('a-');
                     ev += ' input';
                   }
                   //IE 下的 input 事件替代
-                  if(isIE) {
+                  if(ie) {
                     ev += ' keyup propertychange cut';
                   }
                 }
@@ -1001,7 +872,7 @@ setPrefix('a-');
       
     this._ast = parser.parse(path, function(key, type) {
       that[type].push(key);
-    }, this.type);
+    }, this.type && this.type.slice(prefix.length));
   };
   
   function Watcher(relativeVm, token, callback) {
@@ -1395,109 +1266,6 @@ setPrefix('a-');
     }
   )
   
-  //util
-  //---
-  
-  function noop(){}
-
-  function isObject(val) {
-    return typeof val === 'object' && val !== null;
-  }
-  
-  function isUndefined(val) {
-    return typeof val === 'undefined';
-  }
-  
-  function isFunction(val){
-    return typeof val === 'function';
-  }
-  
-  function isArray(val) {
-    if(isIE){
-      //IE 9 及以下 IE 跨窗口检测数组
-      return val && val.constructor + '' === Array + '';
-    }else{
-      return Array.isArray(val);
-    }
-  }
-  
-  //简单对象的简易判断
-  function isPlainObject(o){
-    if (!o || ({}).toString.call(o) !== '[object Object]' || o.nodeType || o === o.window) {
-      return false;
-    }else{
-      return true;
-    }
-  }
-  
-  //函数切面
-  //前面的函数返回值传入 breakCheck 判断, breakCheck 返回值为真时不执行后面的函数
-  function beforeFn(oriFn, fn, breakCheck) {
-    return function() {
-      var ret = fn.apply(this, arguments);
-      if(breakCheck && breakCheck.call(this, ret)){
-        return ret;
-      }
-      return oriFn.apply(this, arguments);
-    };
-  }
-
-  function afterFn(oriFn, fn, breakCheck) {
-    return function() {
-      var ret = oriFn.apply(this, arguments);
-      if(breakCheck && breakCheck.call(this, ret)){
-        return ret;
-      }
-      fn.apply(this, arguments);
-      return ret;
-    }
-  }
-  
-  var keyPathReg = /(?:\.|\[)/g
-    , bra = /\]/g
-    ;
-    
-  function parseKeyPath(keyPath){
-    return keyPath.replace(bra, '').split(keyPathReg);
-  }
-  function deepSet(keyStr, value, obj) {
-    if(keyStr){
-      var chain = parseKeyPath(keyStr)
-        , cur = obj
-        ;
-      chain.forEach(function(key, i) {
-        if(i === chain.length - 1){
-          cur[key] = value;
-        }else{
-          if(cur && cur.hasOwnProperty(key)){
-            cur = cur[key];
-          }else{
-            cur[key] = {};
-            cur = cur[key];
-          }
-        }
-      });
-    }else{
-      extend(obj, value);
-    }
-    return obj;
-  }
-  function deepGet(keyStr, obj) {
-    var chain, cur = obj, key;
-    if(keyStr){
-      chain = parseKeyPath(keyStr);
-      for(var i = 0, l = chain.length; i < l; i++) {
-        key = chain[i];
-        if(cur && cur.hasOwnProperty(key)){
-          cur = cur[key];
-        }else{
-          return;
-        }
-      }
-    }
-    return cur;
-  }
-  
   function addEvent(el, event, handler) {
     if(el.addEventListener) {
       el.addEventListener(event, handler, false);
@@ -1517,5 +1285,7 @@ setPrefix('a-');
   Ant._parse = parser.parse;
   Ant._eval = parser.eval;
   Ant.version = '%VERSION';
-  return Ant;
-});
+  
+  module.exports = Ant;
+  
+})((function() {return this})());

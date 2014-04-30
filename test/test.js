@@ -282,7 +282,7 @@ describe('模板语法', function() {
   });
   
   describe('a-repeat 属性', function() {
-    var tpl = '<li a-repeat={{list}}>{{.}}</li>'
+    var tpl = '<li a-repeat="{{item in list}}">{{item}}</li>'
       , data = {list: ['ant', 'bee']}
       , ant = new Ant(tpl, {data: data});
       ;
@@ -410,7 +410,7 @@ describe('模板语法', function() {
     });
     
     describe('一个数组对应多个 DOM 列表', function() {
-      var tpl = '<ul class="list0"><li a-repeat={{list}}>{{.}}</li></ul><ul class="list1"><li a-repeat={{list}}>{{.}}</li></ul>'
+      var tpl = '<ul class="list0"><li a-repeat="{{item in list}}">{{item}}</li></ul><ul class="list1"><li a-repeat="{{item in list}}">{{item}}</li></ul>'
         , ant = new Ant(tpl, {data: data})
         ;
        
@@ -460,7 +460,7 @@ describe('模板语法', function() {
           }
         ]
       };
-      var tpl = '<ul class="list0"><li a-repeat={{list}} a-if={{state}}>{{name}}</li></ul>';
+      var tpl = '<ul class="list0"><li a-repeat="{{item in list}}" a-if={{item.state}}>{{item.name}}</li></ul>';
       var ant = new Ant(tpl, {data: data});
       
       function listCheck(){
@@ -516,9 +516,9 @@ describe('模板语法', function() {
     
     describe('多层数组', function() {
       var tpl = '\
-          <li a-repeat={{province}}><span>{{name}}</span>\
+          <li a-repeat="{{p in province}}"><span>{{p.name}}</span>\
             <ul>\
-              <li a-repeat={{city}}><span>{{name}}</span>\
+              <li a-repeat="{{c in city}}"><span>{{c.name}}</span>\
             </ul>\
           </li>\
           '

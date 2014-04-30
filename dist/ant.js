@@ -1,1003 +1,31 @@
-//ES5 shim for Ant.js
-
-if(!Array.prototype.forEach){
-  Array.prototype.forEach = function(fn, scope) {
-    for(var i = 0, len = this.length; i < len; ++i) {
-      if (i in this) {
-        fn.call(scope, this[i], i, this);
-      }
-    }
-  };
-}
-
-if(!Array.isArray){
-  Array.isArray = function(val) {//是否数组
-    return ({}).toString.call(val) === '[object Array]'
-  }
-}
-
-if(!String.prototype.trim) {
-  String.prototype.trim = function() {
-    return this.replace(/^\s+|\s+$/g,'');
-  };
-}
-
-if (!Array.prototype.indexOf) {
-  Array.prototype.indexOf = function (obj, start) {
-    for (var i = (start || 0); i < this.length; i++) {
-      if (this[i] === obj) {
-        return i;
-      }
-    }
-    return -1;
-  }
-}
-
-if (!Function.prototype.bind) {
-  Function.prototype.bind = function (oThis) {
-    if (typeof this !== "function") {
-      // closest thing possible to the ECMAScript 5 internal IsCallable function
-      throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
-    }
-
-    var aArgs = Array.prototype.slice.call(arguments, 1), 
-        fToBind = this, 
-        fNOP = function () {},
-        fBound = function () {
-          return fToBind.apply(this instanceof fNOP && oThis
-                                 ? this
-                                 : oThis,
-                               aArgs.concat(Array.prototype.slice.call(arguments)));
-        };
-
-    fNOP.prototype = this.prototype;
-    fBound.prototype = new fNOP();
-
-    return fBound;
-  };
-}
-
-/***
- *          .o.                       .           o8o          
- *         .888.                    .o8           `"'          
- *        .8"888.     ooo. .oo.   .o888oo        oooo  .oooo.o 
- *       .8' `888.    `888P"Y88b    888          `888 d88(  "8 
- *      .88ooo8888.    888   888    888           888 `"Y88b.  
- *     .8'     `888.   888   888    888 . .o.     888 o.  )88b 
- *    o88o     o8888o o888o o888o   "888" Y8P     888 8""888P' 
- *                                                888          
- *                                            .o. 88P          
- *                                            `Y888P           
- */               
-
- 
-(function(factory) {
-  var root = this;
-  if(typeof module === 'object' && module){
-    var doc = root.document || require('jsdom').jsdom();
-    module.exports = factory(doc);//NodeJs
-  }else{
-    var Ant = factory(root.document);
-    if(typeof define === 'function'){
-      define(function() {
-        return Ant;
-      });
-    }
-    if(!root.Ant){
-      root.Ant = Ant;
-    }
-  }
-})(function(document) {
-
-
+!function(e){if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Ant=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+(function(root){
 "use strict";
 
-//Javascript expression parser modified form Crockford's TDOP parser
-  var create = Object.create || function (o) {
-    function F() {}
-    F.prototype = o;
-    return new F();
-  };
-  
-  var error = function (message, t) {
-      t = t || this;
-      t.name = "SyntaxError";
-      t.message = message;
-      throw t;
-  };
-  
-  var noop = function() {};
-  
-  var tokenize = function (code, prefix, suffix) {
-      var c;                      // The current character.
-      var from;                   // The index of the start of the token.
-      var i = 0;                  // The index of the current character.
-      var length = code.length;
-      var n;                      // The number value.
-      var q;                      // The quote character.
-      var str;                    // The string value.
+var doc = root.document || _dereq_('jsdom').jsdom()
+
+  , parser = _dereq_('./parse.js')
+  , utils = _dereq_('./utils.js')
+  , Event = _dereq_('./event.js')
+  , Class = _dereq_('./class.js')
+  ;
+
+
+var isObject = utils.isObject
+  , isUndefined = utils.isUndefined
+  , isFunction = utils.isFunction
+  , isArray = utils.isArray
+  , isPlainObject = utils.isPlainObject
+  , beforeFn = utils.beforeFn
+  , afterFn = utils.afterFn
+  , parseKeyPath = utils.parseKeyPath
+  , deepSet = utils.deepSet
+  , deepGet = utils.deepGet
+  , extend = utils.extend
+  , ie = utils.ie
+  ;
 
-      var result = [];            // An array to hold the results.
 
-      // Make a token object.
-      var make = function (type, value) {
-          return {
-              type: type,
-              value: value,
-              from: from,
-              to: i
-          };
-      };
-
-  // Begin tokenization. If the source string is empty, return nothing.
-
-      if (!code) {
-          return;
-      }
-
-  // If prefix and suffix strings are not provided, supply defaults.
-
-      if (typeof prefix !== 'string') {
-          prefix = '<>+-&';
-      }
-      if (typeof suffix !== 'string') {
-          suffix = '=>&:';
-      }
-
-
-  // Loop through code text, one character at a time.
-
-      c = code.charAt(i);
-      while (c) {
-          from = i;
-          
-          if (c <= ' ') {// Ignore whitespace.
-              i += 1;
-              c = code.charAt(i);
-          } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '$' || c === '_') {// name.
-              str = c;
-              i += 1;
-              for (;;) {
-                  c = code.charAt(i);
-                  if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-                          (c >= '0' && c <= '9') || c === '_') {
-                      str += c;
-                      i += 1;
-                  } else {
-                      break;
-                  }
-              }
-              result.push(make('name', str));
-          } else if (c >= '0' && c <= '9') {
-          // number.
-
-          // A number cannot start with a decimal point. It must start with a digit,
-          // possibly '0'.
-              str = c;
-              i += 1;
-
-  // Look for more digits.
-
-              for (;;) {
-                  c = code.charAt(i);
-                  if (c < '0' || c > '9') {
-                      break;
-                  }
-                  i += 1;
-                  str += c;
-              }
-
-  // Look for a decimal fraction part.
-
-              if (c === '.') {
-                  i += 1;
-                  str += c;
-                  for (;;) {
-                      c = code.charAt(i);
-                      if (c < '0' || c > '9') {
-                          break;
-                      }
-                      i += 1;
-                      str += c;
-                  }
-              }
-
-  // Look for an exponent part.
-
-              if (c === 'e' || c === 'E') {
-                  i += 1;
-                  str += c;
-                  c = code.charAt(i);
-                  if (c === '-' || c === '+') {
-                      i += 1;
-                      str += c;
-                      c = code.charAt(i);
-                  }
-                  if (c < '0' || c > '9') {
-                      error("Bad exponent", make('number', str));
-                  }
-                  do {
-                      i += 1;
-                      str += c;
-                      c = code.charAt(i);
-                  } while (c >= '0' && c <= '9');
-              }
-
-  // Make sure the next character is not a letter.
-
-              if (c >= 'a' && c <= 'z') {
-                  str += c;
-                  i += 1;
-                  error("Bad number", make('number', str));
-              }
-
-  // Convert the string value to a number. If it is finite, then it is a good
-  // token.
-
-              n = +str;
-              if (isFinite(n)) {
-                  result.push(make('number', n));
-              } else {
-                  error("Bad number", make('number', str));
-              }
-
-  // string
-
-          } else if (c === '\'' || c === '"') {
-              str = '';
-              q = c;
-              i += 1;
-              for (;;) {
-                  c = code.charAt(i);
-                  if (c < ' ') {
-                      make('string', str);
-                      error(c === '\n' || c === '\r' || c === '' ?
-                          "Unterminated string." :
-                          "Control character in string.", make('', str));
-                  }
-
-  // Look for the closing quote.
-
-                  if (c === q) {
-                      break;
-                  }
-
-  // Look for escapement.
-
-                  if (c === '\\') {
-                      i += 1;
-                      if (i >= length) {
-                        error("Unterminated string", make('string', str));
-                      }
-                      c = code.charAt(i);
-                      switch (c) {
-                      case 'b':
-                          c = '\b';
-                          break;
-                      case 'f':
-                          c = '\f';
-                          break;
-                      case 'n':
-                          c = '\n';
-                          break;
-                      case 'r':
-                          c = '\r';
-                          break;
-                      case 't':
-                          c = '\t';
-                          break;
-                      case 'u':
-                          if (i >= length) {
-                             error("Unterminated string", make('string', str));
-                          }
-                          c = parseInt(code.substr(i + 1, 4), 16);
-                          if (!isFinite(c) || c < 0) {
-                             error("Unterminated string", make('string', str));
-                          }
-                          c = String.fromCharCode(c);
-                          i += 4;
-                          break;
-                      }
-                  }
-                  str += c;
-                  i += 1;
-              }
-              i += 1;
-              result.push(make('string', str));
-              c = code.charAt(i);
-
-  // comment.
-
-          } else if (c === '/' && code.charAt(i + 1) === '/') {
-              i += 1;
-              for (;;) {
-                  c = code.charAt(i);
-                  if (c === '\n' || c === '\r' || c === '') {
-                      break;
-                  }
-                  i += 1;
-              }
-
-  // combining
-
-          } else if (prefix.indexOf(c) >= 0) {
-              str = c;
-              i += 1;
-              while (true) {
-                  c = code.charAt(i);
-                  if (i >= length || suffix.indexOf(c) < 0) {
-                      break;
-                  }
-                  str += c;
-                  i += 1;
-              }
-              result.push(make('operator', str));
-
-  // single-character operator
-
-          } else {
-              i += 1;
-              result.push(make('operator', c));
-              c = code.charAt(i);
-          }
-      }
-      return result;
-  };
-
-  
-  var make_parse = function () {
-      var symbol_table = {};
-      var token;
-      var tokens;
-      var token_nr;
-      var getter;
-      var context;
-      
-      var path = '';
-
-      var init = function(fn) {
-        var summary = {
-          locals: {},//表达式中的变量
-          filters: {},//用到的 filter
-          paths: {},//用到的监控路径
-          assignments: {}
-        };
-        
-        fn = fn || noop;
-        
-        getter = function(value, type) {
-          if(!summary[type][value]){
-            fn(value, type);
-            summary[type][value] = true;
-          }
-        };
-      };
-      
-      var itself = function () {
-          return this;
-      };
-  
-      var find = function (n) {
-        n.nud      = itself;
-        n.led      = null;
-        n.std      = null;
-        n.lbp      = 0;
-        
-        var type
-          , next = tokens[token_nr]
-          ;
-          
-        if(context === Ant.PREFIX + 'repeat' && next && next.value === 'in') {
-          getter(n.value, 'assignments');
-        }else{
-          if(!token || token.id !== '.'){
-            if(token && token.id === '|'){
-              type = 'filters';
-            }else{
-              type = 'locals';
-              path = n.value;
-            }
-            getter(n.value, type);
-          }else{
-            path += '.' + n.value;
-          }
-          if( path && (!next || next.value !== '.' && next.value !== '[')){
-            getter(path, 'paths');
-            path = '';
-          }
-        }
-        return n;
-      };
-
-      var advance = function (id) {
-          var a, o, t, v;
-          if (id && token.id !== id) {
-              error("Expected '" + id + "'.", token);
-          }
-          if (token_nr >= tokens.length) {
-              token = symbol_table["(end)"];
-              return;
-          }
-          t = tokens[token_nr];
-          token_nr += 1;
-          v = t.value;
-          a = t.type;
-          if ((a === "operator" || a !== 'string') && v in symbol_table) {
-              //true, false 等直接量也会进入此分支
-              o = symbol_table[v];
-              if (!o) {
-                  error("Unknown operator.", t);
-              }
-          } else if (a === "name") {
-              o = find(t);
-          } else if (a === "string" || a ===  "number") {
-              o = symbol_table["(literal)"];
-              a = "literal";
-              if(path){
-                path += '.' + v;
-              }
-          } else {
-              error("Unexpected token.", t);
-          }
-          token = create(o);
-          token.from  = t.from;
-          token.to    = t.to;
-          token.value = v;
-          token.arity = a;
-          return token;
-      };
-
-      var expression = function (rbp) {
-          var left;
-          var t = token;
-          advance();
-          left = t.nud();
-          while (rbp < token.lbp) {
-              t = token;
-              advance();
-              left = t.led(left);
-          }
-          return left;
-      };
-
-      var original_symbol = {
-          nud: function () {
-              error("Undefined.", this);
-          },
-          led: function (left) {
-              error("Missing operator.", this);
-          }
-      };
-
-      var symbol = function (id, bp) {
-          var s = symbol_table[id];
-          bp = bp || 0;
-          if (s) {
-              if (bp >= s.lbp) {
-                  s.lbp = bp;
-              }
-          } else {
-              s = create(original_symbol);
-              s.id = s.value = id;
-              s.lbp = bp;
-              symbol_table[id] = s;
-          }
-          return s;
-      };
-
-      var constant = function (s, v, a) {
-          var x = symbol(s);
-          x.nud = function () {
-              this.value = symbol_table[this.id].value;
-              this.arity = "literal";
-              return this;
-          };
-          x.value = v;
-          return x;
-      };
-      
-      var infix = function (id, bp, led) {
-          var s = symbol(id, bp);
-          s.led = led || function (left) {
-              this.first = left;
-              this.second = expression(bp);
-              this.arity = "binary";
-              return this;
-          };
-          return s;
-      };
-
-      var infixr = function (id, bp, led) {
-          var s = symbol(id, bp);
-          s.led = led || function (left) {
-              this.first = left;
-              this.second = expression(bp - 1);
-              this.arity = "binary";
-              return this;
-          };
-          return s;
-      };
-
-      var prefix = function (id, nud) {
-          var s = symbol(id);
-          s.nud = nud || function () {
-              this.first = expression(70);
-              this.arity = "unary";
-              return this;
-          };
-          return s;
-      };
-
-      symbol("(end)");
-      symbol("(name)");
-      symbol(":");
-      symbol(")");
-      symbol("]");
-      symbol("}");
-      symbol(",");
-
-      constant("true", true);
-      constant("false", false);
-      constant("null", null);
-      
-      constant("Math", Math);
-      constant("Date", Date);
-
-      symbol("(literal)").nud = itself;
-
-      symbol(".").nud = function () {
-          this.arity = "this";
-          getter('.', 'locals');
-          getter('.', 'paths');
-          return this;
-      };
-      // symbol("this").nud = function () {
-          // this.arity = "this";
-          // return this;
-      // };
-
-      //Operator Precedence:
-      //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
-
-      infix("?", 20, function (left) {
-          this.first = left;
-          this.second = expression(0);
-          advance(":");
-          this.third = expression(0);
-          this.arity = "ternary";
-          return this;
-      });
-      
-      infixr("&&", 31);
-      infixr("||", 30);
-
-      infixr("===", 40);
-      infixr("!==", 40);
-
-      infixr("==", 40);
-      infixr("!=", 40);
-
-      infixr("<", 40);
-      infixr("<=", 40);
-      infixr(">", 40);
-      infixr(">=", 40);
-      
-      infix("in", 45, function (left) {
-          this.first = left;
-          this.second = expression(0);
-          this.arity = "binary";
-          if(context === Ant.PREFIX + 'repeat'){
-            // `in` at repeat block
-            this.assignment = true;
-          }
-          return this;
-      });
-
-      infix("+", 50);
-      infix("-", 50);
-
-      infix("*", 60);
-      infix("/", 60);
-      infix("%", 60);
-
-      infix(".", 80, function (left) {
-          this.first = left;
-          if (token.arity !== "name") {
-              error("Expected a property name.", token);
-          }
-          token.arity = "literal";
-          this.second = token;
-          this.arity = "binary";
-          advance();
-          return this;
-      });
-
-      infix("[", 80, function (left) {
-          this.first = left;
-          this.second = expression(0);
-          this.arity = "binary";
-          advance("]");
-          if(path && token.value !== '.' && token.value !== '['){
-            getter(path, 'paths');
-            path = '';
-          }
-          return this;
-      });
-
-      infix("(", 80, function (left) {
-          var a = [];
-          if (left.id === "." || left.id === "[") {
-              this.arity = "ternary";
-              this.first = left.first;
-              this.second = left.second;
-              this.third = a;
-          } else {
-              this.arity = "binary";
-              this.first = left;
-              this.second = a;
-              if ((left.arity !== "unary" || left.id !== "function") &&
-                      left.arity !== "name" && left.arity !== "literal" && left.id !== "(" &&
-                      left.id !== "&&" && left.id !== "||" && left.id !== "?") {
-                  error("Expected a variable name.", left);
-              }
-          }
-          if (token.id !== ")") {
-              while (true) {
-                  a.push(expression(0));
-                  if (token.id !== ",") {
-                      break;
-                  }
-                  advance(",");
-              }
-          }
-          advance(")");
-          return this;
-      });
-
-      //filter
-      infix("|", 10, function(left) {
-        var a;
-        this.first = left;
-        token.arity = 'filter';
-        this.second = expression(10);
-        this.arity = 'binary';
-        if(token.id === ':'){
-          this.arity = 'ternary';
-          this.third = a = [];
-          while(true){
-            advance(':');
-            a.push(expression(0));
-            if(token.id !== ":"){
-              break;
-            }
-          }
-        }
-        return this;
-      });
-      
-
-      prefix("!");
-      prefix("-");
-      prefix("typeof");
-
-      prefix("(", function () {
-          var e = expression(0);
-          advance(")");
-          return e;
-      });
-
-      prefix("[", function () {
-          var a = [];
-          if (token.id !== "]") {
-              while (true) {
-                  a.push(expression(0));
-                  if (token.id !== ",") {
-                      break;
-                  }
-                  advance(",");
-              }
-          }
-          advance("]");
-          this.first = a;
-          this.arity = "unary";
-          return this;
-      });
-
-      prefix("{", function () {
-          var a = [], n, v;
-          if (token.id !== "}") {
-              while (true) {
-                  n = token;
-                  if (n.arity !== "name" && n.arity !== "literal") {
-                      error("Bad property name.", token);
-                  }
-                  advance();
-                  advance(":");
-                  v = expression(0);
-                  v.key = n.value;
-                  a.push(v);
-                  if (token.id !== ",") {
-                      break;
-                  }
-                  advance(",");
-              }
-          }
-          advance("}");
-          this.first = a;
-          this.arity = "unary";
-          return this;
-      });
-
-      //_source: 表达式代码字符串
-      //_fn: 接收表达式语法摘要函数
-      //_context: 表达式的语句环境
-      return function (_source, _fn, _context) {
-          tokens = tokenize(_source, '=<>!+-*&|/%^', '=<>&|');
-          token_nr = 0;
-          context = _context;
-          init(_fn);
-          advance();
-          var s = expression(0);
-          advance("(end)");
-          return s;
-      };
-  };
-
-  var operators = {
-    'unary': {
-      '+': function(v) { return +v; }
-    , '-': function(v) { return -v; }
-    , '!': function(v) { return !v; }
-      
-    , '[': function(v){ return v; }
-    , '{': function(v){
-        var r = {};
-        for(var i = 0, l = v.length; i < l; i++) {
-          r[v[i][0]] = v[i][1];
-        }
-        return r;
-      }
-    , 'typeof': function(v){ return typeof v; }
-    , 'new': function(v){ return new v }
-    }
-    
-  , 'binary': {
-      '+': function(l, r) { return l+r; }
-    , '-': function(l, r) { return l-r; }
-    , '*': function(l, r) { return l*r; }
-    , '/': function(l, r) { return l/r; }
-    , '%': function(l, r) { return l%r; }
-    , '<': function(l, r) { return l<r; }
-    , '>': function(l, r) { return l>r; }
-    , '<=': function(l, r) { return l<=r; }
-    , '>=': function(l, r) { return l>=r; }
-    , '==': function(l, r) { return l==r; }
-    , '!=': function(l, r) { return l!=r; }
-    , '===': function(l, r) { return l===r; }
-    , '!==': function(l, r) { return l!==r; }
-    , '&&': function(l, r) { return l&&r; }
-    , '||': function(l, r) { return l||r; }
-      
-    , '.': function(l, r) { return l[r]; }
-    , '[': function(l, r) { return l[r]; }
-    , '(': function(l, r){ return l.apply(null, r) }
-      
-    , '|': function(l, r){ return r.call(null, l) }//filter. name|filter
-    , 'in': function(l, r){
-        if(this.assignment) {
-          //repeat
-          return r;
-        }else{
-          return l in r;
-        }
-      }
-    }
-    
-  , 'ternary': {
-      '?': function(f, s, t) { return f ? s : t; }
-    , '(': function(f, s, t) { return f[s].apply(f, t) }
-      
-    , '|': function(f, s, t){ return s.apply(null, [f].concat(t)); }//filter. name | filter : arg2 : arg3
-    }
-  };
-
-  var make_eval = function() {
-    var _locals, _filters
-      , isArray = Array.isArray
-      , argName = ['first', 'second', 'third']
-      ;
-      
-    var evaluate = function(tree) {
-      var arity = tree.arity
-        , value = tree.value
-        , args = []
-        , n = 0
-        , arg
-        ;
-      
-      for(; n < 3; n++){
-        arg = tree[argName[n]];
-        if(arg){
-          if(isArray(arg)){
-            args[n] = [];
-            for(var i = 0, l = arg.length; i < l; i++){
-              args[n].push(typeof arg[i].key === 'undefined' ? evaluate(arg[i]) : [arg[i].key, evaluate(arg[i])]);
-            }
-          }else{
-            args[n] = evaluate(arg);
-          }
-        }
-      }
-      
-      switch(arity){
-        case 'unary': 
-        case 'binary':
-        case 'ternary':
-          try{
-            return getOperator(arity, value).apply(tree, args);
-          }catch(e){
-            //console.debug(e);
-            return '';
-          }
-        break;
-        case 'literal':
-          return value;
-        case 'name':
-          return _locals[value];
-        case 'filter':
-          return _filters[value];
-        case 'this':
-          return _locals;
-        break;
-      }
-    };
-    
-    function getOperator(arity, value){
-      return operators[arity][value] || function() { return ''; }
-    }
-    
-    return function(tree, context) {
-      context = context || {};
-      _locals = context.locals || {};
-      _filters = context.filters || {};
-      return evaluate(tree);
-    }
-  };
-  
-  var parser = {
-    parse: make_parse()
-  , eval: make_eval()
-  };
-
-
-var doc = document;
-
-var Event = {
-  //监听自定义事件.
-  on: function(name, handler, context) {
-    var ctx = context || this
-      ;
-      
-    ctx._handlers = ctx._handlers || {};
-    ctx._handlers[name] = ctx._handlers[name] || [];
-    
-    ctx._handlers[name].push({handler: handler, context: context, ctx: ctx});
-    return this;
-  },
-  //移除监听事件.
-  off: function(name, handler, context) {
-    var ctx = context || this
-      , handlers = ctx._handlers
-      ;
-      
-    if(name && handlers[name]){
-      if(isFunction(handler)){
-        for(var i = handlers[name].length - 1; i >=0; i--) {
-          if(handlers[name][i].handler === handler){
-            handlers[name].splice(i, 1);
-          }
-        }
-      }else{
-        handlers[name] = [];
-      }
-    }
-    return this;
-  },
-  //触发自定义事件. 
-  //该方法没有提供静态化的 context 参数. 如要静态化使用, 应该: `Event.trigger.call(context, name, data)`
-  trigger: function(name, data) {
-    var that = this
-      , args = [].slice.call(arguments, 1)
-      , handlers = that._handlers
-      ;
-      
-    if(handlers && handlers[name]){
-      handlers[name].forEach(function(e) {
-        e.handler.apply(that, args)
-      });
-    }
-    return this;
-  }
-};
-
-function extend() {
-  var options
-    , name, src, copy, copyIsArray, clone
-    , target = arguments[0] || {}
-    , i = 1
-    , length = arguments.length
-    , deep = false
-    , callback
-    ;
-
-  // Handle a deep copy situation
-  if (typeof target === "boolean") {
-    deep = target;
-
-    // skip the boolean and the target
-    target = arguments[ i ] || {};
-    i++;
-  }
-  
-  if(isFunction(arguments[length - 1])) {
-    callback = arguments[length - 1];
-    length--;
-  }
-
-  // Handle case when target is a string or something (possible in deep copy)
-  if (typeof target !== "object" && !isFunction(target)) {
-    target = {};
-  }
-
-  for ( ; i < length; i++ ) {
-    // Only deal with non-null/undefined values
-    if ( (options = arguments[ i ]) != null ) {
-      // Extend the base object
-      for ( name in options ) {
-        //android 2.3 browser can enum the prototype of constructor...
-        if(options.hasOwnProperty(name) && name !== 'prototype'){
-          src = target[ name ];
-          copy = options[ name ];
-          
-
-          // Recurse if we're merging plain objects or arrays
-          if ( deep && copy && ( isPlainObject(copy) || (copyIsArray = isArray(copy)) ) ) {
-          
-            // Prevent never-ending loop
-            if ( target === copy ) {
-              continue;
-            }
-            if ( copyIsArray ) {
-              copyIsArray = false;
-              clone = src && isArray(src) ? src : [];
-
-            } else {
-              clone = src && isPlainObject(src) ? src : {};
-            }
-
-            if(callback) {
-              copy = callback(clone, copy, name);
-            }
-
-            // Never move original objects, clone them
-            target[ name ] = extend( deep, clone, copy, callback);
-
-            // Don't bring in undefined values
-          } else if ( !isUndefined(copy) ) {
-
-            if(callback) {
-              copy = callback(src, copy, name);
-            }
-            target[ name ] = copy;
-          }
-        }
-      }
-    }
-  }
-
-  // Return the modified object
-  return target;
-}
 
 //构建修饰 model
 function modelExtend(model, data, vm) {
@@ -1024,29 +52,6 @@ function buildArray(arr, vm) {
   }
   return arr;
 }
-
-var Class = {
-  /** 
-   * 构造函数继承. 
-   * 如: `var Car = Ant.extend({drive: function(){}}); new Car();`
-   * @param {Object} [protoProps] 子构造函数的扩展原型对象
-   * @param {Object} [staticProps] 子构造函数的扩展静态属性
-   * @return {Function} 子构造函数
-   */
-  extend: function (protoProps, staticProps) {
-    protoProps = protoProps || {};
-    var constructor = protoProps.hasOwnProperty('constructor') ? protoProps.constructor : function(){ return sup.apply(this, arguments); }
-    var sup = this;
-    var Fn = function() { this.constructor = constructor; };
-    
-    Fn.prototype = sup.prototype;
-    constructor.prototype = new Fn();
-    extend(constructor.prototype, protoProps);
-    extend(constructor, sup, staticProps, {__super__: sup.prototype});
-    
-    return constructor;
-  }
-};
 
 var prefix, antAttr = {};
 
@@ -1346,7 +351,7 @@ setPrefix('a-');
       }
       return this;
     }
-  , init: noop
+  , init: utils.noop
   
   , watch: function(keyPath, callback) {
       if(keyPath && callback){
@@ -1520,8 +525,6 @@ setPrefix('a-');
     }
     return binding;
   }
-  
-  var isIE = !!doc.attachEvent;
   
   function ViewModel(opts) {
     extend(this, {
@@ -1800,11 +803,11 @@ setPrefix('a-');
               case 'checkbox':
                 value = attr = 'checked';
                 //IE6, IE7 下监听 propertychange 会挂?
-                if(isIE) { ev += ' click'; }
+                if(ie) { ev += ' click'; }
               break;
               case 'radio':
                 attr = 'checked';
-                if(isIE) { ev += ' click'; }
+                if(ie) { ev += ' click'; }
                 callback = function() {
                   el.checked = el.value === vm.$getData(keyPath) + '';
                 };
@@ -1816,7 +819,7 @@ setPrefix('a-');
                     ev += ' input';
                   }
                   //IE 下的 input 事件替代
-                  if(isIE) {
+                  if(ie) {
                     ev += ' keyup propertychange cut';
                   }
                 }
@@ -1870,7 +873,7 @@ setPrefix('a-');
       
     this._ast = parser.parse(path, function(key, type) {
       that[type].push(key);
-    }, this.type);
+    }, this.type && this.type.slice(prefix.length));
   };
   
   function Watcher(relativeVm, token, callback) {
@@ -2264,44 +1267,1016 @@ setPrefix('a-');
     }
   )
   
-  //util
-  //---
+  function addEvent(el, event, handler) {
+    if(el.addEventListener) {
+      el.addEventListener(event, handler, false);
+    }else{
+      el.attachEvent('on' + event, handler);
+    }
+  }
   
-  function noop(){}
+  function removeEvent(el, event, handler) {
+    if(el.removeEventListener) {
+      el.removeEventListener(event, handler);
+    }else{
+      el.detachEvent('on' + event, handler);
+    }
+  }
+  
+  Ant._parse = parser.parse;
+  Ant._eval = parser.eval;
+  Ant.version = '0.2.3';
+  
+  module.exports = Ant;
+  
+})((function() {return this})());
+},{"./class.js":2,"./event.js":3,"./parse.js":4,"./utils.js":5}],2:[function(_dereq_,module,exports){
+var extend = _dereq_('./utils.js').extend;
 
-  function isObject(val) {
+var Class = {
+  /** 
+   * 构造函数继承. 
+   * 如: `var Car = Ant.extend({drive: function(){}}); new Car();`
+   * @param {Object} [protoProps] 子构造函数的扩展原型对象
+   * @param {Object} [staticProps] 子构造函数的扩展静态属性
+   * @return {Function} 子构造函数
+   */
+  extend: function (protoProps, staticProps) {
+    protoProps = protoProps || {};
+    var constructor = protoProps.hasOwnProperty('constructor') ? protoProps.constructor : function(){ return sup.apply(this, arguments); }
+    var sup = this;
+    var Fn = function() { this.constructor = constructor; };
+    
+    Fn.prototype = sup.prototype;
+    constructor.prototype = new Fn();
+    extend(constructor.prototype, protoProps);
+    extend(constructor, sup, staticProps, {__super__: sup.prototype});
+    
+    return constructor;
+  }
+};
+
+module.exports = Class;
+},{"./utils.js":5}],3:[function(_dereq_,module,exports){
+var utils = _dereq_('./utils.js');
+
+var Event = {
+  //监听自定义事件.
+  on: function(name, handler, context) {
+    var ctx = context || this
+      ;
+      
+    ctx._handlers = ctx._handlers || {};
+    ctx._handlers[name] = ctx._handlers[name] || [];
+    
+    ctx._handlers[name].push({handler: handler, context: context, ctx: ctx});
+    return this;
+  },
+  //移除监听事件.
+  off: function(name, handler, context) {
+    var ctx = context || this
+      , handlers = ctx._handlers
+      ;
+      
+    if(name && handlers[name]){
+      if(utils.isFunction(handler)){
+        for(var i = handlers[name].length - 1; i >=0; i--) {
+          if(handlers[name][i].handler === handler){
+            handlers[name].splice(i, 1);
+          }
+        }
+      }else{
+        handlers[name] = [];
+      }
+    }
+    return this;
+  },
+  //触发自定义事件. 
+  //该方法没有提供静态化的 context 参数. 如要静态化使用, 应该: `Event.trigger.call(context, name, data)`
+  trigger: function(name, data) {
+    var that = this
+      , args = [].slice.call(arguments, 1)
+      , handlers = that._handlers
+      ;
+      
+    if(handlers && handlers[name]){
+      handlers[name].forEach(function(e) {
+        e.handler.apply(that, args)
+      });
+    }
+    return this;
+  }
+};
+
+module.exports = Event;
+},{"./utils.js":5}],4:[function(_dereq_,module,exports){
+"use strict";
+//Javascript expression parser modified form Crockford's TDOP parser
+  var create = Object.create || function (o) {
+    function F() {}
+    F.prototype = o;
+    return new F();
+  };
+  
+  var error = function (message, t) {
+      t = t || this;
+      t.name = "SyntaxError";
+      t.message = message;
+      throw t;
+  };
+  
+  var noop = function() {};
+  
+  var tokenize = function (code, prefix, suffix) {
+      var c;                      // The current character.
+      var from;                   // The index of the start of the token.
+      var i = 0;                  // The index of the current character.
+      var length = code.length;
+      var n;                      // The number value.
+      var q;                      // The quote character.
+      var str;                    // The string value.
+
+      var result = [];            // An array to hold the results.
+
+      // Make a token object.
+      var make = function (type, value) {
+          return {
+              type: type,
+              value: value,
+              from: from,
+              to: i
+          };
+      };
+
+  // Begin tokenization. If the source string is empty, return nothing.
+
+      if (!code) {
+          return;
+      }
+
+  // If prefix and suffix strings are not provided, supply defaults.
+
+      if (typeof prefix !== 'string') {
+          prefix = '<>+-&';
+      }
+      if (typeof suffix !== 'string') {
+          suffix = '=>&:';
+      }
+
+
+  // Loop through code text, one character at a time.
+
+      c = code.charAt(i);
+      while (c) {
+          from = i;
+          
+          if (c <= ' ') {// Ignore whitespace.
+              i += 1;
+              c = code.charAt(i);
+          } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '$' || c === '_') {// name.
+              str = c;
+              i += 1;
+              for (;;) {
+                  c = code.charAt(i);
+                  if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                          (c >= '0' && c <= '9') || c === '_') {
+                      str += c;
+                      i += 1;
+                  } else {
+                      break;
+                  }
+              }
+              result.push(make('name', str));
+          } else if (c >= '0' && c <= '9') {
+          // number.
+
+          // A number cannot start with a decimal point. It must start with a digit,
+          // possibly '0'.
+              str = c;
+              i += 1;
+
+  // Look for more digits.
+
+              for (;;) {
+                  c = code.charAt(i);
+                  if (c < '0' || c > '9') {
+                      break;
+                  }
+                  i += 1;
+                  str += c;
+              }
+
+  // Look for a decimal fraction part.
+
+              if (c === '.') {
+                  i += 1;
+                  str += c;
+                  for (;;) {
+                      c = code.charAt(i);
+                      if (c < '0' || c > '9') {
+                          break;
+                      }
+                      i += 1;
+                      str += c;
+                  }
+              }
+
+  // Look for an exponent part.
+
+              if (c === 'e' || c === 'E') {
+                  i += 1;
+                  str += c;
+                  c = code.charAt(i);
+                  if (c === '-' || c === '+') {
+                      i += 1;
+                      str += c;
+                      c = code.charAt(i);
+                  }
+                  if (c < '0' || c > '9') {
+                      error("Bad exponent", make('number', str));
+                  }
+                  do {
+                      i += 1;
+                      str += c;
+                      c = code.charAt(i);
+                  } while (c >= '0' && c <= '9');
+              }
+
+  // Make sure the next character is not a letter.
+
+              if (c >= 'a' && c <= 'z') {
+                  str += c;
+                  i += 1;
+                  error("Bad number", make('number', str));
+              }
+
+  // Convert the string value to a number. If it is finite, then it is a good
+  // token.
+
+              n = +str;
+              if (isFinite(n)) {
+                  result.push(make('number', n));
+              } else {
+                  error("Bad number", make('number', str));
+              }
+
+  // string
+
+          } else if (c === '\'' || c === '"') {
+              str = '';
+              q = c;
+              i += 1;
+              for (;;) {
+                  c = code.charAt(i);
+                  if (c < ' ') {
+                      make('string', str);
+                      error(c === '\n' || c === '\r' || c === '' ?
+                          "Unterminated string." :
+                          "Control character in string.", make('', str));
+                  }
+
+  // Look for the closing quote.
+
+                  if (c === q) {
+                      break;
+                  }
+
+  // Look for escapement.
+
+                  if (c === '\\') {
+                      i += 1;
+                      if (i >= length) {
+                        error("Unterminated string", make('string', str));
+                      }
+                      c = code.charAt(i);
+                      switch (c) {
+                      case 'b':
+                          c = '\b';
+                          break;
+                      case 'f':
+                          c = '\f';
+                          break;
+                      case 'n':
+                          c = '\n';
+                          break;
+                      case 'r':
+                          c = '\r';
+                          break;
+                      case 't':
+                          c = '\t';
+                          break;
+                      case 'u':
+                          if (i >= length) {
+                             error("Unterminated string", make('string', str));
+                          }
+                          c = parseInt(code.substr(i + 1, 4), 16);
+                          if (!isFinite(c) || c < 0) {
+                             error("Unterminated string", make('string', str));
+                          }
+                          c = String.fromCharCode(c);
+                          i += 4;
+                          break;
+                      }
+                  }
+                  str += c;
+                  i += 1;
+              }
+              i += 1;
+              result.push(make('string', str));
+              c = code.charAt(i);
+
+  // comment.
+
+          } else if (c === '/' && code.charAt(i + 1) === '/') {
+              i += 1;
+              for (;;) {
+                  c = code.charAt(i);
+                  if (c === '\n' || c === '\r' || c === '') {
+                      break;
+                  }
+                  i += 1;
+              }
+
+  // combining
+
+          } else if (prefix.indexOf(c) >= 0) {
+              str = c;
+              i += 1;
+              while (true) {
+                  c = code.charAt(i);
+                  if (i >= length || suffix.indexOf(c) < 0) {
+                      break;
+                  }
+                  str += c;
+                  i += 1;
+              }
+              result.push(make('operator', str));
+
+  // single-character operator
+
+          } else {
+              i += 1;
+              result.push(make('operator', c));
+              c = code.charAt(i);
+          }
+      }
+      return result;
+  };
+
+  
+  var make_parse = function () {
+      var symbol_table = {};
+      var token;
+      var tokens;
+      var token_nr;
+      var getter;
+      var context;
+      
+      var path = '';
+
+      var init = function(fn) {
+        var summary = {
+          locals: {},//表达式中的变量
+          filters: {},//用到的 filter
+          paths: {},//用到的监控路径
+          assignments: {}
+        };
+        
+        fn = fn || noop;
+        
+        getter = function(value, type) {
+          if(!summary[type][value]){
+            fn(value, type);
+            summary[type][value] = true;
+          }
+        };
+      };
+      
+      var itself = function () {
+          return this;
+      };
+  
+      var find = function (n) {
+        n.nud      = itself;
+        n.led      = null;
+        n.std      = null;
+        n.lbp      = 0;
+        
+        var type
+          , next = tokens[token_nr]
+          ;
+          
+        if(context === 'repeat' && next && next.value === 'in') {
+          getter(n.value, 'assignments');
+        }else{
+          if(!token || token.id !== '.'){
+            if(token && token.id === '|'){
+              type = 'filters';
+            }else{
+              type = 'locals';
+              path = n.value;
+            }
+            getter(n.value, type);
+          }else{
+            path += '.' + n.value;
+          }
+          if( path && (!next || next.value !== '.' && next.value !== '[')){
+            getter(path, 'paths');
+            path = '';
+          }
+        }
+        return n;
+      };
+
+      var advance = function (id) {
+          var a, o, t, v;
+          if (id && token.id !== id) {
+              error("Expected '" + id + "'.", token);
+          }
+          if (token_nr >= tokens.length) {
+              token = symbol_table["(end)"];
+              return;
+          }
+          t = tokens[token_nr];
+          token_nr += 1;
+          v = t.value;
+          a = t.type;
+          if ((a === "operator" || a !== 'string') && v in symbol_table) {
+              //true, false 等直接量也会进入此分支
+              o = symbol_table[v];
+              if (!o) {
+                  error("Unknown operator.", t);
+              }
+          } else if (a === "name") {
+              o = find(t);
+          } else if (a === "string" || a ===  "number") {
+              o = symbol_table["(literal)"];
+              a = "literal";
+              if(path){
+                path += '.' + v;
+              }
+          } else {
+              error("Unexpected token.", t);
+          }
+          token = create(o);
+          token.from  = t.from;
+          token.to    = t.to;
+          token.value = v;
+          token.arity = a;
+          return token;
+      };
+
+      var expression = function (rbp) {
+          var left;
+          var t = token;
+          advance();
+          left = t.nud();
+          while (rbp < token.lbp) {
+              t = token;
+              advance();
+              left = t.led(left);
+          }
+          return left;
+      };
+
+      var original_symbol = {
+          nud: function () {
+              error("Undefined.", this);
+          },
+          led: function (left) {
+              error("Missing operator.", this);
+          }
+      };
+
+      var symbol = function (id, bp) {
+          var s = symbol_table[id];
+          bp = bp || 0;
+          if (s) {
+              if (bp >= s.lbp) {
+                  s.lbp = bp;
+              }
+          } else {
+              s = create(original_symbol);
+              s.id = s.value = id;
+              s.lbp = bp;
+              symbol_table[id] = s;
+          }
+          return s;
+      };
+
+      var constant = function (s, v, a) {
+          var x = symbol(s);
+          x.nud = function () {
+              this.value = symbol_table[this.id].value;
+              this.arity = "literal";
+              return this;
+          };
+          x.value = v;
+          return x;
+      };
+      
+      var infix = function (id, bp, led) {
+          var s = symbol(id, bp);
+          s.led = led || function (left) {
+              this.first = left;
+              this.second = expression(bp);
+              this.arity = "binary";
+              return this;
+          };
+          return s;
+      };
+
+      var infixr = function (id, bp, led) {
+          var s = symbol(id, bp);
+          s.led = led || function (left) {
+              this.first = left;
+              this.second = expression(bp - 1);
+              this.arity = "binary";
+              return this;
+          };
+          return s;
+      };
+
+      var prefix = function (id, nud) {
+          var s = symbol(id);
+          s.nud = nud || function () {
+              this.first = expression(70);
+              this.arity = "unary";
+              return this;
+          };
+          return s;
+      };
+
+      symbol("(end)");
+      symbol("(name)");
+      symbol(":");
+      symbol(")");
+      symbol("]");
+      symbol("}");
+      symbol(",");
+
+      constant("true", true);
+      constant("false", false);
+      constant("null", null);
+      
+      constant("Math", Math);
+      constant("Date", Date);
+
+      symbol("(literal)").nud = itself;
+
+      symbol(".").nud = function () {
+          this.arity = "this";
+          getter('.', 'locals');
+          getter('.', 'paths');
+          return this;
+      };
+      // symbol("this").nud = function () {
+          // this.arity = "this";
+          // return this;
+      // };
+
+      //Operator Precedence:
+      //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+
+      infix("?", 20, function (left) {
+          this.first = left;
+          this.second = expression(0);
+          advance(":");
+          this.third = expression(0);
+          this.arity = "ternary";
+          return this;
+      });
+      
+      infixr("&&", 31);
+      infixr("||", 30);
+
+      infixr("===", 40);
+      infixr("!==", 40);
+
+      infixr("==", 40);
+      infixr("!=", 40);
+
+      infixr("<", 40);
+      infixr("<=", 40);
+      infixr(">", 40);
+      infixr(">=", 40);
+      
+      infix("in", 45, function (left) {
+          this.first = left;
+          this.second = expression(0);
+          this.arity = "binary";
+          if(context === 'repeat'){
+            // `in` at repeat block
+            this.assignment = true;
+          }
+          return this;
+      });
+
+      infix("+", 50);
+      infix("-", 50);
+
+      infix("*", 60);
+      infix("/", 60);
+      infix("%", 60);
+
+      infix(".", 80, function (left) {
+          this.first = left;
+          if (token.arity !== "name") {
+              error("Expected a property name.", token);
+          }
+          token.arity = "literal";
+          this.second = token;
+          this.arity = "binary";
+          advance();
+          return this;
+      });
+
+      infix("[", 80, function (left) {
+          this.first = left;
+          this.second = expression(0);
+          this.arity = "binary";
+          advance("]");
+          if(path && token.value !== '.' && token.value !== '['){
+            getter(path, 'paths');
+            path = '';
+          }
+          return this;
+      });
+
+      infix("(", 80, function (left) {
+          var a = [];
+          if (left.id === "." || left.id === "[") {
+              this.arity = "ternary";
+              this.first = left.first;
+              this.second = left.second;
+              this.third = a;
+          } else {
+              this.arity = "binary";
+              this.first = left;
+              this.second = a;
+              if ((left.arity !== "unary" || left.id !== "function") &&
+                      left.arity !== "name" && left.arity !== "literal" && left.id !== "(" &&
+                      left.id !== "&&" && left.id !== "||" && left.id !== "?") {
+                  error("Expected a variable name.", left);
+              }
+          }
+          if (token.id !== ")") {
+              while (true) {
+                  a.push(expression(0));
+                  if (token.id !== ",") {
+                      break;
+                  }
+                  advance(",");
+              }
+          }
+          advance(")");
+          return this;
+      });
+
+      //filter
+      infix("|", 10, function(left) {
+        var a;
+        this.first = left;
+        token.arity = 'filter';
+        this.second = expression(10);
+        this.arity = 'binary';
+        if(token.id === ':'){
+          this.arity = 'ternary';
+          this.third = a = [];
+          while(true){
+            advance(':');
+            a.push(expression(0));
+            if(token.id !== ":"){
+              break;
+            }
+          }
+        }
+        return this;
+      });
+      
+
+      prefix("!");
+      prefix("-");
+      prefix("typeof");
+
+      prefix("(", function () {
+          var e = expression(0);
+          advance(")");
+          return e;
+      });
+
+      prefix("[", function () {
+          var a = [];
+          if (token.id !== "]") {
+              while (true) {
+                  a.push(expression(0));
+                  if (token.id !== ",") {
+                      break;
+                  }
+                  advance(",");
+              }
+          }
+          advance("]");
+          this.first = a;
+          this.arity = "unary";
+          return this;
+      });
+
+      prefix("{", function () {
+          var a = [], n, v;
+          if (token.id !== "}") {
+              while (true) {
+                  n = token;
+                  if (n.arity !== "name" && n.arity !== "literal") {
+                      error("Bad property name.", token);
+                  }
+                  advance();
+                  advance(":");
+                  v = expression(0);
+                  v.key = n.value;
+                  a.push(v);
+                  if (token.id !== ",") {
+                      break;
+                  }
+                  advance(",");
+              }
+          }
+          advance("}");
+          this.first = a;
+          this.arity = "unary";
+          return this;
+      });
+
+      //_source: 表达式代码字符串
+      //_fn: 接收表达式语法摘要函数
+      //_context: 表达式的语句环境
+      return function (_source, _fn, _context) {
+          tokens = tokenize(_source, '=<>!+-*&|/%^', '=<>&|');
+          token_nr = 0;
+          context = _context;
+          init(_fn);
+          advance();
+          var s = expression(0);
+          advance("(end)");
+          return s;
+      };
+  };
+
+  var operators = {
+    'unary': {
+      '+': function(v) { return +v; }
+    , '-': function(v) { return -v; }
+    , '!': function(v) { return !v; }
+      
+    , '[': function(v){ return v; }
+    , '{': function(v){
+        var r = {};
+        for(var i = 0, l = v.length; i < l; i++) {
+          r[v[i][0]] = v[i][1];
+        }
+        return r;
+      }
+    , 'typeof': function(v){ return typeof v; }
+    , 'new': function(v){ return new v }
+    }
+    
+  , 'binary': {
+      '+': function(l, r) { return l+r; }
+    , '-': function(l, r) { return l-r; }
+    , '*': function(l, r) { return l*r; }
+    , '/': function(l, r) { return l/r; }
+    , '%': function(l, r) { return l%r; }
+    , '<': function(l, r) { return l<r; }
+    , '>': function(l, r) { return l>r; }
+    , '<=': function(l, r) { return l<=r; }
+    , '>=': function(l, r) { return l>=r; }
+    , '==': function(l, r) { return l==r; }
+    , '!=': function(l, r) { return l!=r; }
+    , '===': function(l, r) { return l===r; }
+    , '!==': function(l, r) { return l!==r; }
+    , '&&': function(l, r) { return l&&r; }
+    , '||': function(l, r) { return l||r; }
+      
+    , '.': function(l, r) { return l[r]; }
+    , '[': function(l, r) { return l[r]; }
+    , '(': function(l, r){ return l.apply(null, r) }
+      
+    , '|': function(l, r){ return r.call(null, l) }//filter. name|filter
+    , 'in': function(l, r){
+        if(this.assignment) {
+          //repeat
+          return r;
+        }else{
+          return l in r;
+        }
+      }
+    }
+    
+  , 'ternary': {
+      '?': function(f, s, t) { return f ? s : t; }
+    , '(': function(f, s, t) { return f[s].apply(f, t) }
+      
+    , '|': function(f, s, t){ return s.apply(null, [f].concat(t)); }//filter. name | filter : arg2 : arg3
+    }
+  };
+
+  var make_eval = function() {
+    var _locals, _filters
+      , isArray = Array.isArray
+      , argName = ['first', 'second', 'third']
+      ;
+      
+    var evaluate = function(tree) {
+      var arity = tree.arity
+        , value = tree.value
+        , args = []
+        , n = 0
+        , arg
+        ;
+      
+      for(; n < 3; n++){
+        arg = tree[argName[n]];
+        if(arg){
+          if(isArray(arg)){
+            args[n] = [];
+            for(var i = 0, l = arg.length; i < l; i++){
+              args[n].push(typeof arg[i].key === 'undefined' ? evaluate(arg[i]) : [arg[i].key, evaluate(arg[i])]);
+            }
+          }else{
+            args[n] = evaluate(arg);
+          }
+        }
+      }
+      
+      switch(arity){
+        case 'unary': 
+        case 'binary':
+        case 'ternary':
+          try{
+            return getOperator(arity, value).apply(tree, args);
+          }catch(e){
+            //console.debug(e);
+            return '';
+          }
+        break;
+        case 'literal':
+          return value;
+        case 'name':
+          return _locals[value];
+        case 'filter':
+          return _filters[value];
+        case 'this':
+          return _locals;
+        break;
+      }
+    };
+    
+    function getOperator(arity, value){
+      return operators[arity][value] || function() { return ''; }
+    }
+    
+    return function(tree, context) {
+      context = context || {};
+      _locals = context.locals || {};
+      _filters = context.filters || {};
+      return evaluate(tree);
+    }
+  };
+  
+  module.exports = {
+    parse: make_parse()
+  , eval: make_eval()
+  };
+},{}],5:[function(_dereq_,module,exports){
+"use strict";
+
+//utils
+//---
+
+var keyPathReg = /(?:\.|\[)/g
+  , bra = /\]/g
+  ;
+
+function parseKeyPath(keyPath){
+  return keyPath.replace(bra, '').split(keyPathReg);
+}
+
+function extend(/* deep, target, object..., calllback */) {
+  var options
+    , name, src, copy, copyIsArray, clone
+    , target = arguments[0] || {}
+    , i = 1
+    , length = arguments.length
+    , deep = false
+    , callback
+    ;
+
+  // Handle a deep copy situation
+  if (typeof target === "boolean") {
+    deep = target;
+
+    // skip the boolean and the target
+    target = arguments[ i ] || {};
+    i++;
+  }
+  
+  if(utils.isFunction(arguments[length - 1])) {
+    callback = arguments[length - 1];
+    length--;
+  }
+
+  // Handle case when target is a string or something (possible in deep copy)
+  if (typeof target !== "object" && !utils.isFunction(target)) {
+    target = {};
+  }
+
+  for ( ; i < length; i++ ) {
+    // Only deal with non-null/undefined values
+    if ( (options = arguments[ i ]) != null ) {
+      // Extend the base object
+      for ( name in options ) {
+        //android 2.3 browser can enum the prototype of constructor...
+        if(options.hasOwnProperty(name) && name !== 'prototype'){
+          src = target[ name ];
+          copy = options[ name ];
+          
+
+          // Recurse if we're merging plain objects or arrays
+          if ( deep && copy && ( utils.isPlainObject(copy) || (copyIsArray = utils.isArray(copy)) ) ) {
+          
+            // Prevent never-ending loop
+            if ( target === copy ) {
+              continue;
+            }
+            if ( copyIsArray ) {
+              copyIsArray = false;
+              clone = src && utils.isArray(src) ? src : [];
+
+            } else {
+              clone = src && utils.isPlainObject(src) ? src : {};
+            }
+
+            if(callback) {
+              copy = callback(clone, copy, name);
+            }
+
+            // Never move original objects, clone them
+            target[ name ] = extend( deep, clone, copy, callback);
+
+            // Don't bring in undefined values
+          } else if ( !utils.isUndefined(copy) ) {
+
+            if(callback) {
+              copy = callback(src, copy, name);
+            }
+            target[ name ] = copy;
+          }
+        }
+      }
+    }
+  }
+
+  // Return the modified object
+  return target;
+}
+  
+var utils = {
+  noop: function (){}
+, ie: typeof document !== 'undefined' && !!document.attachEvent
+
+, isObject: function (val) {
     return typeof val === 'object' && val !== null;
   }
-  
-  function isUndefined(val) {
+
+, isUndefined: function (val) {
     return typeof val === 'undefined';
   }
-  
-  function isFunction(val){
+
+, isFunction: function (val){
     return typeof val === 'function';
   }
-  
-  function isArray(val) {
-    if(isIE){
+
+, isArray: function (val) {
+    if(utils.ie){
       //IE 9 及以下 IE 跨窗口检测数组
       return val && val.constructor + '' === Array + '';
     }else{
       return Array.isArray(val);
     }
   }
-  
+
   //简单对象的简易判断
-  function isPlainObject(o){
+, isPlainObject: function (o){
     if (!o || ({}).toString.call(o) !== '[object Object]' || o.nodeType || o === o.window) {
       return false;
     }else{
       return true;
     }
   }
-  
+
   //函数切面
   //前面的函数返回值传入 breakCheck 判断, breakCheck 返回值为真时不执行后面的函数
-  function beforeFn(oriFn, fn, breakCheck) {
+, beforeFn: function (oriFn, fn, breakCheck) {
     return function() {
       var ret = fn.apply(this, arguments);
       if(breakCheck && breakCheck.call(this, ret)){
@@ -2311,7 +2286,7 @@ setPrefix('a-');
     };
   }
 
-  function afterFn(oriFn, fn, breakCheck) {
+, afterFn: function (oriFn, fn, breakCheck) {
     return function() {
       var ret = oriFn.apply(this, arguments);
       if(breakCheck && breakCheck.call(this, ret)){
@@ -2322,14 +2297,9 @@ setPrefix('a-');
     }
   }
   
-  var keyPathReg = /(?:\.|\[)/g
-    , bra = /\]/g
-    ;
-    
-  function parseKeyPath(keyPath){
-    return keyPath.replace(bra, '').split(keyPathReg);
-  }
-  function deepSet(keyStr, value, obj) {
+, parseKeyPath: parseKeyPath
+
+, deepSet: function (keyStr, value, obj) {
     if(keyStr){
       var chain = parseKeyPath(keyStr)
         , cur = obj
@@ -2351,7 +2321,7 @@ setPrefix('a-');
     }
     return obj;
   }
-  function deepGet(keyStr, obj) {
+, deepGet: function (keyStr, obj) {
     var chain, cur = obj, key;
     if(keyStr){
       chain = parseKeyPath(keyStr);
@@ -2366,25 +2336,10 @@ setPrefix('a-');
     }
     return cur;
   }
-  
-  function addEvent(el, event, handler) {
-    if(el.addEventListener) {
-      el.addEventListener(event, handler, false);
-    }else{
-      el.attachEvent('on' + event, handler);
-    }
-  }
-  
-  function removeEvent(el, event, handler) {
-    if(el.removeEventListener) {
-      el.removeEventListener(event, handler);
-    }else{
-      el.detachEvent('on' + event, handler);
-    }
-  }
-  
-  Ant._parse = parser.parse;
-  Ant._eval = parser.eval;
-  Ant.version = '0.2.3';
-  return Ant;
+, extend: extend
+};
+
+module.exports = utils;
+},{}]},{},[1])
+(1)
 });

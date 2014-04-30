@@ -1,7 +1,4 @@
-define(function(){
-
 "use strict";
-
 //Javascript expression parser modified form Crockford's TDOP parser
   var create = Object.create || function (o) {
     function F() {}
@@ -297,7 +294,7 @@ define(function(){
           , next = tokens[token_nr]
           ;
           
-        if(context === Ant.PREFIX + 'repeat' && next && next.value === 'in') {
+        if(context === 'repeat' && next && next.value === 'in') {
           getter(n.value, 'assignments');
         }else{
           if(!token || token.id !== '.'){
@@ -496,7 +493,7 @@ define(function(){
           this.first = left;
           this.second = expression(0);
           this.arity = "binary";
-          if(context === Ant.PREFIX + 'repeat'){
+          if(context === 'repeat'){
             // `in` at repeat block
             this.assignment = true;
           }
@@ -774,10 +771,7 @@ define(function(){
     }
   };
   
-  var parser = {
+  module.exports = {
     parse: make_parse()
   , eval: make_eval()
   };
-  
-  return parser;
-});
