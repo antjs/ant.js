@@ -8,8 +8,8 @@ module.exports = function(grunt) {
     pkg: grunt.file.readJSON('package.json'),
     concat: {
       options: {
-        separator: ';',
-        banner: '',
+        //separator: ';',
+        banner: grunt.file.read('src/intro.js', {encoding: 'utf8'})
       },
       all: {
         src: ['dist/ant.js', 'extensions/*.js'],

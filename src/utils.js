@@ -3,10 +3,13 @@
 //utils
 //---
 
+var doc = require('./document.js');
+
 var keyPathReg = /(?:\.|\[)/g
   , bra = /\]/g
   ;
 
+//path.key, path[key] --> ['path', 'key']
 function parseKeyPath(keyPath){
   return keyPath.replace(bra, '').split(keyPathReg);
 }
@@ -89,10 +92,30 @@ function extend(/* deep, target, object..., calllback */) {
   // Return the modified object
   return target;
 }
-  
+
+
+function tplParse(tpl, target) {
+  var el;
+  if(utils.isObject(tpl)){
+    if(target){
+      el = target = utils.isObject(target) ? target : doc.createElement(target);
+      el.innerHTML = '';//清空目标对象
+      target.appendChild(tpl);
+    }else{
+      el = tpl;
+    }
+    tpl = el.outerHTML;
+  }else{
+    el = utils.isObject(target) ? target : doc.createElement(target || 'div');
+    el.innerHTML = tpl;
+  }
+  return {el: el, tpl: tpl};
+}
+
+ 
 var utils = {
   noop: function (){}
-, ie: typeof document !== 'undefined' && !!document.attachEvent
+, ie: !!doc.attachEvent
 
 , isObject: function (val) {
     return typeof val === 'object' && val !== null;
@@ -187,6 +210,7 @@ var utils = {
     return cur;
   }
 , extend: extend
+, tplParse: tplParse
 };
 
 module.exports = utils;

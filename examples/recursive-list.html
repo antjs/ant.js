@@ -11,24 +11,16 @@
 <body>
   <h1>嵌套数组: </h1>
 	<div id=template>
-    <!-- <ul>
-      <li a-repeat={{province}}><span>{{$index + 1}} {{name}}</span>
-        <ul>
-          <li a-repeat={{city}}><span>{{name}}</span>
-            <ul a-if={{county}}>
-              <li a-repeat={{county}}>{{.}}</li>
-            </ul>
-          </li>
-        </ul>
-      </li>
-    </ul> -->
-    
+    <input type="text" value="省市县" a-model="{{title}}" />
+    <!-- <h2>{{title}}</h2> -->
     <ul>
-      <li a-repeat="{{p in province}}">{{p.name}}
+      <li a-repeat="{{p in province}}">{{p.name}} {{title}}
         <ul>
-          <li a-repeat="{{c in city}}">{{p.name}} {{c.name}}
+          <li a-repeat="{{c in p.city}}">{{p.name}} {{c.name}}
             <ul a-if="{{c.county}}">
-              <li a-repeat="{{o in c.county}}">{{o}}<small>{{c.name}} {{p.name}}</small></li>
+              <li a-repeat="{{o in c.county}}">{{o}}<small>{{c.name}} {{p.name}}</small>
+                <input type="text" a-model="{{c.name}}">
+              </li>
             </ul>
           </li>
         </ul>
@@ -45,7 +37,7 @@
         , {name:"韶关",county:["武江区","浈江区","曲江区","始兴县"]}
         , {name:"深圳",county:["罗湖区","福田区","南山区","宝安区","龙岗区","盐田区"]}
         ]}
-       // {name: '北京市', city: [{name:"东城区"},{name:"西城区"}]}
+        //{name: '北京市', city: [{name:"东城区"},{name:"西城区"}]}
       //, {name: '上海市', city: [{name:"黄浦区"},{name:"闸北区"}]}
       ]
     }

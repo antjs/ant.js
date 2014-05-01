@@ -66,7 +66,7 @@
             <option value="dragonfly">dragonfly</option>
           </select></label>
         <label>下拉列表3: <select name=select3 a-model={{select3}}>
-            <option a-repeat={{select2}} value="{{.}}">{{.}}</option>
+            <option a-repeat="{{i in select2}}" value="{{i}}">{{i}}</option>
           </select></label>
       </fieldset>
       <fieldset>
@@ -83,7 +83,7 @@
       	<li>单选框: <span a-style="background-color:{{radio}};color:#fff">{{radio}}</span></li>
       	<li>多行文本框: {{{textarea}}}</li>
       	<li>下拉框1: <span  a-class='{{select1}}'>{{select1}}</span></li>
-      	<li>下拉框2: {{select2}}</li>
+      	<li>下拉框2: {{select2}} {{select2.length}}</li>
       	<li a-if={{!checkbox}}>下拉框3: {{select3}}</li>
         <li a-style="background-color: {{color}}; width: {{range}}%">范围框/取色框/日期框: <span>{{range}} / {{color}} / {{date}}</span></li>
         <li>子模板: {{> partial}}<!-- {{{> partial}}} --> !</li>

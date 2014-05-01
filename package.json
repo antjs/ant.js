@@ -27,14 +27,14 @@
     "jsdom": "~0.10.4"
   },
   "devDependencies": {
-    "grunt-contrib-concat": "~0.3.0",
-    "grunt-contrib-uglify": "~0.2.2",
+    "grunt-contrib-concat": "~0.4.0",
+    "grunt-contrib-uglify": "~0.4.0",
     "grunt": "~0.4.1",
     "mocha": "~1.13.0",
     "expect.js": "~0.3.1",
     "grunt-mocha": "~0.4.1",
     "pygmentize-bundled": "~2.1.0",
-    "grunt-contrib-watch": "~0.5.3",
+    "grunt-contrib-watch": "~0.6.1",
     "grunt-browserify": "~2.0.8",
     "browserify": "~3.44.2"
   }

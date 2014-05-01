@@ -26,7 +26,7 @@ describe('接口可用性', function() {
     expect(ant.off).to.be.a('function');
     expect(ant.trigger).to.be.a('function');
     expect(ant.render).to.be.a('function');
-    expect(ant.update).to.be.a('function');
+    //expect(ant.update).to.be.a('function');
     expect(ant.set).to.be.a('function');
     expect(ant.get).to.be.a('function');
     expect(ant.clone).to.be.a('function');
@@ -495,18 +495,20 @@ describe('模板语法', function() {
       });
       
       it('替换数组并更改状态', function(){
-        data.list[0].state = false;
-        data.list[1].state = true;
-        ant.set('list', data.list);
+        var list = data.list.slice();
+        list[0].state = false;
+        list[1].state = true;
+        list.push({state: true, name: 'cicada'});
+        ant.set('list', list);
         listCheck();
-        ant.set('list[1].name', 'Bee')
+        ant.set('list[1].name', 'Bee');
         listCheck();
       })
       
     });
 
     it('深度变量', function() {
-      var tpl = '<li a-repeat={{path.list}}>{{.}}</li>'
+      var tpl = '<li a-repeat="{{item in path.list}}">{{item}}</li>'
         , data = {path: {list: ['ant', 'bee']}}
         , ant = new Ant(tpl, {data: data})
         ;
@@ -612,7 +614,7 @@ describe('模板语法', function() {
     });
     
     it('子模板根元素带有 repeat 属性', function() {
-      var content = '<span>{{title}}</span><span class=repeat a-repeat={{list}}>{{.}}</span>'
+      var content = '<span>{{title}}</span><span class=repeat a-repeat="{{item in list}}">{{item}}</span>'
         , ant = new Ant(getTpl(true), {
             data: {
               title: 'Ant'

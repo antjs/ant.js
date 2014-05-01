@@ -1,9 +1,20 @@
-!function(e){if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Ant=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
-(function(root){
+/***
+ *          .o.                       .           o8o          
+ *         .888.                    .o8           `"'          
+ *        .8"888.     ooo. .oo.   .o888oo        oooo  .oooo.o 
+ *       .8' `888.    `888P"Y88b    888          `888 d88(  "8 
+ *      .88ooo8888.    888   888    888           888 `"Y88b.  
+ *     .8'     `888.   888   888    888 . .o.     888 o.  )88b 
+ *    o88o     o8888o o888o o888o   "888" Y8P     888 8""888P' 
+ *                                                888          
+ *                                            .o. 88P          
+ *                                            `Y888P           
+ */               
+
+ !function(e){if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Ant=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 "use strict";
 
-var doc = root.document || _dereq_('jsdom').jsdom()
-
+var doc = _dereq_('./document.js')
   , parser = _dereq_('./parse.js')
   , utils = _dereq_('./utils.js')
   , Event = _dereq_('./event.js')
@@ -23,6 +34,7 @@ var isObject = utils.isObject
   , deepGet = utils.deepGet
   , extend = utils.extend
   , ie = utils.ie
+  , tplParse = utils.tplParse
   ;
 
 
@@ -61,7 +73,7 @@ function setPrefix(newPrefix) {
     antAttr.IF = prefix + 'if';
     antAttr.REPEAT = prefix + 'repeat';
     antAttr.MODEL = prefix + 'model';
-    Ant.PREFIX = prefix;
+    this.prefix = prefix;
   }
 }
 
@@ -74,13 +86,12 @@ function isAntAttr(attrName) {
   return false;
 }
 
-setPrefix('a-');
-  
   /**
    * # Ant
    * 基于 dom 的模板引擎. 支持数据绑定
-   * @param {String | Object} tpl 模板应该是合法而且标准的 HTML 标签字符串或者直接是现有 DOM 树中的一个 element 对象.
+   * @param {String | Element} [tpl] 模板应该是合法而且标准的 HTML 标签字符串或者直接是现有 DOM 树中的一个 element 对象.
    * @param {Object} [opts]
+   * @param {String | Element} opts.tpl
    * @param {Object} opts.data 渲染模板的数据. 该项如果为空, 稍后可以用 `tpl.render(model)` 来渲染生成 html.
    * @param {Boolean} opts.lazy 是否对 'input' 及 'textarea' 监听 `change` 事件, 而不是 `input` 事件
    * @param {Object} opts.events 
@@ -89,6 +100,9 @@ setPrefix('a-');
    * @constructor
    */
   function Ant(tpl, opts) {
+    if(isPlainObject(tpl)) {
+      tpl = opts.tpl;
+    }
     opts = opts || {};
     var el
       , defaults = this.defaults || {}
@@ -150,9 +164,7 @@ setPrefix('a-');
       this.setFilter(filterName, filters[filterName]);
     }
     
-    this.trigger('beforeInit');
     buildViewModel(this);
-    this.trigger('build');
     
     //这里需要合并可能存在的 this.data
     //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
@@ -162,7 +174,6 @@ setPrefix('a-');
       this.render(data);
     }
     this.init.apply(this, arguments);
-    this.trigger('afterInit');
   }
   
   extend(Ant, Class, {
@@ -171,46 +182,17 @@ setPrefix('a-');
   , doc: doc
   });
   
+  Ant.setPrefix('a-');
+  
+  
   //方法
   //----
   extend(Ant.prototype, Event, {
     /**
-     * ### ant.update
-     * 更新模板. 
-     * @param {Object} data 要更新的数据. 增量数据或全新的数据.
-     * @param {String} [keyPath] 需要更新的数据路径.
-     * @param {AnyType|Object} [data] 需要更新的数据. 省略的话将使用现有的数据.
-     * @param {Boolean} [isExtend] 界面更新类型.
-              为 true 时, 是扩展式更新, 原有的数据不变
-              为 false 时, 为替换更新, 不在 data 中的变量, 将在 DOM 中被清空.
-     */
-    update: function(keyPath, data, isExtend, isBubble) {
-      var attrs, vm = this._vm;
-      if(isObject(keyPath)){
-        isBubble = isExtend;
-        isExtend = data;
-        attrs = data = keyPath;
-      }else if(typeof keyPath === 'string'){
-        keyPath = parseKeyPath(keyPath).join('.');
-        if(isUndefined(data)){
-          data = this.get(keyPath);
-        }
-        attrs = deepSet(keyPath, data, {});
-        vm = vm.$getChild(keyPath);
-      }else{
-        data = this.data;
-      }
-      
-      if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
-      vm.$set(data, isExtend, isBubble !== false);
-      this.trigger('update', attrs);
-      return this;
-    }
-    /**
      * ### ant.render
      * 渲染模板
      */
-  , render: function(data) {
+    render: function(data) {
       data = data || this.data;
       this.set(data, {isExtend: false});
       this.isRendered = true;
@@ -286,7 +268,7 @@ setPrefix('a-');
                 path = 'data';
               }
             }
-            parent[path] = isObject(val) ? modelExtend(isArray(val) ? [] : {}, val, this._vm.$getChild(key, !isArray(val))) : val;
+            parent[path] = isObject(val) ? modelExtend(isArray(val) ? [] : {}, val, this._vm.$getVM(key, !isArray(val))) : val;
             isExtend = false;
           }else{
             modelExtend(this.data, deepSet(key, val, {}), this._vm);
@@ -294,7 +276,7 @@ setPrefix('a-');
           }
         }
       }
-      changed && (!opt.silence) && (isObject(key) ? this.update(key, isExtend, opt.isBubble) : this.update(key, val, isExtend, opt.isBubble));
+      changed && (!opt.silence) && (isObject(key) ? update.call(this, key, isExtend, opt.isBubble) : update.call(this, key, val, isExtend, opt.isBubble));
       return this;
     }
     /**
@@ -322,7 +304,7 @@ setPrefix('a-');
         this.partials[name] = partialInfo;
       }
       if(partial) {
-        vm = this._vm.$getChild(path);
+        vm = this._vm.$getVM(path);
         
         if(typeof partial === 'string'){
           if(partialInfo.escape){
@@ -346,7 +328,7 @@ setPrefix('a-');
           }
         }
         
-        travelEls(els, vm);
+        travelEl(els, vm);
         this.isRendered && vm.$set(deepGet(path, this.data), false, true);
       }
       return this;
@@ -360,7 +342,7 @@ setPrefix('a-');
       return this;
     }
   , unwatch: function(keyPath, callback) {
-      var vm = this._vm.$getChild(keyPath, true);
+      var vm = this._vm.$getVM(keyPath, true);
       if(vm){
         for(var i = vm.$watchers.length - 1; i >= 0; i--){
           if(vm.$watchers[i].callback === callback){
@@ -383,22 +365,37 @@ setPrefix('a-');
     }
   });
   
-  function tplParse(tpl, target) {
-    var el;
-    if(isObject(tpl)){
-      if(target){
-        el = target = isObject(target) ? target : doc.createElement(target);
-        el.innerHTML = '';//清空目标对象
-        target.appendChild(tpl);
-      }else{
-        el = tpl;
+  /**
+   * ### ant.update
+   * 更新模板. 
+   * @param {Object} data 要更新的数据. 增量数据或全新的数据.
+   * @param {String} [keyPath] 需要更新的数据路径.
+   * @param {AnyType|Object} [data] 需要更新的数据. 省略的话将使用现有的数据.
+   * @param {Boolean} [isExtend] 界面更新类型.
+            为 true 时, 是扩展式更新, 原有的数据不变
+            为 false 时, 为替换更新, 不在 data 中的变量, 将在 DOM 中被清空.
+   */
+  function update (keyPath, data, isExtend, isBubble) {
+    var attrs, vm = this._vm;
+    if(isObject(keyPath)){
+      isBubble = isExtend;
+      isExtend = data;
+      attrs = data = keyPath;
+    }else if(typeof keyPath === 'string'){
+      keyPath = parseKeyPath(keyPath).join('.');
+      if(isUndefined(data)){
+        data = this.get(keyPath);
       }
-      tpl = el.outerHTML;
+      attrs = deepSet(keyPath, data, {});
+      vm = vm.$getVM(keyPath);
     }else{
-      el = isObject(target) ? target : doc.createElement(target || 'div');
-      el.innerHTML = tpl;
+      data = this.data;
     }
-    return {el: el, tpl: tpl};
+    
+    if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
+    vm.$set(data, isExtend, isBubble !== false);
+    this.trigger('update', attrs);
+    return this;
   }
   
   function buildViewModel(ant) {
@@ -407,17 +404,7 @@ setPrefix('a-');
     });
     
     ant._vm = vm;
-    travelEls(ant.el, vm);
-  }
-  
-  function travelEls(els, vm) {
-    if(els.nodeType && !els.length){
-      travelEl(els, vm);
-    }else{
-      for(var i = 0, l = els.length; i < l; i++) {
-        travelEl(els[i], vm);
-      }
-    }
+    travelEl(ant.el, vm);
   }
   
   var NODETYPE = {
@@ -428,6 +415,14 @@ setPrefix('a-');
   
   //遍历元素及其子元素的所有属性节点及文本节点
   function travelEl(el, vm) {
+    if(el.length && isUndefined(el.nodeType)){
+      //node list
+      for(var i = 0, l = el.length; i < l; i++) {
+        travelEl(el[i], vm);
+      }
+      return;
+    }
+    
     if(el.nodeType === NODETYPE.COMMENT){
       //注释节点
       return;
@@ -531,17 +526,18 @@ setPrefix('a-');
       $key: ''
     , $root: this
     , $watchers: []
-    , $$assignment: {}
+    , $assignment: {}
     }, opts);
   }
   
   ViewModel.prototype = {
     $root: null
   , $parent: null
+  
   , $ant: null
   , $key: null
   , $repeat: false
-  , $$assignment: null
+  , $assignment: null
   
   , $watchers: null
 
@@ -549,21 +545,19 @@ setPrefix('a-');
     
   //获取子 vm
   //strict: false(default)不存在的话将新建一个
-  , $getChild: function(path, strict) {
-      var key, vm
-        , cur = this
-        , keyChain
-        ;
-        
+  , $getVM: function(path, strict) {
       path = path + '';
       
-      keyChain = path.split(/(?!^)\.(?!$)/);
-      
-      if(keyChain[0] in this.$$assignment) {
-        cur = this.$$assignment[keyChain[0]];
+      var key, vm
+        , cur = this
+        , keyChain = utils.parseKeyPath(path)
+        ;
+        
+      if(keyChain[0] in this.$assignment) {
+        cur = this.$assignment[keyChain[0]];
         keyChain.shift();
       }
-      if(path && path !== '.'){
+      if(path){
         for(var i = 0, l = keyChain.length; i < l; i++){
           key = keyChain[i];
           
@@ -571,8 +565,8 @@ setPrefix('a-');
             if(strict){ return null; }
             vm = new ViewModel({
               $parent: cur
-            , $root: cur.$root || cur
-            , $$assignment: extend({}, cur.$$assignment)
+            , $root: cur.$root
+            , $assignment: extend({}, cur.$assignment)
             , $key: key
             });
             
@@ -626,9 +620,10 @@ setPrefix('a-');
       
       if(isObject(map)){
         for(var path in map) {
-          if(this.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
           //传入的数据键值不能和 vm 中的自带属性名相同.
           //所以不推荐使用 '$' 作为 JSON 数据键值的开头.
+          //对于数组, .splice 方法会接管其成员, 除了 length 属性
+          if(this.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
             this[path].$set(data ? data[path] : void(0), isExtend);
           }
         }
@@ -766,7 +761,7 @@ setPrefix('a-');
         if(!keyPath){ return false; }
         
         var ant = vm.$root.$ant
-          , cur = keyPath === '.' ? vm : vm.$getChild(keyPath)
+          , cur = keyPath === '.' ? vm : vm.$getVM(keyPath)
           , ev = 'change blur'
           , attr, value = attr = 'value'
           , isSetDefaut = isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
@@ -894,14 +889,24 @@ setPrefix('a-');
     
     token.path && parse.call(this, token.path);
     
+    var root = relativeVm
+      , paths
+      , run = !this.locals.length
+      ;
+    
     for(var i = 0, l = this.paths.length; i < l; i++){
-      relativeVm.$getChild(this.paths[i]).$watchers.push(this);
+      paths = utils.parseKeyPath(this.paths[i]);
+      if(!(paths[0] in relativeVm.$assignment)) {
+        root = relativeVm.$root;
+        run = run || root !== relativeVm;
+      }
+      root.$getVM(this.paths[i]).$watchers.push(this);
     }
     
     this.state = Watcher.STATE_READY
     
     //When there is no variable in a binding, evaluate it immediately.
-    if(!this.locals.length) {
+    if(run) {
       this.fn();
     }
   }
@@ -916,8 +921,8 @@ setPrefix('a-');
       var vals = {}, key;
       for(var i = 0, l = this.locals.length; i < l; i++){
         key = this.locals[i];
-        if(key in this.relativeVm.$$assignment){
-          vals[key] = this.relativeVm.$$assignment[key].$getData();
+        if(key in this.relativeVm.$assignment){
+          vals[key] = this.relativeVm.$assignment[key].$getData();
         }else if(key === '.'){
           vals = this.relativeVm.$getData();
         }else{
@@ -1066,7 +1071,7 @@ setPrefix('a-');
         noFixVm = true;
       }
     }
-    vmArray.__ant__.$getChild('length').$set(vmArray.length, false, true);
+    vmArray.__ant__.$getVM('length').$set(vmArray.length, false, true);
     vmArray.__ant__.$root.$ant.trigger('update');
   }
   var arrayMethods = {
@@ -1119,7 +1124,7 @@ setPrefix('a-');
         el.removeAttribute(type);
                 
         this.els = [];
-        this.vm = relativeVm.$getChild(this.paths[0]);
+        this.vm = relativeVm.$getVM(this.paths[0]);
         
         if(type === antAttr.IF){
           //if 属性不用切换作用域
@@ -1207,10 +1212,10 @@ setPrefix('a-');
         for(var j = 0; j < m; j++){
           el = this.el.cloneNode(true);
           noFixVm || delete this.vm[index + j];
-          vm = this.vm.$getChild(index + j);
+          vm = this.vm.$getVM(index + j);
           
           for(var a = 0; a < this.assignments.length; a++) {
-            vm.$$assignment[this.assignments[a]] = vm;
+            vm.$assignment[this.assignments[a]] = vm;
           }
           
           el['$index'] = index + j;
@@ -1288,9 +1293,7 @@ setPrefix('a-');
   Ant.version = '0.2.3';
   
   module.exports = Ant;
-  
-})((function() {return this})());
-},{"./class.js":2,"./event.js":3,"./parse.js":4,"./utils.js":5}],2:[function(_dereq_,module,exports){
+},{"./class.js":2,"./document.js":3,"./event.js":4,"./parse.js":5,"./utils.js":6}],2:[function(_dereq_,module,exports){
 var extend = _dereq_('./utils.js').extend;
 
 var Class = {
@@ -1317,7 +1320,14 @@ var Class = {
 };
 
 module.exports = Class;
-},{"./utils.js":5}],3:[function(_dereq_,module,exports){
+},{"./utils.js":6}],3:[function(_dereq_,module,exports){
+(function(root){
+  "use strict";
+
+  module.exports = root.document || _dereq_('jsdom').jsdom();
+
+})((function() {return this})());
+},{}],4:[function(_dereq_,module,exports){
 var utils = _dereq_('./utils.js');
 
 var Event = {
@@ -1369,7 +1379,7 @@ var Event = {
 };
 
 module.exports = Event;
-},{"./utils.js":5}],4:[function(_dereq_,module,exports){
+},{"./utils.js":6}],5:[function(_dereq_,module,exports){
 "use strict";
 //Javascript expression parser modified form Crockford's TDOP parser
   var create = Object.create || function (o) {
@@ -2147,16 +2157,19 @@ module.exports = Event;
     parse: make_parse()
   , eval: make_eval()
   };
-},{}],5:[function(_dereq_,module,exports){
+},{}],6:[function(_dereq_,module,exports){
 "use strict";
 
 //utils
 //---
 
+var doc = _dereq_('./document.js');
+
 var keyPathReg = /(?:\.|\[)/g
   , bra = /\]/g
   ;
 
+//path.key, path[key] --> ['path', 'key']
 function parseKeyPath(keyPath){
   return keyPath.replace(bra, '').split(keyPathReg);
 }
@@ -2239,10 +2252,30 @@ function extend(/* deep, target, object..., calllback */) {
   // Return the modified object
   return target;
 }
-  
+
+
+function tplParse(tpl, target) {
+  var el;
+  if(utils.isObject(tpl)){
+    if(target){
+      el = target = utils.isObject(target) ? target : doc.createElement(target);
+      el.innerHTML = '';//清空目标对象
+      target.appendChild(tpl);
+    }else{
+      el = tpl;
+    }
+    tpl = el.outerHTML;
+  }else{
+    el = utils.isObject(target) ? target : doc.createElement(target || 'div');
+    el.innerHTML = tpl;
+  }
+  return {el: el, tpl: tpl};
+}
+
+ 
 var utils = {
   noop: function (){}
-, ie: typeof document !== 'undefined' && !!document.attachEvent
+, ie: !!doc.attachEvent
 
 , isObject: function (val) {
     return typeof val === 'object' && val !== null;
@@ -2337,12 +2370,14 @@ var utils = {
     return cur;
   }
 , extend: extend
+, tplParse: tplParse
 };
 
 module.exports = utils;
-},{}]},{},[1])
+},{"./document.js":3}]},{},[1])
 (1)
-});;
+});
+
 /**
  * 让 Ant.js 支持事件委托. 
  */
@@ -2377,7 +2412,8 @@ module.exports = utils;
       return this;
     }
   });
-})(this, jQuery);;//Some filters
+})(this, jQuery);
+//Some filters
 (function(Ant){
   window.Ant = Ant.extend({
     defaults: {
@@ -2578,7 +2614,8 @@ module.exports = utils;
       "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
     ]
   };
-})(window.Ant);;(function(window, $, undefined){
+})(window.Ant);
+(function(window, $, undefined){
   "use strict";
   var $root = $(window);
 
