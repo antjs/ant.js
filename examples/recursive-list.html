@@ -17,11 +17,12 @@
       <li a-repeat="{{p in province}}">{{p.name}} {{title}}
         <ul>
           <li a-repeat="{{c in p.city}}">{{p.name}} {{c.name}}
-            <ul a-if="{{c.county}}">
+            <input type="text" a-model="{{p.name}}">
+            <!-- <ul a-if="{{c.county}}">
               <li a-repeat="{{o in c.county}}">{{o}}<small>{{c.name}} {{p.name}}</small>
                 <input type="text" a-model="{{c.name}}">
               </li>
-            </ul>
+            </ul> -->
           </li>
         </ul>
       </li>
@@ -31,13 +32,13 @@
   var ant = new Ant(document.getElementById('template'), {
     data: {
       province:[
-        {name: '北京市', city: [{name:"东城区"},{name:"西城区"},{name:"崇文区"}]}
-      , {name: '上海市', city: [{name:"黄浦区"},{name:"闸北区"},{name:"徐汇区"}]}
-      , {name: '广东省', city: [{name:"广州",county:["荔湾区","越秀区","海珠区","天河区","白云区","黄埔区","番禺区"]}
-        , {name:"韶关",county:["武江区","浈江区","曲江区","始兴县"]}
-        , {name:"深圳",county:["罗湖区","福田区","南山区","宝安区","龙岗区","盐田区"]}
-        ]}
-        //{name: '北京市', city: [{name:"东城区"},{name:"西城区"}]}
+      //  {name: '北京市', city: [{name:"东城区"},{name:"西城区"},{name:"崇文区"}]}
+      //, {name: '上海市', city: [{name:"黄浦区"},{name:"闸北区"},{name:"徐汇区"}]}
+      //, {name: '广东省', city: [{name:"广州",county:["荔湾区","越秀区","海珠区","天河区","白云区","黄埔区","番禺区"]}
+       // , {name:"韶关",county:["武江区","浈江区","曲江区","始兴县"]}
+       // , {name:"深圳",county:["罗湖区","福田区","南山区","宝安区","龙岗区","盐田区"]}
+       // ]}
+        {name: '北京市', city: [{name:"东城区"}]}
       //, {name: '上海市', city: [{name:"黄浦区"},{name:"闸北区"}]}
       ]
     }

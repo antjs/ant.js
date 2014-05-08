@@ -1,5 +1,11 @@
 更新日志
 ----
+Version **[0.3.0]** 
+
+* 使用 CommonJs(browserify) 代替 AMD(requirejs) 作为内部模块规范.
+* 迭代指令使用 `in` 和 repeat 的方式.
+* 废弃 mustache 式的变量向上查找机制.
+
 Version **[0.2.3]** -- 2014-04-01
 
 * Bugs fix.

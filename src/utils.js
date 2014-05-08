@@ -147,8 +147,8 @@ var utils = {
     }
   }
 
-  //函数切面
-  //前面的函数返回值传入 breakCheck 判断, breakCheck 返回值为真时不执行后面的函数
+  //函数切面. oriFn 原始函数, fn 切面补充函数
+  //前面的函数返回值传入 breakCheck 判断, breakCheck 返回值为真时不执行切面补充的函数
 , beforeFn: function (oriFn, fn, breakCheck) {
     return function() {
       var ret = fn.apply(this, arguments);

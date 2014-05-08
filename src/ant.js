@@ -598,7 +598,7 @@ function isAntAttr(attrName) {
       
       
       for(var i = 0, l = this.$watchers.length; i < l; i++){
-        if((this.$value !== data && !this.$repeat) || this.$watchers[i].state === Watcher.STATE_READY){
+        if((this.$value !== data) || this.$watchers[i].state === Watcher.STATE_READY){
           this.$watchers[i].fn();
         }
       }
@@ -608,8 +608,7 @@ function isAntAttr(attrName) {
         for(var path in map) {
           //传入的数据键值不能和 vm 中的自带属性名相同.
           //所以不推荐使用 '$' 作为 JSON 数据键值的开头.
-          //对于数组, .splice 方法会接管其成员, 除了 length 属性
-          if(this.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
+          if(this.hasOwnProperty(path) && (!(path in ViewModel.prototype)) && (!this.$repeat || path === 'length')){
             this[path].$set(data ? data[path] : void(0), isExtend);
           }
         }
@@ -885,6 +884,10 @@ function isAntAttr(attrName) {
       if(!(paths[0] in relativeVm.$assignment)) {
         root = relativeVm.$root;
         run = run || root !== relativeVm;
+      }else{
+        //if(this.state == Watcher.STATE_READY) {
+          run = true;//引用父级 VM 时, 立即计算
+        //}
       }
       root.$getVM(this.paths[i]).$watchers.push(this);
     }
@@ -909,8 +912,8 @@ function isAntAttr(attrName) {
         key = this.locals[i];
         if(key in this.relativeVm.$assignment){
           vals[key] = this.relativeVm.$assignment[key].$getData();
-        }else if(key === '.'){
-          vals = this.relativeVm.$getData();
+        // }else if(key === '.'){
+          // vals = this.relativeVm.$getData();
         }else{
           vals[key] = this.relativeVm.$getData(key)
         }
@@ -1128,9 +1131,7 @@ function isAntAttr(attrName) {
             console.warn('需要一个数组');
             return;
           }
-          //if(this.state === 0 || !isExtend){
-            data && this.splice([0, this.els.length].concat(data), data);
-          //}
+          data && this.splice([0, this.els.length].concat(data), data);
         }else{
           if(data) {
             if(!that.lastIfState) {
