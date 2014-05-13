@@ -47,11 +47,11 @@ module.exports = function(grunt) {
     },
     watch: {
       test: {
-        files: ['src/*.js'],
+        files: ['src/*.js', 'src/*/*.js'],
         tasks: ['browserify', 'test']
       }
     , build: {
-        files: ['src/*.js'],
+        files: ['src/*.js', 'src/*/*.js'],
         tasks: ['browserify']
       }
     },

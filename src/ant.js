@@ -7,6 +7,7 @@ var doc = require('./document.js')
   , Event = require('./event.js')
   , Class = require('./class.js')
   , Dir = require('./directive.js')
+  , dirs = require('./directives')
   ;
 
 
@@ -175,153 +176,10 @@ function isAntAttr(attrName) {
   
   Ant.setPrefix('a-');
   
-  Ant.directive('text', {
-    terminal: true
-  , init: function() {
-      var text = doc.createTextNode('')
-        , el
-        ;
-      if(this.nodeName !== text.nodeName) {
-        el = this.el;
-        this.el = el.parentNode;
-        this.el.replaceChild(text, el);
-        this.node = text;
-        this.nodeName = text.nodeName;
-      }
-    }
-  , update: function(val, old) {
-      this.node.nodeValue = val;
-    }
-  });
-  
-  Ant.directive('html', {
+  for(var dir in dirs) {
+    Ant.directive(dir, dirs[dir]);
+  }
     
-  });
-  
-  Ant.directive('attr', {
-    
-  });
-  
-  Ant.directive('repeat', {
-    priority: 10000
-  , terminal: true
-  });
-  
-  Ant.directive('if', {
-    
-  });
-  
-  Ant.directive('model', {
-    init: function(vm) {
-      if(!this.path) { return false; }
-      
-      var el = this.el, keyPath = this.path
-        , ev = 'change'
-        , attr, value = attr = 'value'
-        , ant = vm.$root.$ant
-        , cur = vm.$getVM(keyPath)
-        , isSetDefaut = isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
-        , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
-        , callback = function(val) {
-            //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
-            var newVal = (val || vm.$getData(keyPath) || '') + ''
-              , val = el[attr]
-              ;
-            val && val.replace && (val = val.replace(crlf, '\n'));
-            if(newVal !== val){ el[attr] = newVal; }
-          }
-        , handler = function(isInit) {
-            var val = el[value];
-            
-            val.replace && (val = val.replace(crlf, '\n'));
-            ant.set(cur.$getKeyPath(), val, {isBubble: isInit !== true});
-          }
-        , callHandler = function(e) {
-            if(e && e.propertyName && e.propertyName !== attr) {
-              return;
-            }
-            handler.apply(this, arguments)
-          }
-        ;
-      
-      switch(el.tagName) {
-        default:
-          value = attr = 'innerHTML';
-          //ev += ' blur';
-        case 'INPUT':
-        case 'TEXTAREA':
-          switch(el.type) {
-            case 'checkbox':
-              value = attr = 'checked';
-              //IE6, IE7 下监听 propertychange 会挂?
-              if(ie) { ev += ' click'; }
-            break;
-            case 'radio':
-              attr = 'checked';
-              if(ie) { ev += ' click'; }
-              callback = function() {
-                el.checked = el.value === vm.$getData(keyPath) + '';
-              };
-              isSetDefaut = el.checked;
-            break;
-            default:
-              if(!ant.options.lazy){
-                if('oninput' in el){
-                  ev += ' input';
-                }
-                //IE 下的 input 事件替代
-                if(ie) {
-                  ev += ' keyup propertychange cut';
-                }
-              }
-            break;
-          }
-        break;
-        case 'SELECT':
-          if(el.multiple){
-            handler = function(isInit) {
-              var vals = [];
-              for(var i = 0, l = el.options.length; i < l; i++){
-                if(el.options[i].selected){ vals.push(el.options[i].value) }
-              }
-              ant.set(cur.$getKeyPath(), vals, {isBubble: isInit !== true});
-            };
-            callback = function(){
-              var vals = vm.$getData(keyPath);
-              if(vals && vals.length){
-                for(var i = 0, l = el.options.length; i < l; i++){
-                  el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
-                }
-              }
-            };
-          }
-          isSetDefaut = isSetDefaut && !hasToken(el[value]);
-        break;
-      }
-      
-      this.update = callback;
-      
-      ev.split(/\s+/g).forEach(function(e){
-        removeEvent(el, e, callHandler);
-        addEvent(el, e, callHandler);
-      });
-      
-      //根据表单元素的初始化默认值设置对应 model 的值
-      if(el[value] && isSetDefaut){
-         handler(true); 
-      }
-        
-    }
-  });
-  
-  Ant.directive('partial', {
-    terminal: true
-  , init: function() {
-      ;
-    }
-  });
-  
-  
   //实例方法
   //----
   extend(Ant.prototype, Event, {
@@ -1355,22 +1213,6 @@ function isAntAttr(attrName) {
       }
     }
   )
-  
-  function addEvent(el, event, handler) {
-    if(el.addEventListener) {
-      el.addEventListener(event, handler, false);
-    }else{
-      el.attachEvent('on' + event, handler);
-    }
-  }
-  
-  function removeEvent(el, event, handler) {
-    if(el.removeEventListener) {
-      el.removeEventListener(event, handler);
-    }else{
-      el.detachEvent('on' + event, handler);
-    }
-  }
   
   Ant._parse = parse;
   Ant._eval = evaluate.eval;

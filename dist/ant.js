@@ -8,6 +8,7 @@ var doc = _dereq_('./document.js')
   , Event = _dereq_('./event.js')
   , Class = _dereq_('./class.js')
   , Dir = _dereq_('./directive.js')
+  , dirs = _dereq_('./directives')
   ;
 
 
@@ -176,153 +177,10 @@ function isAntAttr(attrName) {
   
   Ant.setPrefix('a-');
   
-  Ant.directive('text', {
-    terminal: true
-  , init: function() {
-      var text = doc.createTextNode('')
-        , el
-        ;
-      if(this.nodeName !== text.nodeName) {
-        el = this.el;
-        this.el = el.parentNode;
-        this.el.replaceChild(text, el);
-        this.node = text;
-        this.nodeName = text.nodeName;
-      }
-    }
-  , update: function(val, old) {
-      this.node.nodeValue = val;
-    }
-  });
-  
-  Ant.directive('html', {
+  for(var dir in dirs) {
+    Ant.directive(dir, dirs[dir]);
+  }
     
-  });
-  
-  Ant.directive('attr', {
-    
-  });
-  
-  Ant.directive('repeat', {
-    priority: 10000
-  , terminal: true
-  });
-  
-  Ant.directive('if', {
-    
-  });
-  
-  Ant.directive('model', {
-    init: function(vm) {
-      if(!this.path) { return false; }
-      
-      var el = this.el, keyPath = this.path
-        , ev = 'change'
-        , attr, value = attr = 'value'
-        , ant = vm.$root.$ant
-        , cur = vm.$getVM(keyPath)
-        , isSetDefaut = isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
-        , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
-        , callback = function(val) {
-            //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
-            var newVal = (val || vm.$getData(keyPath) || '') + ''
-              , val = el[attr]
-              ;
-            val && val.replace && (val = val.replace(crlf, '\n'));
-            if(newVal !== val){ el[attr] = newVal; }
-          }
-        , handler = function(isInit) {
-            var val = el[value];
-            
-            val.replace && (val = val.replace(crlf, '\n'));
-            ant.set(cur.$getKeyPath(), val, {isBubble: isInit !== true});
-          }
-        , callHandler = function(e) {
-            if(e && e.propertyName && e.propertyName !== attr) {
-              return;
-            }
-            handler.apply(this, arguments)
-          }
-        ;
-      
-      switch(el.tagName) {
-        default:
-          value = attr = 'innerHTML';
-          //ev += ' blur';
-        case 'INPUT':
-        case 'TEXTAREA':
-          switch(el.type) {
-            case 'checkbox':
-              value = attr = 'checked';
-              //IE6, IE7 下监听 propertychange 会挂?
-              if(ie) { ev += ' click'; }
-            break;
-            case 'radio':
-              attr = 'checked';
-              if(ie) { ev += ' click'; }
-              callback = function() {
-                el.checked = el.value === vm.$getData(keyPath) + '';
-              };
-              isSetDefaut = el.checked;
-            break;
-            default:
-              if(!ant.options.lazy){
-                if('oninput' in el){
-                  ev += ' input';
-                }
-                //IE 下的 input 事件替代
-                if(ie) {
-                  ev += ' keyup propertychange cut';
-                }
-              }
-            break;
-          }
-        break;
-        case 'SELECT':
-          if(el.multiple){
-            handler = function(isInit) {
-              var vals = [];
-              for(var i = 0, l = el.options.length; i < l; i++){
-                if(el.options[i].selected){ vals.push(el.options[i].value) }
-              }
-              ant.set(cur.$getKeyPath(), vals, {isBubble: isInit !== true});
-            };
-            callback = function(){
-              var vals = vm.$getData(keyPath);
-              if(vals && vals.length){
-                for(var i = 0, l = el.options.length; i < l; i++){
-                  el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
-                }
-              }
-            };
-          }
-          isSetDefaut = isSetDefaut && !hasToken(el[value]);
-        break;
-      }
-      
-      this.update = callback;
-      
-      ev.split(/\s+/g).forEach(function(e){
-        removeEvent(el, e, callHandler);
-        addEvent(el, e, callHandler);
-      });
-      
-      //根据表单元素的初始化默认值设置对应 model 的值
-      if(el[value] && isSetDefaut){
-         handler(true); 
-      }
-        
-    }
-  });
-  
-  Ant.directive('partial', {
-    terminal: true
-  , init: function() {
-      ;
-    }
-  });
-  
-  
   //实例方法
   //----
   extend(Ant.prototype, Event, {
@@ -1357,28 +1215,12 @@ function isAntAttr(attrName) {
     }
   )
   
-  function addEvent(el, event, handler) {
-    if(el.addEventListener) {
-      el.addEventListener(event, handler, false);
-    }else{
-      el.attachEvent('on' + event, handler);
-    }
-  }
-  
-  function removeEvent(el, event, handler) {
-    if(el.removeEventListener) {
-      el.removeEventListener(event, handler);
-    }else{
-      el.detachEvent('on' + event, handler);
-    }
-  }
-  
   Ant._parse = parse;
   Ant._eval = evaluate.eval;
   Ant.version = '0.2.3';
   
   module.exports = Ant;
-},{"./class.js":2,"./directive.js":3,"./document.js":4,"./eval.js":5,"./event.js":6,"./parse.js":7,"./utils.js":8}],2:[function(_dereq_,module,exports){
+},{"./class.js":2,"./directive.js":3,"./directives":5,"./document.js":7,"./eval.js":8,"./event.js":9,"./parse.js":10,"./utils.js":11}],2:[function(_dereq_,module,exports){
 var extend = _dereq_('./utils.js').extend;
 
 var Class = {
@@ -1405,7 +1247,7 @@ var Class = {
 };
 
 module.exports = Class;
-},{"./utils.js":8}],3:[function(_dereq_,module,exports){
+},{"./utils.js":11}],3:[function(_dereq_,module,exports){
 "use strict";
 
 var utils = _dereq_('./utils.js');
@@ -1426,14 +1268,222 @@ function directive(key, opts) {
 
 exports.directive = directive;
 
-},{"./utils.js":8}],4:[function(_dereq_,module,exports){
+},{"./utils.js":11}],4:[function(_dereq_,module,exports){
+"use strict";
+
+module.exports = {
+  update: function(val) {
+    ;
+    
+  }
+};
+
+//IE 浏览器很多属性通过 `setAttribute` 设置后无效. 
+//这些通过 `el[attr] = value` 设置的属性却能够通过 `removeAttribute` 清除.
+function setAttr(el, attr, val){
+  try{
+    if(((attr in el) || attr === 'class')){
+      if(attr === 'style' && el.style.setAttribute){
+        el.style.setAttribute('cssText', val);
+      }else if(attr === 'class'){
+        el.className = val;
+      }else{
+        el[attr] = typeof el[attr] === 'boolean' ? true : val;
+      }
+    }
+  }catch(e){}
+  try{
+    //chrome setattribute with `{{}}` will throw an error
+    el.setAttribute(attr, val);
+  }catch(e){ console.warn(e) }
+}
+},{}],5:[function(_dereq_,module,exports){
+"use strict";
+
+var doc = _dereq_('../document.js');
+  
+var dirs = {};
+
+
+dirs.text = {
+  terminal: true
+, init: function() {
+    var text = doc.createTextNode('')
+      , el
+      ;
+    if(this.nodeName !== text.nodeName) {
+      el = this.el;
+      this.el = el.parentNode;
+      this.el.replaceChild(text, el);
+      this.node = text;
+      this.nodeName = text.nodeName;
+    }
+  }
+, update: function(val) {
+    this.node.nodeValue = val;
+  }
+};
+
+
+
+dirs.html = {
+  
+};
+  
+  
+dirs.repeat = {
+  priority: 10000
+, terminal: true
+};
+  
+dirs['if'] = {
+  
+};
+  
+dirs.attr = _dereq_('./attr.js');
+dirs.model = _dereq_('./model.js')
+  
+dirs.partial = {
+  terminal: true
+, init: function() {
+    ;
+  }
+};
+
+module.exports = dirs;
+},{"../document.js":7,"./attr.js":4,"./model.js":6}],6:[function(_dereq_,module,exports){
+"use strict";
+
+
+var utils = _dereq_('../utils.js');
+
+module.exports = {
+  init: function(vm) {
+    if(!this.path) { return false; }
+    
+    var el = this.el, keyPath = this.path
+      , ev = 'change'
+      , attr, value = attr = 'value'
+      , ant = vm.$root.$ant
+      , cur = vm.$getVM(keyPath)
+      , isSetDefaut = utils.isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
+      , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
+      , callback = function(val) {
+          //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
+          var newVal = (val || vm.$getData(keyPath) || '') + ''
+            , val = el[attr]
+            ;
+          val && val.replace && (val = val.replace(crlf, '\n'));
+          if(newVal !== val){ el[attr] = newVal; }
+        }
+      , handler = function(isInit) {
+          var val = el[value];
+          
+          val.replace && (val = val.replace(crlf, '\n'));
+          ant.set(cur.$getKeyPath(), val, {isBubble: isInit !== true});
+        }
+      , callHandler = function(e) {
+          if(e && e.propertyName && e.propertyName !== attr) {
+            return;
+          }
+          handler.apply(this, arguments)
+        }
+      , ie = utils.ie
+      ;
+    
+    switch(el.tagName) {
+      default:
+        value = attr = 'innerHTML';
+        //ev += ' blur';
+      case 'INPUT':
+      case 'TEXTAREA':
+        switch(el.type) {
+          case 'checkbox':
+            value = attr = 'checked';
+            //IE6, IE7 下监听 propertychange 会挂?
+            if(ie) { ev += ' click'; }
+          break;
+          case 'radio':
+            attr = 'checked';
+            if(ie) { ev += ' click'; }
+            callback = function() {
+              el.checked = el.value === vm.$getData(keyPath) + '';
+            };
+            isSetDefaut = el.checked;
+          break;
+          default:
+            if(!ant.options.lazy){
+              if('oninput' in el){
+                ev += ' input';
+              }
+              //IE 下的 input 事件替代
+              if(ie) {
+                ev += ' keyup propertychange cut';
+              }
+            }
+          break;
+        }
+      break;
+      case 'SELECT':
+        if(el.multiple){
+          handler = function(isInit) {
+            var vals = [];
+            for(var i = 0, l = el.options.length; i < l; i++){
+              if(el.options[i].selected){ vals.push(el.options[i].value) }
+            }
+            ant.set(cur.$getKeyPath(), vals, {isBubble: isInit !== true});
+          };
+          callback = function(){
+            var vals = vm.$getData(keyPath);
+            if(vals && vals.length){
+              for(var i = 0, l = el.options.length; i < l; i++){
+                el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
+              }
+            }
+          };
+        }
+        isSetDefaut = isSetDefaut && !hasToken(el[value]);
+      break;
+    }
+    
+    this.update = callback;
+    
+    ev.split(/\s+/g).forEach(function(e){
+      removeEvent(el, e, callHandler);
+      addEvent(el, e, callHandler);
+    });
+    
+    //根据表单元素的初始化默认值设置对应 model 的值
+    if(el[value] && isSetDefaut){
+       handler(true); 
+    }
+      
+  }
+};
+
+function addEvent(el, event, handler) {
+  if(el.addEventListener) {
+    el.addEventListener(event, handler, false);
+  }else{
+    el.attachEvent('on' + event, handler);
+  }
+}
+
+function removeEvent(el, event, handler) {
+  if(el.removeEventListener) {
+    el.removeEventListener(event, handler);
+  }else{
+    el.detachEvent('on' + event, handler);
+  }
+}
+},{"../utils.js":11}],7:[function(_dereq_,module,exports){
 (function(root){
   "use strict";
 
   module.exports = root.document || _dereq_('jsdom').jsdom();
 
 })((function() {return this})());
-},{}],5:[function(_dereq_,module,exports){
+},{}],8:[function(_dereq_,module,exports){
 "use strict";
 
 var operators = {
@@ -1615,7 +1665,7 @@ exports.summary = function(tree) {
   }
   return summary;
 };
-},{}],6:[function(_dereq_,module,exports){
+},{}],9:[function(_dereq_,module,exports){
 var utils = _dereq_('./utils.js');
 
 var Event = {
@@ -1667,7 +1717,7 @@ var Event = {
 };
 
 module.exports = Event;
-},{"./utils.js":8}],7:[function(_dereq_,module,exports){
+},{"./utils.js":11}],10:[function(_dereq_,module,exports){
 "use strict";
 //Javascript expression parser modified form Crockford's TDOP parser
 var create = Object.create || function (o) {
@@ -2261,7 +2311,7 @@ var make_parse = function () {
 };
 
 exports.parse = make_parse();
-},{}],8:[function(_dereq_,module,exports){
+},{}],11:[function(_dereq_,module,exports){
 "use strict";
 
 //utils
@@ -2487,6 +2537,6 @@ var utils = {
 };
 
 module.exports = utils;
-},{"./document.js":4}]},{},[1])
+},{"./document.js":7}]},{},[1])
 (1)
 });
