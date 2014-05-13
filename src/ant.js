@@ -1,10 +1,12 @@
 "use strict";
 
 var doc = require('./document.js')
-  , parser = require('./parse.js')
+  , parse = require('./parse.js').parse
+  , evaluate = require('./eval.js')
   , utils = require('./utils.js')
   , Event = require('./event.js')
   , Class = require('./class.js')
+  , Dir = require('./directive.js')
   ;
 
 
@@ -150,7 +152,7 @@ function isAntAttr(attrName) {
       this.setFilter(filterName, filters[filterName]);
     }
     
-    buildViewModel(this);
+    buildViewModel.call(this);
     
     //这里需要合并可能存在的 this.data
     //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
@@ -162,16 +164,165 @@ function isAntAttr(attrName) {
     this.init.apply(this, arguments);
   }
   
-  extend(Ant, Class, {
+  //静态方法
+  //---
+  extend(Ant, Class, Dir, {
     setPrefix: setPrefix
-  , Event: Event
   , doc: doc
+  , directives: {}
+  , utils: utils
   });
   
   Ant.setPrefix('a-');
   
+  Ant.directive('text', {
+    terminal: true
+  , init: function() {
+      var text = doc.createTextNode('')
+        , el
+        ;
+      if(this.nodeName !== text.nodeName) {
+        el = this.el;
+        this.el = el.parentNode;
+        this.el.replaceChild(text, el);
+        this.node = text;
+        this.nodeName = text.nodeName;
+      }
+    }
+  , update: function(val, old) {
+      this.node.nodeValue = val;
+    }
+  });
   
-  //方法
+  Ant.directive('html', {
+    
+  });
+  
+  Ant.directive('attr', {
+    
+  });
+  
+  Ant.directive('repeat', {
+    priority: 10000
+  , terminal: true
+  });
+  
+  Ant.directive('if', {
+    
+  });
+  
+  Ant.directive('model', {
+    init: function(vm) {
+      if(!this.path) { return false; }
+      
+      var el = this.el, keyPath = this.path
+        , ev = 'change'
+        , attr, value = attr = 'value'
+        , ant = vm.$root.$ant
+        , cur = vm.$getVM(keyPath)
+        , isSetDefaut = isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
+        , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
+        , callback = function(val) {
+            //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
+            var newVal = (val || vm.$getData(keyPath) || '') + ''
+              , val = el[attr]
+              ;
+            val && val.replace && (val = val.replace(crlf, '\n'));
+            if(newVal !== val){ el[attr] = newVal; }
+          }
+        , handler = function(isInit) {
+            var val = el[value];
+            
+            val.replace && (val = val.replace(crlf, '\n'));
+            ant.set(cur.$getKeyPath(), val, {isBubble: isInit !== true});
+          }
+        , callHandler = function(e) {
+            if(e && e.propertyName && e.propertyName !== attr) {
+              return;
+            }
+            handler.apply(this, arguments)
+          }
+        ;
+      
+      switch(el.tagName) {
+        default:
+          value = attr = 'innerHTML';
+          //ev += ' blur';
+        case 'INPUT':
+        case 'TEXTAREA':
+          switch(el.type) {
+            case 'checkbox':
+              value = attr = 'checked';
+              //IE6, IE7 下监听 propertychange 会挂?
+              if(ie) { ev += ' click'; }
+            break;
+            case 'radio':
+              attr = 'checked';
+              if(ie) { ev += ' click'; }
+              callback = function() {
+                el.checked = el.value === vm.$getData(keyPath) + '';
+              };
+              isSetDefaut = el.checked;
+            break;
+            default:
+              if(!ant.options.lazy){
+                if('oninput' in el){
+                  ev += ' input';
+                }
+                //IE 下的 input 事件替代
+                if(ie) {
+                  ev += ' keyup propertychange cut';
+                }
+              }
+            break;
+          }
+        break;
+        case 'SELECT':
+          if(el.multiple){
+            handler = function(isInit) {
+              var vals = [];
+              for(var i = 0, l = el.options.length; i < l; i++){
+                if(el.options[i].selected){ vals.push(el.options[i].value) }
+              }
+              ant.set(cur.$getKeyPath(), vals, {isBubble: isInit !== true});
+            };
+            callback = function(){
+              var vals = vm.$getData(keyPath);
+              if(vals && vals.length){
+                for(var i = 0, l = el.options.length; i < l; i++){
+                  el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
+                }
+              }
+            };
+          }
+          isSetDefaut = isSetDefaut && !hasToken(el[value]);
+        break;
+      }
+      
+      this.update = callback;
+      
+      ev.split(/\s+/g).forEach(function(e){
+        removeEvent(el, e, callHandler);
+        addEvent(el, e, callHandler);
+      });
+      
+      //根据表单元素的初始化默认值设置对应 model 的值
+      if(el[value] && isSetDefaut){
+         handler(true); 
+      }
+        
+    }
+  });
+  
+  Ant.directive('partial', {
+    terminal: true
+  , init: function() {
+      ;
+    }
+  });
+  
+  
+  //实例方法
   //----
   extend(Ant.prototype, Event, {
     /**
@@ -352,7 +503,6 @@ function isAntAttr(attrName) {
   });
   
   /**
-   * ### ant.update
    * 更新模板. 
    * @param {Object} data 要更新的数据. 增量数据或全新的数据.
    * @param {String} [keyPath] 需要更新的数据路径.
@@ -384,13 +534,13 @@ function isAntAttr(attrName) {
     return this;
   }
   
-  function buildViewModel(ant) {
+  function buildViewModel() {
     var vm = new ViewModel({
-      $ant: ant
+      $ant: this
     });
     
-    ant._vm = vm;
-    travelEl(ant.el, vm);
+    this._vm = vm;
+    travelEl(this.el, vm);
   }
   
   var NODETYPE = {
@@ -414,7 +564,7 @@ function isAntAttr(attrName) {
       return;
     }else if(el.nodeType === NODETYPE.TEXT){
       //文本节点
-      checkBinding(vm, el, el.parentNode);
+      checkText(el, vm);
       return;
     }
     
@@ -437,6 +587,22 @@ function isAntAttr(attrName) {
       , attr, gen = repeatAttr || ifAttr
       ;
     
+    var dirs = getDir(el, Ant.directives, Ant.prefix)
+      , dir
+      ;
+    
+    for (var i = 0, l = dirs.length; i < l; i++) {
+      dir = dirs[i];
+     
+      checkBinding(vm, dir);
+     
+      el.removeAttribute(dir.nodeName);
+      if(dir.terminal) {
+        return true;
+      }
+    }
+    
+    return;
     if(gen){
       checkBinding(vm, gen, el);
       return true;
@@ -456,8 +622,50 @@ function isAntAttr(attrName) {
     }
   }
   
+  function checkText(node, vm) {
+    if(hasToken(node.nodeValue)) {
+      checkBinding(vm, extend({
+        node: node
+      , el: node.parentNode
+      , nodeName: node.nodeName
+      }, Ant.directives.text))
+    }
+  }
+  
+  //获取一个元素上所有用 HTML 属性定义的指令
+  function getDir(el, directives, prefix) {
+    prefix = prefix || '';
+    directives = directives || {};
+    
+    var attr, attrName, dirName
+      , dirs = [], dir
+      ;
+      
+    for(var i = el.attributes.length - 1; i >= 0; i--){
+      attr = el.attributes[i];
+      attrName = attr.nodeName;
+      dirName = attrName.slice(prefix.length);
+      if(attrName.indexOf(prefix) === 0 && (dirName in directives)) {
+        dir = directives[dirName];
+      }else if(hasToken(attr.nodeValue)) {
+        dir = directives['attr'];
+      }
+      if(dir) {
+        dirs.push(extend({el: el, node: attr, nodeName: attrName}, dir));
+      }
+    }
+    dirs.sort(function(d0, d1) {
+      return d0.priority - d1.priority;
+    });
+    return dirs;
+  }
+  
   //el: 该节点的所属元素. 
-  function checkBinding(vm, node, el) {
+  function checkBinding(vm, dir) {
+    var node = dir.node
+      , el = dir.el
+      ;
+      
     var hasTokenName = hasToken(node.nodeName)
       , hasTokenValue = hasToken(node.nodeValue)
       ;
@@ -485,15 +693,20 @@ function isAntAttr(attrName) {
           });
         }
         tokens.forEach(function(token){
-          addBinding(vm, token);
+          setBinding(vm, extend(dir, token));
         });
       }
     }
   }
   
-  function addBinding(vm, token) {
+  function setBinding(vm, dir) {
+    dir.init(vm);
+    new Watcher(vm, dir);
+  }
+  
+  function addBinding(vm, dir) {
     var binding = getBinding(vm.$root.$ant.bindings);
-    binding(vm, token);
+    binding(vm, dir);
   }
   
   function getBinding(bindings) {
@@ -734,136 +947,20 @@ function isAntAttr(attrName) {
         return new Generator(vm, token);
       }
     }
-    
-    //model 双向绑定
-  , function (vm, token) {
-      var keyPath = token.path
-        , el = token.el
-        ;
-      
-      if(token.nodeName === antAttr.MODEL){
-      
-        if(!keyPath){ return false; }
-        
-        var ant = vm.$root.$ant
-          , cur = keyPath === '.' ? vm : vm.$getVM(keyPath)
-          , ev = 'change blur'
-          , attr, value = attr = 'value'
-          , isSetDefaut = isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
-          , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
-          , callback = function(val) {
-              //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
-              var newVal = (val || vm.$getData(keyPath) || '') + ''
-                , val = el[attr]
-                ;
-              val && val.replace && (val = val.replace(crlf, '\n'));
-              if(newVal !== val){ el[attr] = newVal; }
-            }
-          , handler = function(isInit) {
-              var val = el[value];
-              
-              val.replace && (val = val.replace(crlf, '\n'));
-              ant.set(cur.$getKeyPath(), val, {isBubble: isInit !== true});
-            }
-          , callHandler = function(e) {
-              if(e && e.propertyName && e.propertyName !== attr) {
-                return;
-              }
-              handler.apply(this, arguments)
-            }
-          ;
-        
-        switch(el.tagName) {
-          default:
-            value = attr = 'innerHTML';
-            //ev += ' blur';
-          case 'INPUT':
-          case 'TEXTAREA':
-            switch(el.type) {
-              case 'checkbox':
-                value = attr = 'checked';
-                //IE6, IE7 下监听 propertychange 会挂?
-                if(ie) { ev += ' click'; }
-              break;
-              case 'radio':
-                attr = 'checked';
-                if(ie) { ev += ' click'; }
-                callback = function() {
-                  el.checked = el.value === vm.$getData(keyPath) + '';
-                };
-                isSetDefaut = el.checked;
-              break;
-              default:
-                if(!ant.options.lazy){
-                  if('oninput' in el){
-                    ev += ' input';
-                  }
-                  //IE 下的 input 事件替代
-                  if(ie) {
-                    ev += ' keyup propertychange cut';
-                  }
-                }
-              break;
-            }
-          break;
-          case 'SELECT':
-            if(el.multiple){
-              handler = function(isInit) {
-                var vals = [];
-                for(var i = 0, l = el.options.length; i < l; i++){
-                  if(el.options[i].selected){ vals.push(el.options[i].value) }
-                }
-                ant.set(cur.$getKeyPath(), vals, {isBubble: isInit !== true});
-              };
-              callback = function(){
-                var vals = vm.$getData(keyPath);
-                if(vals && vals.length){
-                  for(var i = 0, l = el.options.length; i < l; i++){
-                    el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
-                  }
-                }
-              };
-            }
-            isSetDefaut = isSetDefaut && !hasToken(el[value]);
-          break;
-        }
-        
-        ev.split(/\s+/g).forEach(function(e){
-          removeEvent(el, e, callHandler);
-          addEvent(el, e, callHandler);
-        });
-        
-        el.removeAttribute(antAttr.MODEL);
-        
-        var watcher = new Watcher(vm, token);
-        watcher.callback = callback;
-        
-        //根据表单元素的初始化默认值设置对应 model 的值
-        if(el[value] && isSetDefaut){
-           handler(true); 
-        }
-        
-        return watcher;
-      }
-    }
   ];
   
-  var parse = function(path) {
+  var exParse = function(path) {
     var that = this;
+    var ast = parse(path, this.type && this.type.slice(prefix.length));
       
-    this._ast = parser.parse(path, function(key, type) {
-      that[type].push(key);
-    }, this.type && this.type.slice(prefix.length));
+    extend(this, evaluate.summary(ast));
+    this._ast = ast;
   };
   
   function Watcher(relativeVm, token, callback) {
     this.token = token;
     this.relativeVm = relativeVm;
     this.ant = relativeVm.$root.$ant;
-    this.locals = [];
-    this.filters = [];
-    this.paths = [];
-    this.assignments = [];
     
     this.el = token.el;
     this.val = NaN;
@@ -872,7 +969,7 @@ function isAntAttr(attrName) {
       this.callback = callback;
     }
     
-    token.path && parse.call(this, token.path);
+    token.path && exParse.call(this, token.path);
     
     var root = relativeVm
       , paths
@@ -921,7 +1018,7 @@ function isAntAttr(attrName) {
       var newVal = this.getValue(vals);
       if(newVal !== this.val){
         try{
-          this.callback(newVal, this.val);
+          this.token.update(newVal, this.val);
           this.val = newVal;
         }catch(e){
           console.error(e);
@@ -1021,7 +1118,7 @@ function isAntAttr(attrName) {
       }
       
       try{
-        val = parser.eval(this._ast, {locals: vals, filters: ant.filters});
+        val = evaluate.eval(this._ast, {locals: vals, filters: ant.filters});
       }catch(e){
         val = '';
       }
@@ -1275,8 +1372,8 @@ function isAntAttr(attrName) {
     }
   }
   
-  Ant._parse = parser.parse;
-  Ant._eval = parser.eval;
+  Ant._parse = parse;
+  Ant._eval = evaluate.eval;
   Ant.version = '%VERSION';
   
   module.exports = Ant;

@@ -2,10 +2,12 @@
 "use strict";
 
 var doc = _dereq_('./document.js')
-  , parser = _dereq_('./parse.js')
+  , parse = _dereq_('./parse.js').parse
+  , evaluate = _dereq_('./eval.js')
   , utils = _dereq_('./utils.js')
   , Event = _dereq_('./event.js')
   , Class = _dereq_('./class.js')
+  , Dir = _dereq_('./directive.js')
   ;
 
 
@@ -151,7 +153,7 @@ function isAntAttr(attrName) {
       this.setFilter(filterName, filters[filterName]);
     }
     
-    buildViewModel(this);
+    buildViewModel.call(this);
     
     //这里需要合并可能存在的 this.data
     //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
@@ -163,16 +165,165 @@ function isAntAttr(attrName) {
     this.init.apply(this, arguments);
   }
   
-  extend(Ant, Class, {
+  //静态方法
+  //---
+  extend(Ant, Class, Dir, {
     setPrefix: setPrefix
-  , Event: Event
   , doc: doc
+  , directives: {}
+  , utils: utils
   });
   
   Ant.setPrefix('a-');
   
+  Ant.directive('text', {
+    terminal: true
+  , init: function() {
+      var text = doc.createTextNode('')
+        , el
+        ;
+      if(this.nodeName !== text.nodeName) {
+        el = this.el;
+        this.el = el.parentNode;
+        this.el.replaceChild(text, el);
+        this.node = text;
+        this.nodeName = text.nodeName;
+      }
+    }
+  , update: function(val, old) {
+      this.node.nodeValue = val;
+    }
+  });
   
-  //方法
+  Ant.directive('html', {
+    
+  });
+  
+  Ant.directive('attr', {
+    
+  });
+  
+  Ant.directive('repeat', {
+    priority: 10000
+  , terminal: true
+  });
+  
+  Ant.directive('if', {
+    
+  });
+  
+  Ant.directive('model', {
+    init: function(vm) {
+      if(!this.path) { return false; }
+      
+      var el = this.el, keyPath = this.path
+        , ev = 'change'
+        , attr, value = attr = 'value'
+        , ant = vm.$root.$ant
+        , cur = vm.$getVM(keyPath)
+        , isSetDefaut = isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
+        , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
+        , callback = function(val) {
+            //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
+            var newVal = (val || vm.$getData(keyPath) || '') + ''
+              , val = el[attr]
+              ;
+            val && val.replace && (val = val.replace(crlf, '\n'));
+            if(newVal !== val){ el[attr] = newVal; }
+          }
+        , handler = function(isInit) {
+            var val = el[value];
+            
+            val.replace && (val = val.replace(crlf, '\n'));
+            ant.set(cur.$getKeyPath(), val, {isBubble: isInit !== true});
+          }
+        , callHandler = function(e) {
+            if(e && e.propertyName && e.propertyName !== attr) {
+              return;
+            }
+            handler.apply(this, arguments)
+          }
+        ;
+      
+      switch(el.tagName) {
+        default:
+          value = attr = 'innerHTML';
+          //ev += ' blur';
+        case 'INPUT':
+        case 'TEXTAREA':
+          switch(el.type) {
+            case 'checkbox':
+              value = attr = 'checked';
+              //IE6, IE7 下监听 propertychange 会挂?
+              if(ie) { ev += ' click'; }
+            break;
+            case 'radio':
+              attr = 'checked';
+              if(ie) { ev += ' click'; }
+              callback = function() {
+                el.checked = el.value === vm.$getData(keyPath) + '';
+              };
+              isSetDefaut = el.checked;
+            break;
+            default:
+              if(!ant.options.lazy){
+                if('oninput' in el){
+                  ev += ' input';
+                }
+                //IE 下的 input 事件替代
+                if(ie) {
+                  ev += ' keyup propertychange cut';
+                }
+              }
+            break;
+          }
+        break;
+        case 'SELECT':
+          if(el.multiple){
+            handler = function(isInit) {
+              var vals = [];
+              for(var i = 0, l = el.options.length; i < l; i++){
+                if(el.options[i].selected){ vals.push(el.options[i].value) }
+              }
+              ant.set(cur.$getKeyPath(), vals, {isBubble: isInit !== true});
+            };
+            callback = function(){
+              var vals = vm.$getData(keyPath);
+              if(vals && vals.length){
+                for(var i = 0, l = el.options.length; i < l; i++){
+                  el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
+                }
+              }
+            };
+          }
+          isSetDefaut = isSetDefaut && !hasToken(el[value]);
+        break;
+      }
+      
+      this.update = callback;
+      
+      ev.split(/\s+/g).forEach(function(e){
+        removeEvent(el, e, callHandler);
+        addEvent(el, e, callHandler);
+      });
+      
+      //根据表单元素的初始化默认值设置对应 model 的值
+      if(el[value] && isSetDefaut){
+         handler(true); 
+      }
+        
+    }
+  });
+  
+  Ant.directive('partial', {
+    terminal: true
+  , init: function() {
+      ;
+    }
+  });
+  
+  
+  //实例方法
   //----
   extend(Ant.prototype, Event, {
     /**
@@ -353,7 +504,6 @@ function isAntAttr(attrName) {
   });
   
   /**
-   * ### ant.update
    * 更新模板. 
    * @param {Object} data 要更新的数据. 增量数据或全新的数据.
    * @param {String} [keyPath] 需要更新的数据路径.
@@ -385,13 +535,13 @@ function isAntAttr(attrName) {
     return this;
   }
   
-  function buildViewModel(ant) {
+  function buildViewModel() {
     var vm = new ViewModel({
-      $ant: ant
+      $ant: this
     });
     
-    ant._vm = vm;
-    travelEl(ant.el, vm);
+    this._vm = vm;
+    travelEl(this.el, vm);
   }
   
   var NODETYPE = {
@@ -415,7 +565,7 @@ function isAntAttr(attrName) {
       return;
     }else if(el.nodeType === NODETYPE.TEXT){
       //文本节点
-      checkBinding(vm, el, el.parentNode);
+      checkText(el, vm);
       return;
     }
     
@@ -438,6 +588,22 @@ function isAntAttr(attrName) {
       , attr, gen = repeatAttr || ifAttr
       ;
     
+    var dirs = getDir(el, Ant.directives, Ant.prefix)
+      , dir
+      ;
+    
+    for (var i = 0, l = dirs.length; i < l; i++) {
+      dir = dirs[i];
+     
+      checkBinding(vm, dir);
+     
+      el.removeAttribute(dir.nodeName);
+      if(dir.terminal) {
+        return true;
+      }
+    }
+    
+    return;
     if(gen){
       checkBinding(vm, gen, el);
       return true;
@@ -457,8 +623,50 @@ function isAntAttr(attrName) {
     }
   }
   
+  function checkText(node, vm) {
+    if(hasToken(node.nodeValue)) {
+      checkBinding(vm, extend({
+        node: node
+      , el: node.parentNode
+      , nodeName: node.nodeName
+      }, Ant.directives.text))
+    }
+  }
+  
+  //获取一个元素上所有用 HTML 属性定义的指令
+  function getDir(el, directives, prefix) {
+    prefix = prefix || '';
+    directives = directives || {};
+    
+    var attr, attrName, dirName
+      , dirs = [], dir
+      ;
+      
+    for(var i = el.attributes.length - 1; i >= 0; i--){
+      attr = el.attributes[i];
+      attrName = attr.nodeName;
+      dirName = attrName.slice(prefix.length);
+      if(attrName.indexOf(prefix) === 0 && (dirName in directives)) {
+        dir = directives[dirName];
+      }else if(hasToken(attr.nodeValue)) {
+        dir = directives['attr'];
+      }
+      if(dir) {
+        dirs.push(extend({el: el, node: attr, nodeName: attrName}, dir));
+      }
+    }
+    dirs.sort(function(d0, d1) {
+      return d0.priority - d1.priority;
+    });
+    return dirs;
+  }
+  
   //el: 该节点的所属元素. 
-  function checkBinding(vm, node, el) {
+  function checkBinding(vm, dir) {
+    var node = dir.node
+      , el = dir.el
+      ;
+      
     var hasTokenName = hasToken(node.nodeName)
       , hasTokenValue = hasToken(node.nodeValue)
       ;
@@ -486,15 +694,20 @@ function isAntAttr(attrName) {
           });
         }
         tokens.forEach(function(token){
-          addBinding(vm, token);
+          setBinding(vm, extend(dir, token));
         });
       }
     }
   }
   
-  function addBinding(vm, token) {
+  function setBinding(vm, dir) {
+    dir.init(vm);
+    new Watcher(vm, dir);
+  }
+  
+  function addBinding(vm, dir) {
     var binding = getBinding(vm.$root.$ant.bindings);
-    binding(vm, token);
+    binding(vm, dir);
   }
   
   function getBinding(bindings) {
@@ -735,136 +948,20 @@ function isAntAttr(attrName) {
         return new Generator(vm, token);
       }
     }
-    
-    //model 双向绑定
-  , function (vm, token) {
-      var keyPath = token.path
-        , el = token.el
-        ;
-      
-      if(token.nodeName === antAttr.MODEL){
-      
-        if(!keyPath){ return false; }
-        
-        var ant = vm.$root.$ant
-          , cur = keyPath === '.' ? vm : vm.$getVM(keyPath)
-          , ev = 'change blur'
-          , attr, value = attr = 'value'
-          , isSetDefaut = isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
-          , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
-          , callback = function(val) {
-              //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
-              var newVal = (val || vm.$getData(keyPath) || '') + ''
-                , val = el[attr]
-                ;
-              val && val.replace && (val = val.replace(crlf, '\n'));
-              if(newVal !== val){ el[attr] = newVal; }
-            }
-          , handler = function(isInit) {
-              var val = el[value];
-              
-              val.replace && (val = val.replace(crlf, '\n'));
-              ant.set(cur.$getKeyPath(), val, {isBubble: isInit !== true});
-            }
-          , callHandler = function(e) {
-              if(e && e.propertyName && e.propertyName !== attr) {
-                return;
-              }
-              handler.apply(this, arguments)
-            }
-          ;
-        
-        switch(el.tagName) {
-          default:
-            value = attr = 'innerHTML';
-            //ev += ' blur';
-          case 'INPUT':
-          case 'TEXTAREA':
-            switch(el.type) {
-              case 'checkbox':
-                value = attr = 'checked';
-                //IE6, IE7 下监听 propertychange 会挂?
-                if(ie) { ev += ' click'; }
-              break;
-              case 'radio':
-                attr = 'checked';
-                if(ie) { ev += ' click'; }
-                callback = function() {
-                  el.checked = el.value === vm.$getData(keyPath) + '';
-                };
-                isSetDefaut = el.checked;
-              break;
-              default:
-                if(!ant.options.lazy){
-                  if('oninput' in el){
-                    ev += ' input';
-                  }
-                  //IE 下的 input 事件替代
-                  if(ie) {
-                    ev += ' keyup propertychange cut';
-                  }
-                }
-              break;
-            }
-          break;
-          case 'SELECT':
-            if(el.multiple){
-              handler = function(isInit) {
-                var vals = [];
-                for(var i = 0, l = el.options.length; i < l; i++){
-                  if(el.options[i].selected){ vals.push(el.options[i].value) }
-                }
-                ant.set(cur.$getKeyPath(), vals, {isBubble: isInit !== true});
-              };
-              callback = function(){
-                var vals = vm.$getData(keyPath);
-                if(vals && vals.length){
-                  for(var i = 0, l = el.options.length; i < l; i++){
-                    el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
-                  }
-                }
-              };
-            }
-            isSetDefaut = isSetDefaut && !hasToken(el[value]);
-          break;
-        }
-        
-        ev.split(/\s+/g).forEach(function(e){
-          removeEvent(el, e, callHandler);
-          addEvent(el, e, callHandler);
-        });
-        
-        el.removeAttribute(antAttr.MODEL);
-        
-        var watcher = new Watcher(vm, token);
-        watcher.callback = callback;
-        
-        //根据表单元素的初始化默认值设置对应 model 的值
-        if(el[value] && isSetDefaut){
-           handler(true); 
-        }
-        
-        return watcher;
-      }
-    }
   ];
   
-  var parse = function(path) {
+  var exParse = function(path) {
     var that = this;
+    var ast = parse(path, this.type && this.type.slice(prefix.length));
       
-    this._ast = parser.parse(path, function(key, type) {
-      that[type].push(key);
-    }, this.type && this.type.slice(prefix.length));
+    extend(this, evaluate.summary(ast));
+    this._ast = ast;
   };
   
   function Watcher(relativeVm, token, callback) {
     this.token = token;
     this.relativeVm = relativeVm;
     this.ant = relativeVm.$root.$ant;
-    this.locals = [];
-    this.filters = [];
-    this.paths = [];
-    this.assignments = [];
     
     this.el = token.el;
     this.val = NaN;
@@ -873,7 +970,7 @@ function isAntAttr(attrName) {
       this.callback = callback;
     }
     
-    token.path && parse.call(this, token.path);
+    token.path && exParse.call(this, token.path);
     
     var root = relativeVm
       , paths
@@ -922,7 +1019,7 @@ function isAntAttr(attrName) {
       var newVal = this.getValue(vals);
       if(newVal !== this.val){
         try{
-          this.callback(newVal, this.val);
+          this.token.update(newVal, this.val);
           this.val = newVal;
         }catch(e){
           console.error(e);
@@ -1022,7 +1119,7 @@ function isAntAttr(attrName) {
       }
       
       try{
-        val = parser.eval(this._ast, {locals: vals, filters: ant.filters});
+        val = evaluate.eval(this._ast, {locals: vals, filters: ant.filters});
       }catch(e){
         val = '';
       }
@@ -1276,12 +1373,12 @@ function isAntAttr(attrName) {
     }
   }
   
-  Ant._parse = parser.parse;
-  Ant._eval = parser.eval;
+  Ant._parse = parse;
+  Ant._eval = evaluate.eval;
   Ant.version = '0.2.3';
   
   module.exports = Ant;
-},{"./class.js":2,"./document.js":3,"./event.js":4,"./parse.js":5,"./utils.js":6}],2:[function(_dereq_,module,exports){
+},{"./class.js":2,"./directive.js":3,"./document.js":4,"./eval.js":5,"./event.js":6,"./parse.js":7,"./utils.js":8}],2:[function(_dereq_,module,exports){
 var extend = _dereq_('./utils.js').extend;
 
 var Class = {
@@ -1308,14 +1405,217 @@ var Class = {
 };
 
 module.exports = Class;
-},{"./utils.js":6}],3:[function(_dereq_,module,exports){
+},{"./utils.js":8}],3:[function(_dereq_,module,exports){
+"use strict";
+
+var utils = _dereq_('./utils.js');
+
+//为 Ant 构造函数添加指令 (directive). `Ant.directive`
+function directive(key, opts) {
+  var dirs = this.directives = this.directives || {};
+  
+  dirs[key] = utils.extend({
+    priority: 0
+  , type: key
+  , terminal: false
+  , replace: false
+  , update: utils.noop
+  , init: utils.noop
+  }, opts);
+}
+
+exports.directive = directive;
+
+},{"./utils.js":8}],4:[function(_dereq_,module,exports){
 (function(root){
   "use strict";
 
   module.exports = root.document || _dereq_('jsdom').jsdom();
 
 })((function() {return this})());
-},{}],4:[function(_dereq_,module,exports){
+},{}],5:[function(_dereq_,module,exports){
+"use strict";
+
+var operators = {
+  'unary': {
+    '+': function(v) { return +v; }
+  , '-': function(v) { return -v; }
+  , '!': function(v) { return !v; }
+    
+  , '[': function(v){ return v; }
+  , '{': function(v){
+      var r = {};
+      for(var i = 0, l = v.length; i < l; i++) {
+        r[v[i][0]] = v[i][1];
+      }
+      return r;
+    }
+  , 'typeof': function(v){ return typeof v; }
+  , 'new': function(v){ return new v }
+  }
+  
+, 'binary': {
+    '+': function(l, r) { return l + r; }
+  , '-': function(l, r) { return l - r; }
+  , '*': function(l, r) { return l * r; }
+  , '/': function(l, r) { return l / r; }
+  , '%': function(l, r) { return l % r; }
+  , '<': function(l, r) { return l < r; }
+  , '>': function(l, r) { return l > r; }
+  , '<=': function(l, r) { return l <= r; }
+  , '>=': function(l, r) { return l >= r; }
+  , '==': function(l, r) { return l == r; }
+  , '!=': function(l, r) { return l != r; }
+  , '===': function(l, r) { return l === r; }
+  , '!==': function(l, r) { return l !== r; }
+  , '&&': function(l, r) { return l && r; }
+  , '||': function(l, r) { return l || r; }
+    
+  , '.': function(l, r) {
+      if(r){
+        path = path + '.' + r;
+      }
+      return l[r];
+    }
+  , '[': function(l, r) {
+      if(r){
+        path = path + '.' + r;
+      }
+      return l[r];
+    }
+  , '(': function(l, r){ return l.apply(null, r) }
+    
+  , '|': function(l, r){ return r.call(null, l) }//filter. name|filter
+  , 'in': function(l, r){
+      if(this.assignment) {
+        //repeat
+        delete summary.locals[l];
+        summary.assignments[l] = true;
+        return r;
+      }else{
+        return l in r;
+      }
+    }
+  }
+  
+, 'ternary': {
+    '?': function(f, s, t) { return f ? s : t; }
+  , '(': function(f, s, t) { return f[s].apply(f, t) }
+  
+  //filter. name | filter : arg2 : arg3
+  , '|': function(f, s, t){ return s.apply(null, [f].concat(t)); }
+  }
+};
+
+var argName = ['first', 'second', 'third']
+  , context, summary
+  , path
+  ;
+
+//遍历 ast
+var evaluate = function(tree) {
+  var arity = tree.arity
+    , value = tree.value
+    , args = []
+    , n = 0
+    , arg
+    , res
+    ;
+  
+  //操作符最多只有三元
+  for(; n < 3; n++){
+    arg = tree[argName[n]];
+    if(arg){
+      if(Array.isArray(arg)){
+        args[n] = [];
+        for(var i = 0, l = arg.length; i < l; i++){
+          args[n].push(typeof arg[i].key === 'undefined' ? 
+            evaluate(arg[i]) : [arg[i].key, evaluate(arg[i])]);
+        }
+      }else{
+        args[n] = evaluate(arg);
+      }
+    }
+  }
+  
+  if(arity !== 'literal') {
+    if(path && value !== '.' && value !== '[') {
+      summary.paths[path] = true;
+    }
+    if(arity === 'name') {
+      path = value;
+    }
+  }
+  
+  switch(arity){
+    case 'unary': 
+    case 'binary':
+    case 'ternary':
+      try{
+        res = getOperator(arity, value).apply(tree, args);
+      }catch(e){
+        //console.debug(e);
+      }
+    break;
+    case 'literal':
+      res = value;
+    break;
+    case 'name':
+      summary.locals[value] = true;
+      res = context.locals[value];
+    break;
+    case 'filter':
+      summary.filters[value] = true;
+      res = context.filters[value];
+    break;
+    case 'this':
+      res = context.locals;
+    break;
+  }
+  return res;
+};
+
+function getOperator(arity, value){
+  return operators[arity][value] || function() { return; }
+}
+
+function reset(_context) {
+  if(_context) {
+    context = {locals: _context.locals || {}, filters: _context.filters || {}};
+  }else{
+    context = {filters: {}, locals: {}};
+  }
+  
+  summary = {filters: {}, locals: {}, paths: {}, assignments: {}};
+  path = '';
+}
+
+//表达式求值
+//tree: parser 生成的 ast
+//context: 表达式执行的环境
+//context.locals: 变量
+//context.filters: 过滤器函数
+exports.eval = function(tree, _context) {
+  reset(_context || {});
+  
+  return evaluate(tree);
+};
+
+//生成表达式摘要
+exports.summary = function(tree) {
+  reset();
+  
+  evaluate(tree);
+  
+  if(path) {
+    summary.paths[path] = true;
+  }
+  for(var key in summary) {
+    summary[key] = Object.keys(summary[key]);
+  }
+  return summary;
+};
+},{}],6:[function(_dereq_,module,exports){
 var utils = _dereq_('./utils.js');
 
 var Event = {
@@ -1367,785 +1667,601 @@ var Event = {
 };
 
 module.exports = Event;
-},{"./utils.js":6}],5:[function(_dereq_,module,exports){
+},{"./utils.js":8}],7:[function(_dereq_,module,exports){
 "use strict";
 //Javascript expression parser modified form Crockford's TDOP parser
-  var create = Object.create || function (o) {
-    function F() {}
-    F.prototype = o;
-    return new F();
-  };
-  
-  var error = function (message, t) {
-      t = t || this;
-      t.name = "SyntaxError";
-      t.message = message;
-      throw t;
-  };
-  
-  var noop = function() {};
-  
-  var tokenize = function (code, prefix, suffix) {
-      var c;                      // The current character.
-      var from;                   // The index of the start of the token.
-      var i = 0;                  // The index of the current character.
-      var length = code.length;
-      var n;                      // The number value.
-      var q;                      // The quote character.
-      var str;                    // The string value.
+var create = Object.create || function (o) {
+  function F() {}
+  F.prototype = o;
+  return new F();
+};
 
-      var result = [];            // An array to hold the results.
+var error = function (message, t) {
+    t = t || this;
+    t.name = "SyntaxError";
+    t.message = message;
+    throw t;
+};
 
-      // Make a token object.
-      var make = function (type, value) {
-          return {
-              type: type,
-              value: value,
-              from: from,
-              to: i
-          };
-      };
+var noop = function() {};
 
-  // Begin tokenization. If the source string is empty, return nothing.
+var tokenize = function (code, prefix, suffix) {
+    var c;                      // The current character.
+    var from;                   // The index of the start of the token.
+    var i = 0;                  // The index of the current character.
+    var length = code.length;
+    var n;                      // The number value.
+    var q;                      // The quote character.
+    var str;                    // The string value.
 
-      if (!code) {
-          return;
-      }
+    var result = [];            // An array to hold the results.
 
-  // If prefix and suffix strings are not provided, supply defaults.
-
-      if (typeof prefix !== 'string') {
-          prefix = '<>+-&';
-      }
-      if (typeof suffix !== 'string') {
-          suffix = '=>&:';
-      }
-
-
-  // Loop through code text, one character at a time.
-
-      c = code.charAt(i);
-      while (c) {
-          from = i;
-          
-          if (c <= ' ') {// Ignore whitespace.
-              i += 1;
-              c = code.charAt(i);
-          } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '$' || c === '_') {// name.
-              str = c;
-              i += 1;
-              for (;;) {
-                  c = code.charAt(i);
-                  if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-                          (c >= '0' && c <= '9') || c === '_') {
-                      str += c;
-                      i += 1;
-                  } else {
-                      break;
-                  }
-              }
-              result.push(make('name', str));
-          } else if (c >= '0' && c <= '9') {
-          // number.
-
-          // A number cannot start with a decimal point. It must start with a digit,
-          // possibly '0'.
-              str = c;
-              i += 1;
-
-  // Look for more digits.
-
-              for (;;) {
-                  c = code.charAt(i);
-                  if (c < '0' || c > '9') {
-                      break;
-                  }
-                  i += 1;
-                  str += c;
-              }
-
-  // Look for a decimal fraction part.
-
-              if (c === '.') {
-                  i += 1;
-                  str += c;
-                  for (;;) {
-                      c = code.charAt(i);
-                      if (c < '0' || c > '9') {
-                          break;
-                      }
-                      i += 1;
-                      str += c;
-                  }
-              }
-
-  // Look for an exponent part.
-
-              if (c === 'e' || c === 'E') {
-                  i += 1;
-                  str += c;
-                  c = code.charAt(i);
-                  if (c === '-' || c === '+') {
-                      i += 1;
-                      str += c;
-                      c = code.charAt(i);
-                  }
-                  if (c < '0' || c > '9') {
-                      error("Bad exponent", make('number', str));
-                  }
-                  do {
-                      i += 1;
-                      str += c;
-                      c = code.charAt(i);
-                  } while (c >= '0' && c <= '9');
-              }
-
-  // Make sure the next character is not a letter.
-
-              if (c >= 'a' && c <= 'z') {
-                  str += c;
-                  i += 1;
-                  error("Bad number", make('number', str));
-              }
-
-  // Convert the string value to a number. If it is finite, then it is a good
-  // token.
-
-              n = +str;
-              if (isFinite(n)) {
-                  result.push(make('number', n));
-              } else {
-                  error("Bad number", make('number', str));
-              }
-
-  // string
-
-          } else if (c === '\'' || c === '"') {
-              str = '';
-              q = c;
-              i += 1;
-              for (;;) {
-                  c = code.charAt(i);
-                  if (c < ' ') {
-                      make('string', str);
-                      error(c === '\n' || c === '\r' || c === '' ?
-                          "Unterminated string." :
-                          "Control character in string.", make('', str));
-                  }
-
-  // Look for the closing quote.
-
-                  if (c === q) {
-                      break;
-                  }
-
-  // Look for escapement.
-
-                  if (c === '\\') {
-                      i += 1;
-                      if (i >= length) {
-                        error("Unterminated string", make('string', str));
-                      }
-                      c = code.charAt(i);
-                      switch (c) {
-                      case 'b':
-                          c = '\b';
-                          break;
-                      case 'f':
-                          c = '\f';
-                          break;
-                      case 'n':
-                          c = '\n';
-                          break;
-                      case 'r':
-                          c = '\r';
-                          break;
-                      case 't':
-                          c = '\t';
-                          break;
-                      case 'u':
-                          if (i >= length) {
-                             error("Unterminated string", make('string', str));
-                          }
-                          c = parseInt(code.substr(i + 1, 4), 16);
-                          if (!isFinite(c) || c < 0) {
-                             error("Unterminated string", make('string', str));
-                          }
-                          c = String.fromCharCode(c);
-                          i += 4;
-                          break;
-                      }
-                  }
-                  str += c;
-                  i += 1;
-              }
-              i += 1;
-              result.push(make('string', str));
-              c = code.charAt(i);
-
-  // comment.
-
-          } else if (c === '/' && code.charAt(i + 1) === '/') {
-              i += 1;
-              for (;;) {
-                  c = code.charAt(i);
-                  if (c === '\n' || c === '\r' || c === '') {
-                      break;
-                  }
-                  i += 1;
-              }
-
-  // combining
-
-          } else if (prefix.indexOf(c) >= 0) {
-              str = c;
-              i += 1;
-              while (true) {
-                  c = code.charAt(i);
-                  if (i >= length || suffix.indexOf(c) < 0) {
-                      break;
-                  }
-                  str += c;
-                  i += 1;
-              }
-              result.push(make('operator', str));
-
-  // single-character operator
-
-          } else {
-              i += 1;
-              result.push(make('operator', c));
-              c = code.charAt(i);
-          }
-      }
-      return result;
-  };
-
-  
-  var make_parse = function () {
-      var symbol_table = {};
-      var token;
-      var tokens;
-      var token_nr;
-      var getter;
-      var context;
-      
-      var path = '';
-
-      var init = function(fn) {
-        var summary = {
-          locals: {},//表达式中的变量
-          filters: {},//用到的 filter
-          paths: {},//用到的监控路径
-          assignments: {}
+    // Make a token object.
+    var make = function (type, value) {
+        return {
+            type: type,
+            value: value,
+            from: from,
+            to: i
         };
+    };
+
+// Begin tokenization. If the source string is empty, return nothing.
+
+    if (!code) {
+        return;
+    }
+
+// If prefix and suffix strings are not provided, supply defaults.
+
+    if (typeof prefix !== 'string') {
+        prefix = '<>+-&';
+    }
+    if (typeof suffix !== 'string') {
+        suffix = '=>&:';
+    }
+
+
+// Loop through code text, one character at a time.
+
+    c = code.charAt(i);
+    while (c) {
+        from = i;
         
-        fn = fn || noop;
-        
-        getter = function(value, type) {
-          if(!summary[type][value]){
-            fn(value, type);
-            summary[type][value] = true;
-          }
-        };
-      };
-      
-      var itself = function () {
-          return this;
-      };
-  
-      var find = function (n) {
-        n.nud      = itself;
-        n.led      = null;
-        n.std      = null;
-        n.lbp      = 0;
-        
-        var type
-          , next = tokens[token_nr]
-          ;
-          
-        if(context === 'repeat' && next && next.value === 'in') {
-          getter(n.value, 'assignments');
-        }else{
-          if(!token || token.id !== '.'){
-            if(token && token.id === '|'){
-              type = 'filters';
-            }else{
-              type = 'locals';
-              path = n.value;
+        if (c <= ' ') {// Ignore whitespace.
+            i += 1;
+            c = code.charAt(i);
+        } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '$' || c === '_') {// name.
+            str = c;
+            i += 1;
+            for (;;) {
+                c = code.charAt(i);
+                if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                        (c >= '0' && c <= '9') || c === '_') {
+                    str += c;
+                    i += 1;
+                } else {
+                    break;
+                }
             }
-            getter(n.value, type);
-          }else{
-            path += '.' + n.value;
-          }
-          if( path && (!next || next.value !== '.' && next.value !== '[')){
-            getter(path, 'paths');
-            path = '';
-          }
-        }
-        return n;
-      };
+            result.push(make('name', str));
+        } else if (c >= '0' && c <= '9') {
+        // number.
 
-      var advance = function (id) {
-          var a, o, t, v;
-          if (id && token.id !== id) {
-              error("Expected '" + id + "'.", token);
-          }
-          if (token_nr >= tokens.length) {
-              token = symbol_table["(end)"];
-              return;
-          }
-          t = tokens[token_nr];
-          token_nr += 1;
-          v = t.value;
-          a = t.type;
-          if ((a === "operator" || a !== 'string') && v in symbol_table) {
-              //true, false 等直接量也会进入此分支
-              o = symbol_table[v];
-              if (!o) {
-                  error("Unknown operator.", t);
-              }
-          } else if (a === "name") {
-              o = find(t);
-          } else if (a === "string" || a ===  "number") {
-              o = symbol_table["(literal)"];
-              a = "literal";
-              if(path){
-                path += '.' + v;
-              }
-          } else {
-              error("Unexpected token.", t);
-          }
-          token = create(o);
-          token.from  = t.from;
-          token.to    = t.to;
-          token.value = v;
-          token.arity = a;
-          return token;
-      };
+        // A number cannot start with a decimal point. It must start with a digit,
+        // possibly '0'.
+            str = c;
+            i += 1;
 
-      var expression = function (rbp) {
-          var left;
-          var t = token;
-          advance();
-          left = t.nud();
-          while (rbp < token.lbp) {
-              t = token;
-              advance();
-              left = t.led(left);
-          }
-          return left;
-      };
+// Look for more digits.
 
-      var original_symbol = {
-          nud: function () {
-              error("Undefined.", this);
-          },
-          led: function (left) {
-              error("Missing operator.", this);
-          }
-      };
-
-      var symbol = function (id, bp) {
-          var s = symbol_table[id];
-          bp = bp || 0;
-          if (s) {
-              if (bp >= s.lbp) {
-                  s.lbp = bp;
-              }
-          } else {
-              s = create(original_symbol);
-              s.id = s.value = id;
-              s.lbp = bp;
-              symbol_table[id] = s;
-          }
-          return s;
-      };
-
-      var constant = function (s, v, a) {
-          var x = symbol(s);
-          x.nud = function () {
-              this.value = symbol_table[this.id].value;
-              this.arity = "literal";
-              return this;
-          };
-          x.value = v;
-          return x;
-      };
-      
-      var infix = function (id, bp, led) {
-          var s = symbol(id, bp);
-          s.led = led || function (left) {
-              this.first = left;
-              this.second = expression(bp);
-              this.arity = "binary";
-              return this;
-          };
-          return s;
-      };
-
-      var infixr = function (id, bp, led) {
-          var s = symbol(id, bp);
-          s.led = led || function (left) {
-              this.first = left;
-              this.second = expression(bp - 1);
-              this.arity = "binary";
-              return this;
-          };
-          return s;
-      };
-
-      var prefix = function (id, nud) {
-          var s = symbol(id);
-          s.nud = nud || function () {
-              this.first = expression(70);
-              this.arity = "unary";
-              return this;
-          };
-          return s;
-      };
-
-      symbol("(end)");
-      symbol("(name)");
-      symbol(":");
-      symbol(")");
-      symbol("]");
-      symbol("}");
-      symbol(",");
-
-      constant("true", true);
-      constant("false", false);
-      constant("null", null);
-      
-      constant("Math", Math);
-      constant("Date", Date);
-
-      symbol("(literal)").nud = itself;
-
-      symbol(".").nud = function () {
-          this.arity = "this";
-          getter('.', 'locals');
-          getter('.', 'paths');
-          return this;
-      };
-      // symbol("this").nud = function () {
-          // this.arity = "this";
-          // return this;
-      // };
-
-      //Operator Precedence:
-      //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
-
-      infix("?", 20, function (left) {
-          this.first = left;
-          this.second = expression(0);
-          advance(":");
-          this.third = expression(0);
-          this.arity = "ternary";
-          return this;
-      });
-      
-      infixr("&&", 31);
-      infixr("||", 30);
-
-      infixr("===", 40);
-      infixr("!==", 40);
-
-      infixr("==", 40);
-      infixr("!=", 40);
-
-      infixr("<", 40);
-      infixr("<=", 40);
-      infixr(">", 40);
-      infixr(">=", 40);
-      
-      infix("in", 45, function (left) {
-          this.first = left;
-          this.second = expression(0);
-          this.arity = "binary";
-          if(context === 'repeat'){
-            // `in` at repeat block
-            this.assignment = true;
-          }
-          return this;
-      });
-
-      infix("+", 50);
-      infix("-", 50);
-
-      infix("*", 60);
-      infix("/", 60);
-      infix("%", 60);
-
-      infix(".", 80, function (left) {
-          this.first = left;
-          if (token.arity !== "name") {
-              error("Expected a property name.", token);
-          }
-          token.arity = "literal";
-          this.second = token;
-          this.arity = "binary";
-          advance();
-          return this;
-      });
-
-      infix("[", 80, function (left) {
-          this.first = left;
-          this.second = expression(0);
-          this.arity = "binary";
-          advance("]");
-          if(path && token.value !== '.' && token.value !== '['){
-            getter(path, 'paths');
-            path = '';
-          }
-          return this;
-      });
-
-      infix("(", 80, function (left) {
-          var a = [];
-          if (left.id === "." || left.id === "[") {
-              this.arity = "ternary";
-              this.first = left.first;
-              this.second = left.second;
-              this.third = a;
-          } else {
-              this.arity = "binary";
-              this.first = left;
-              this.second = a;
-              if ((left.arity !== "unary" || left.id !== "function") &&
-                      left.arity !== "name" && left.arity !== "literal" && left.id !== "(" &&
-                      left.id !== "&&" && left.id !== "||" && left.id !== "?") {
-                  error("Expected a variable name.", left);
-              }
-          }
-          if (token.id !== ")") {
-              while (true) {
-                  a.push(expression(0));
-                  if (token.id !== ",") {
-                      break;
-                  }
-                  advance(",");
-              }
-          }
-          advance(")");
-          return this;
-      });
-
-      //filter
-      infix("|", 10, function(left) {
-        var a;
-        this.first = left;
-        token.arity = 'filter';
-        this.second = expression(10);
-        this.arity = 'binary';
-        if(token.id === ':'){
-          this.arity = 'ternary';
-          this.third = a = [];
-          while(true){
-            advance(':');
-            a.push(expression(0));
-            if(token.id !== ":"){
-              break;
+            for (;;) {
+                c = code.charAt(i);
+                if (c < '0' || c > '9') {
+                    break;
+                }
+                i += 1;
+                str += c;
             }
-          }
+
+// Look for a decimal fraction part.
+
+            if (c === '.') {
+                i += 1;
+                str += c;
+                for (;;) {
+                    c = code.charAt(i);
+                    if (c < '0' || c > '9') {
+                        break;
+                    }
+                    i += 1;
+                    str += c;
+                }
+            }
+
+// Look for an exponent part.
+
+            if (c === 'e' || c === 'E') {
+                i += 1;
+                str += c;
+                c = code.charAt(i);
+                if (c === '-' || c === '+') {
+                    i += 1;
+                    str += c;
+                    c = code.charAt(i);
+                }
+                if (c < '0' || c > '9') {
+                    error("Bad exponent", make('number', str));
+                }
+                do {
+                    i += 1;
+                    str += c;
+                    c = code.charAt(i);
+                } while (c >= '0' && c <= '9');
+            }
+
+// Make sure the next character is not a letter.
+
+            if (c >= 'a' && c <= 'z') {
+                str += c;
+                i += 1;
+                error("Bad number", make('number', str));
+            }
+
+// Convert the string value to a number. If it is finite, then it is a good
+// token.
+
+            n = +str;
+            if (isFinite(n)) {
+                result.push(make('number', n));
+            } else {
+                error("Bad number", make('number', str));
+            }
+
+// string
+
+        } else if (c === '\'' || c === '"') {
+            str = '';
+            q = c;
+            i += 1;
+            for (;;) {
+                c = code.charAt(i);
+                if (c < ' ') {
+                    make('string', str);
+                    error(c === '\n' || c === '\r' || c === '' ?
+                        "Unterminated string." :
+                        "Control character in string.", make('', str));
+                }
+
+// Look for the closing quote.
+
+                if (c === q) {
+                    break;
+                }
+
+// Look for escapement.
+
+                if (c === '\\') {
+                    i += 1;
+                    if (i >= length) {
+                      error("Unterminated string", make('string', str));
+                    }
+                    c = code.charAt(i);
+                    switch (c) {
+                    case 'b':
+                        c = '\b';
+                        break;
+                    case 'f':
+                        c = '\f';
+                        break;
+                    case 'n':
+                        c = '\n';
+                        break;
+                    case 'r':
+                        c = '\r';
+                        break;
+                    case 't':
+                        c = '\t';
+                        break;
+                    case 'u':
+                        if (i >= length) {
+                           error("Unterminated string", make('string', str));
+                        }
+                        c = parseInt(code.substr(i + 1, 4), 16);
+                        if (!isFinite(c) || c < 0) {
+                           error("Unterminated string", make('string', str));
+                        }
+                        c = String.fromCharCode(c);
+                        i += 4;
+                        break;
+                    }
+                }
+                str += c;
+                i += 1;
+            }
+            i += 1;
+            result.push(make('string', str));
+            c = code.charAt(i);
+
+// comment.
+
+        } else if (c === '/' && code.charAt(i + 1) === '/') {
+            i += 1;
+            for (;;) {
+                c = code.charAt(i);
+                if (c === '\n' || c === '\r' || c === '') {
+                    break;
+                }
+                i += 1;
+            }
+
+// combining
+
+        } else if (prefix.indexOf(c) >= 0) {
+            str = c;
+            i += 1;
+            while (true) {
+                c = code.charAt(i);
+                if (i >= length || suffix.indexOf(c) < 0) {
+                    break;
+                }
+                str += c;
+                i += 1;
+            }
+            result.push(make('operator', str));
+
+// single-character operator
+
+        } else {
+            i += 1;
+            result.push(make('operator', c));
+            c = code.charAt(i);
         }
+    }
+    return result;
+};
+
+
+var make_parse = function () {
+    var symbol_table = {};
+    var token;
+    var tokens;
+    var token_nr;
+    var context;
+    
+    var itself = function () {
         return this;
-      });
-      
+    };
 
-      prefix("!");
-      prefix("-");
-      prefix("typeof");
+    var find = function (n) {
+      n.nud      = itself;
+      n.led      = null;
+      n.std      = null;
+      n.lbp      = 0;
+      return n;
+    };
 
-      prefix("(", function () {
-          var e = expression(0);
-          advance(")");
-          return e;
-      });
-
-      prefix("[", function () {
-          var a = [];
-          if (token.id !== "]") {
-              while (true) {
-                  a.push(expression(0));
-                  if (token.id !== ",") {
-                      break;
-                  }
-                  advance(",");
-              }
-          }
-          advance("]");
-          this.first = a;
-          this.arity = "unary";
-          return this;
-      });
-
-      prefix("{", function () {
-          var a = [], n, v;
-          if (token.id !== "}") {
-              while (true) {
-                  n = token;
-                  if (n.arity !== "name" && n.arity !== "literal") {
-                      error("Bad property name.", token);
-                  }
-                  advance();
-                  advance(":");
-                  v = expression(0);
-                  v.key = n.value;
-                  a.push(v);
-                  if (token.id !== ",") {
-                      break;
-                  }
-                  advance(",");
-              }
-          }
-          advance("}");
-          this.first = a;
-          this.arity = "unary";
-          return this;
-      });
-
-      //_source: 表达式代码字符串
-      //_fn: 接收表达式语法摘要函数
-      //_context: 表达式的语句环境
-      return function (_source, _fn, _context) {
-          tokens = tokenize(_source, '=<>!+-*&|/%^', '=<>&|');
-          token_nr = 0;
-          context = _context;
-          init(_fn);
-          advance();
-          var s = expression(0);
-          advance("(end)");
-          return s;
-      };
-  };
-
-  var operators = {
-    'unary': {
-      '+': function(v) { return +v; }
-    , '-': function(v) { return -v; }
-    , '!': function(v) { return !v; }
-      
-    , '[': function(v){ return v; }
-    , '{': function(v){
-        var r = {};
-        for(var i = 0, l = v.length; i < l; i++) {
-          r[v[i][0]] = v[i][1];
+    var advance = function (id) {
+        var a, o, t, v;
+        if (id && token.id !== id) {
+            error("Expected '" + id + "'.", token);
         }
-        return r;
-      }
-    , 'typeof': function(v){ return typeof v; }
-    , 'new': function(v){ return new v }
-    }
-    
-  , 'binary': {
-      '+': function(l, r) { return l+r; }
-    , '-': function(l, r) { return l-r; }
-    , '*': function(l, r) { return l*r; }
-    , '/': function(l, r) { return l/r; }
-    , '%': function(l, r) { return l%r; }
-    , '<': function(l, r) { return l<r; }
-    , '>': function(l, r) { return l>r; }
-    , '<=': function(l, r) { return l<=r; }
-    , '>=': function(l, r) { return l>=r; }
-    , '==': function(l, r) { return l==r; }
-    , '!=': function(l, r) { return l!=r; }
-    , '===': function(l, r) { return l===r; }
-    , '!==': function(l, r) { return l!==r; }
-    , '&&': function(l, r) { return l&&r; }
-    , '||': function(l, r) { return l||r; }
-      
-    , '.': function(l, r) { return l[r]; }
-    , '[': function(l, r) { return l[r]; }
-    , '(': function(l, r){ return l.apply(null, r) }
-      
-    , '|': function(l, r){ return r.call(null, l) }//filter. name|filter
-    , 'in': function(l, r){
-        if(this.assignment) {
-          //repeat
-          return r;
-        }else{
-          return l in r;
+        if (token_nr >= tokens.length) {
+            token = symbol_table["(end)"];
+            return;
         }
-      }
-    }
-    
-  , 'ternary': {
-      '?': function(f, s, t) { return f ? s : t; }
-    , '(': function(f, s, t) { return f[s].apply(f, t) }
-      
-    , '|': function(f, s, t){ return s.apply(null, [f].concat(t)); }//filter. name | filter : arg2 : arg3
-    }
-  };
-
-  var make_eval = function() {
-    var _locals, _filters
-      , isArray = Array.isArray
-      , argName = ['first', 'second', 'third']
-      ;
-      
-    var evaluate = function(tree) {
-      var arity = tree.arity
-        , value = tree.value
-        , args = []
-        , n = 0
-        , arg
-        ;
-      
-      for(; n < 3; n++){
-        arg = tree[argName[n]];
-        if(arg){
-          if(isArray(arg)){
-            args[n] = [];
-            for(var i = 0, l = arg.length; i < l; i++){
-              args[n].push(typeof arg[i].key === 'undefined' ? evaluate(arg[i]) : [arg[i].key, evaluate(arg[i])]);
+        t = tokens[token_nr];
+        token_nr += 1;
+        v = t.value;
+        a = t.type;
+        if ((a === "operator" || a !== 'string') && v in symbol_table) {
+            //true, false 等直接量也会进入此分支
+            o = symbol_table[v];
+            if (!o) {
+                error("Unknown operator.", t);
             }
-          }else{
-            args[n] = evaluate(arg);
-          }
+        } else if (a === "name") {
+            o = find(t);
+        } else if (a === "string" || a ===  "number") {
+            o = symbol_table["(literal)"];
+            a = "literal";
+        } else {
+            error("Unexpected token.", t);
         }
-      }
-      
-      switch(arity){
-        case 'unary': 
-        case 'binary':
-        case 'ternary':
-          try{
-            return getOperator(arity, value).apply(tree, args);
-          }catch(e){
-            //console.debug(e);
-            return '';
-          }
-        break;
-        case 'literal':
-          return value;
-        case 'name':
-          return _locals[value];
-        case 'filter':
-          return _filters[value];
-        case 'this':
-          return _locals;
-        break;
-      }
+        token = create(o);
+        token.from  = t.from;
+        token.to    = t.to;
+        token.value = v;
+        token.arity = a;
+        return token;
+    };
+
+    var expression = function (rbp) {
+        var left;
+        var t = token;
+        advance();
+        left = t.nud();
+        while (rbp < token.lbp) {
+            t = token;
+            advance();
+            left = t.led(left);
+        }
+        return left;
+    };
+
+    var original_symbol = {
+        nud: function () {
+            error("Undefined.", this);
+        },
+        led: function (left) {
+            error("Missing operator.", this);
+        }
+    };
+
+    var symbol = function (id, bp) {
+        var s = symbol_table[id];
+        bp = bp || 0;
+        if (s) {
+            if (bp >= s.lbp) {
+                s.lbp = bp;
+            }
+        } else {
+            s = create(original_symbol);
+            s.id = s.value = id;
+            s.lbp = bp;
+            symbol_table[id] = s;
+        }
+        return s;
+    };
+
+    var constant = function (s, v, a) {
+        var x = symbol(s);
+        x.nud = function () {
+            this.value = symbol_table[this.id].value;
+            this.arity = "literal";
+            return this;
+        };
+        x.value = v;
+        return x;
     };
     
-    function getOperator(arity, value){
-      return operators[arity][value] || function() { return ''; }
-    }
+    var infix = function (id, bp, led) {
+        var s = symbol(id, bp);
+        s.led = led || function (left) {
+            this.first = left;
+            this.second = expression(bp);
+            this.arity = "binary";
+            return this;
+        };
+        return s;
+    };
+
+    var infixr = function (id, bp, led) {
+        var s = symbol(id, bp);
+        s.led = led || function (left) {
+            this.first = left;
+            this.second = expression(bp - 1);
+            this.arity = "binary";
+            return this;
+        };
+        return s;
+    };
+
+    var prefix = function (id, nud) {
+        var s = symbol(id);
+        s.nud = nud || function () {
+            this.first = expression(70);
+            this.arity = "unary";
+            return this;
+        };
+        return s;
+    };
+
+    symbol("(end)");
+    symbol("(name)");
+    symbol(":");
+    symbol(")");
+    symbol("]");
+    symbol("}");
+    symbol(",");
+
+    constant("true", true);
+    constant("false", false);
+    constant("null", null);
     
-    return function(tree, context) {
-      context = context || {};
-      _locals = context.locals || {};
-      _filters = context.filters || {};
-      return evaluate(tree);
-    }
-  };
-  
-  module.exports = {
-    parse: make_parse()
-  , eval: make_eval()
-  };
-},{}],6:[function(_dereq_,module,exports){
+    constant("Math", Math);
+    constant("Date", Date);
+
+    symbol("(literal)").nud = itself;
+
+    // symbol("this").nud = function () {
+        // this.arity = "this";
+        // return this;
+    // };
+
+    //Operator Precedence:
+    //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+
+    infix("?", 20, function (left) {
+        this.first = left;
+        this.second = expression(0);
+        advance(":");
+        this.third = expression(0);
+        this.arity = "ternary";
+        return this;
+    });
+    
+    infixr("&&", 31);
+    infixr("||", 30);
+
+    infixr("===", 40);
+    infixr("!==", 40);
+
+    infixr("==", 40);
+    infixr("!=", 40);
+
+    infixr("<", 40);
+    infixr("<=", 40);
+    infixr(">", 40);
+    infixr(">=", 40);
+    
+    infix("in", 45, function (left) {
+        this.first = left;
+        this.second = expression(0);
+        this.arity = "binary";
+        if(context === 'repeat'){
+          // `in` at repeat block
+          this.assignment = true;
+        }
+        return this;
+    });
+
+    infix("+", 50);
+    infix("-", 50);
+
+    infix("*", 60);
+    infix("/", 60);
+    infix("%", 60);
+
+    infix(".", 80, function (left) {
+        this.first = left;
+        if (token.arity !== "name") {
+            error("Expected a property name.", token);
+        }
+        token.arity = "literal";
+        this.second = token;
+        this.arity = "binary";
+        advance();
+        return this;
+    });
+
+    infix("[", 80, function (left) {
+        this.first = left;
+        this.second = expression(0);
+        this.arity = "binary";
+        advance("]");
+        return this;
+    });
+
+    infix("(", 80, function (left) {
+        var a = [];
+        if (left.id === "." || left.id === "[") {
+            this.arity = "ternary";
+            this.first = left.first;
+            this.second = left.second;
+            this.third = a;
+        } else {
+            this.arity = "binary";
+            this.first = left;
+            this.second = a;
+            if ((left.arity !== "unary" || left.id !== "function") &&
+                    left.arity !== "name" && left.arity !== "literal" && left.id !== "(" &&
+                    left.id !== "&&" && left.id !== "||" && left.id !== "?") {
+                error("Expected a variable name.", left);
+            }
+        }
+        if (token.id !== ")") {
+            while (true) {
+                a.push(expression(0));
+                if (token.id !== ",") {
+                    break;
+                }
+                advance(",");
+            }
+        }
+        advance(")");
+        return this;
+    });
+
+    //filter
+    infix("|", 10, function(left) {
+      var a;
+      this.first = left;
+      token.arity = 'filter';
+      this.second = expression(10);
+      this.arity = 'binary';
+      if(token.id === ':'){
+        this.arity = 'ternary';
+        this.third = a = [];
+        while(true){
+          advance(':');
+          a.push(expression(0));
+          if(token.id !== ":"){
+            break;
+          }
+        }
+      }
+      return this;
+    });
+    
+
+    prefix("!");
+    prefix("-");
+    prefix("typeof");
+
+    prefix("(", function () {
+        var e = expression(0);
+        advance(")");
+        return e;
+    });
+
+    prefix("[", function () {
+        var a = [];
+        if (token.id !== "]") {
+            while (true) {
+                a.push(expression(0));
+                if (token.id !== ",") {
+                    break;
+                }
+                advance(",");
+            }
+        }
+        advance("]");
+        this.first = a;
+        this.arity = "unary";
+        return this;
+    });
+
+    prefix("{", function () {
+        var a = [], n, v;
+        if (token.id !== "}") {
+            while (true) {
+                n = token;
+                if (n.arity !== "name" && n.arity !== "literal") {
+                    error("Bad property name.", token);
+                }
+                advance();
+                advance(":");
+                v = expression(0);
+                v.key = n.value;
+                a.push(v);
+                if (token.id !== ",") {
+                    break;
+                }
+                advance(",");
+            }
+        }
+        advance("}");
+        this.first = a;
+        this.arity = "unary";
+        return this;
+    });
+
+    //_source: 表达式代码字符串
+    //_context: 表达式的语句环境
+    return function (_source, _context) {
+        tokens = tokenize(_source, '=<>!+-*&|/%^', '=<>&|');
+        token_nr = 0;
+        context = _context;
+        advance();
+        var s = expression(0);
+        advance("(end)");
+        return s;
+    };
+};
+
+exports.parse = make_parse();
+},{}],8:[function(_dereq_,module,exports){
 "use strict";
 
 //utils
@@ -2162,6 +2278,15 @@ function parseKeyPath(keyPath){
   return keyPath.replace(bra, '').split(keyPathReg);
 }
 
+/**
+ * 合并对象
+ * @static
+ * @param {Boolean} [deep=false] 是否深度合并
+ * @param {Object} target 目标对象
+ * @param {Object} [object...] 来源对象
+ * @param {Function} [callback] 用于自定义合并的回调
+ * @return {Function} 合并后的 target 对象
+ */
 function extend(/* deep, target, object..., calllback */) {
   var options
     , name, src, copy, copyIsArray, clone
@@ -2362,6 +2487,6 @@ var utils = {
 };
 
 module.exports = utils;
-},{"./document.js":3}]},{},[1])
+},{"./document.js":4}]},{},[1])
 (1)
 });
