@@ -1601,7 +1601,7 @@ exports.eval = function(tree, _context) {
   return evaluate(tree);
 };
 
-//生成表达式摘要
+//表达式摘要
 exports.summary = function(tree) {
   reset();
   
