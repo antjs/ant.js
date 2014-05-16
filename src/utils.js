@@ -102,6 +102,11 @@ function extend(/* deep, target, object..., calllback */) {
   return target;
 }
 
+var create = Object.create || function (o) {
+  function F() {}
+  F.prototype = o;
+  return new F();
+};
 
 function tplParse(tpl, target) {
   var el;
@@ -219,6 +224,7 @@ var utils = {
     return cur;
   }
 , extend: extend
+, create: create
 , tplParse: tplParse
 };
 

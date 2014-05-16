@@ -20,5 +20,6 @@ function Directive(key, opts) {
   , replace: false
   , update: utils.noop
   , init: utils.noop
+  , tearDown: utils.noop
   }, opts);
 }

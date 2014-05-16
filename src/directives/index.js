@@ -44,7 +44,20 @@ dirs.repeat = {
 };
   
 dirs['if'] = {
-  
+  init: function() {
+    var parent = this.parent = this.el.parentNode;
+    this.anchor = doc.createComment(this.type + ' = ' + this.path)
+    parent.insertBefore(this.anchor, this.el);
+    parent.removeChild(this.el);
+  }
+, update: function(val) {
+    if(val) {
+      if(!this.state) { this.parent.insertBefore(this.el, this.anchor); }
+    }else{
+      if(this.state) { this.parent.removeChild(this.el); }
+    }
+    this.state = val;
+  }
 };
   
 dirs.attr = require('./attr.js');

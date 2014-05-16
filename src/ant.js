@@ -17,7 +17,6 @@ var isObject = utils.isObject
   , isFunction = utils.isFunction
   , isArray = utils.isArray
   , isPlainObject = utils.isPlainObject
-  , beforeFn = utils.beforeFn
   , afterFn = utils.afterFn
   , parseKeyPath = utils.parseKeyPath
   , deepSet = utils.deepSet
@@ -25,6 +24,7 @@ var isObject = utils.isObject
   , extend = utils.extend
   , ie = utils.ie
   , tplParse = utils.tplParse
+  , create = utils.create
   ;
 
 
@@ -456,7 +456,7 @@ function isAntAttr(attrName) {
     for (var i = 0, l = dirs.length; i < l; i++) {
       dir = dirs[i];
      
-      //对于 terminal 为 true 的 directive, 在解析完其相同权重的 directive 后中断解析
+      //对于 terminal 为 true 的 directive, 在解析完其相同权重的 directive 后中断遍历该元素
       if(terminalPriority < dir.priority) {
         break;
       }
@@ -480,20 +480,11 @@ function isAntAttr(attrName) {
       // checkBinding(vm, gen, el);
       // return true;
     // }
-    
-    // for(var i = el.attributes.length - 1; i >= 0; i--){
-      // attr = el.attributes[i];
-      // checkBinding(vm, attr, el);
-      // //replace prefix and postfix attribute. a-style={{value}}, disabled?={{value}}
-      // if(attr.nodeName.indexOf(prefix) === 0 || attrPostReg.test(attr.nodeName)){
-        // el.removeAttribute(attr.nodeName);
-      // }
-    // }
   }
   
   function checkText(node, vm) {
     if(token.hasToken(node.nodeValue)) {
-      var tokens = token.parseToken(node)
+      var tokens = token.parseToken(node.nodeValue)
         , textMap = tokens.textMap
         , el = node.parentNode
         ;
@@ -530,21 +521,18 @@ function isAntAttr(attrName) {
       attrName = attr.nodeName;
       dirName = attrName.slice(prefix.length);
       if(attrName.indexOf(prefix) === 0 && (dirName in directives)) {
-        dir = extend({}, directives[dirName]);
+        dir = create(directives[dirName]);
         dir.dirName = dirName
       }else if(token.hasToken(attr.value)) {
-        dir = extend({}, directives['attr']);
-        dir.dirs = token.parseToken(attr);
+        dir = create(directives['attr']);
+        dir.dirs = token.parseToken(attr.value);
         dir.dirName = attrName.indexOf(prefix) === 0 ? dirName : attrName ;
       }else{
         dir = false;
       }
       
-      if(token.hasToken(attrName)) {
-        //TODO 属性名
-      }
       if(dir) {
-        dirs.push(extend({el: el, node: attr, nodeName: attrName, path: attr.value}, dir));
+        dirs.push(extend(dir, {el: el, node: attr, nodeName: attrName, path: attr.value}));
       }
     }
     dirs.sort(function(d0, d1) {
@@ -554,44 +542,6 @@ function isAntAttr(attrName) {
   }
   
 
-  //el: 该节点的所属元素. 
-  function checkBinding(vm, dir) {
-    var node = dir.node
-      , el = dir.el
-      ;
-      
-    var hasTokenName = token.hasToken(node.nodeName)
-      , hasTokenValue = token.hasToken(node.nodeValue)
-      ;
-      
-    if(hasTokenValue || hasTokenName){
-      var tokens = token.parseTokens(node, el, hasTokenName)
-        , textMap = tokens.textMap
-        , valTokens
-        ;
-      //如果绑定内容是在文本中, 则将{{key}}分割成单独的文本节点
-      if(node.nodeType === NODETYPE.TEXT && textMap.length > 1){
-        textMap.forEach(function(text) {
-          var tn = doc.createTextNode(text);
-          el.insertBefore(tn, node);
-          checkText(tn, vm);
-        });
-        el.removeChild(node);
-      }else{
-        //<tag {{attr}}={{value}} />
-        if(hasTokenName && hasTokenValue){
-          valTokens = token.parseTokens(node, el);
-          valTokens.forEach(function(token){
-            token.baseTokens = tokens;
-            addBinding(vm, token);
-          });
-        }
-        
-        setBinding(vm, dir, tokens);
-      }
-    }
-  }
-  
   function setBinding(vm, dir) {
     if(dir.replace) {
       var el = dir.el;
@@ -609,27 +559,11 @@ function isAntAttr(attrName) {
     
     if(dir.dirs) {
       dir.dirs.forEach(function(token) {
-        new Watcher(vm, extend({}, dir, token));
+        new Watcher(vm, extend(dir, token));
       });
     }else{
       new Watcher(vm, dir);
     }
-  }
-  
-  function addBinding(vm, dir) {
-    var binding = getBinding(vm.$root.$ant.bindings);
-    binding(vm, dir);
-  }
-  
-  function getBinding(bindings) {
-    bindings = baseBindings.concat(bindings);
-    var binding = bindings[0];
-    for(var i = 1, l = bindings.length; i < l; i++){
-      binding = beforeFn(binding, bindings[i], function(ret) {
-        return (ret instanceof Watcher) || ret === false;
-      })
-    }
-    return binding;
   }
   
   function ViewModel(opts) {
@@ -862,62 +796,6 @@ function isAntAttr(attrName) {
         }
       }
       this.state = Watcher.STATE_CALLED;
-    }
-    //update the DOMs
-  , callback: function(newVal) {
-      var token = this.token
-        , pos = token.position
-        , node = token.node
-        , el = token.el
-        , textMap = token.textMap
-        , nodeName = token.nodeName
-        , isAttrName = token.isAttrName
-        , val
-        ;
-      if(newVal + '' !== textMap[pos] + '') {
-        
-        textMap[pos] = newVal && (newVal + '');
-        val = textMap.join('');
-        
-        if(nodeName === '#text') {
-          
-        }else{
-          //{{}} token in attribute value, which nodeName is dynamic
-          //baseTokens is about attribute name
-          if(token.baseTokens){
-            nodeName = token.nodeName = token.baseTokens.textMap.join('');
-          }
-
-          if(!isAttrName){
-            node.nodeValue = val;
-          }
-
-          //conditional attribute just only consider attr's value
-          if(token.condiAttr && !isAttrName){
-            if(newVal){
-             // delete node._hide_;
-            }else{
-              el.removeAttribute(nodeName);
-             // node._hide_ = true;
-              return;
-            }
-          }
-          //if(!node._hide_){
-            if(isAttrName){
-              if(nodeName){
-                el.removeAttribute(nodeName);
-              }
-              nodeName = token.nodeName = val;
-              val = node.nodeValue;
-            }
-            if(nodeName){
-              setAttr(el, nodeName, val);
-            }
-          // }else{
-          //   console.log('skip..')
-          // }
-        }
-      }
     }
   , getValue: function(vals) {
       var filters = this.filters
