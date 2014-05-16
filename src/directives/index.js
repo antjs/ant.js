@@ -1,33 +1,40 @@
 "use strict";
 
 var doc = require('../document.js');
-  
+
 var dirs = {};
 
 
 dirs.text = {
   terminal: true
-, init: function() {
-    var text = doc.createTextNode('')
-      , el
-      ;
-    if(this.nodeName !== text.nodeName) {
-      el = this.el;
-      this.el = el.parentNode;
-      this.el.replaceChild(text, el);
-      this.node = text;
-      this.nodeName = text.nodeName;
-    }
-  }
+, replace: function() { return doc.createTextNode('') }
 , update: function(val) {
     this.node.nodeValue = val;
   }
 };
 
 
-
 dirs.html = {
-  
+  terminal: true
+, replace: true
+, init: function() {
+    this.nodes = [];
+  }
+, update: function(val) {
+    var el = document.createElement('div');
+    el.innerHTML = val;
+    
+    var node;
+    while(node = this.nodes.pop()) {
+      node.parentNode && node.parentNode.removeChild(node);
+    }
+    
+    var nodes = el.childNodes;
+    for(var i = 0, l = nodes.length; i < l; i ++) {
+      this.nodes.push(nodes[i])
+      this.el.insertBefore(this.nodes[i], this.node);
+    }
+  }
 };
   
   

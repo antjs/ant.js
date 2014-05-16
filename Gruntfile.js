@@ -27,6 +27,7 @@ module.exports = function(grunt) {
       },
       core: {
         options: {
+          sourceMap: true,
           banner: '/*! <%= pkg.name %> - v<%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
         },
         files: {
@@ -62,6 +63,7 @@ module.exports = function(grunt) {
         options: {
           exclude: ['jsdom'],
           bundleOptions: {
+            debug: true,
             standalone: 'Ant'
           },
           postBundleCB: function(err, src, next) {

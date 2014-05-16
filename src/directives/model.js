@@ -1,13 +1,16 @@
 "use strict";
 
-
 var utils = require('../utils.js');
 
 module.exports = {
-  init: function(vm) {
-    if(!this.path) { return false; }
+  teminal: true
+, priority: 1
+, init: function(vm) {
+    var keyPath = this.path;
     
-    var el = this.el, keyPath = this.path
+    if(!keyPath) { return false; }
+    
+    var el = this.el
       , ev = 'change'
       , attr, value = attr = 'value'
       , ant = vm.$root.$ant
@@ -88,7 +91,7 @@ module.exports = {
             }
           };
         }
-        isSetDefaut = isSetDefaut && !hasToken(el[value]);
+        //isSetDefaut = isSetDefaut && !hasToken(el[value]);
       break;
     }
     

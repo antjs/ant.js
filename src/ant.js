@@ -8,6 +8,7 @@ var doc = require('./document.js')
   , Class = require('./class.js')
   , Dir = require('./directive.js')
   , dirs = require('./directives')
+  , token = require('./token.js')
   ;
 
 
@@ -176,6 +177,7 @@ function isAntAttr(attrName) {
   
   Ant.setPrefix('a-');
   
+  //内置 directive
   for(var dir in dirs) {
     Ant.directive(dir, dirs[dir]);
   }
@@ -426,6 +428,7 @@ function isAntAttr(attrName) {
       return;
     }
     
+    //遇到 terminal 为 true 的 directive 属性不再遍历
     if(checkAttr(el, vm)){
       return;
     }
@@ -441,52 +444,75 @@ function isAntAttr(attrName) {
   function checkAttr(el, vm) {
     var repeatAttr = el.getAttributeNode(antAttr.REPEAT)
       , ifAttr = el.getAttributeNode(antAttr.IF)
-      , modelAttr = el.getAttributeNode(antAttr.MODEL)
       , attr, gen = repeatAttr || ifAttr
       ;
     
-    var dirs = getDir(el, Ant.directives, Ant.prefix)
+    var prefix = Ant.prefix
+      , dirs = getDir(el, Ant.directives, prefix)
       , dir
+      , terminalPriority, terminal
       ;
     
     for (var i = 0, l = dirs.length; i < l; i++) {
       dir = dirs[i];
      
-      checkBinding(vm, dir);
+      //对于 terminal 为 true 的 directive, 在解析完其相同权重的 directive 后中断解析
+      if(terminalPriority < dir.priority) {
+        break;
+      }
+      
+      setBinding(vm, dir);
      
-      el.removeAttribute(dir.nodeName);
+      el.removeAttribute(dir.node.nodeName);
+      
       if(dir.terminal) {
-        return true;
+        terminal = true;
+        terminalPriority = dir.priority;
       }
     }
     
-    return;
-    if(gen){
-      checkBinding(vm, gen, el);
+    if(terminal) {
       return true;
     }
     
-    if(modelAttr){
-      checkBinding(vm, modelAttr, el);
-    }
+    // return;
+    // if(gen){
+      // checkBinding(vm, gen, el);
+      // return true;
+    // }
     
-    for(var i = el.attributes.length - 1; i >= 0; i--){
-      attr = el.attributes[i];
-      checkBinding(vm, attr, el);
-      //replace prefix and postfix attribute. a-style={{value}}, disabled?={{value}}
-      if(attr.nodeName.indexOf(prefix) === 0 || attrPostReg.test(attr.nodeName)){
-        el.removeAttribute(attr.nodeName);
-      }
-    }
+    // for(var i = el.attributes.length - 1; i >= 0; i--){
+      // attr = el.attributes[i];
+      // checkBinding(vm, attr, el);
+      // //replace prefix and postfix attribute. a-style={{value}}, disabled?={{value}}
+      // if(attr.nodeName.indexOf(prefix) === 0 || attrPostReg.test(attr.nodeName)){
+        // el.removeAttribute(attr.nodeName);
+      // }
+    // }
   }
   
   function checkText(node, vm) {
-    if(hasToken(node.nodeValue)) {
-      checkBinding(vm, extend({
-        node: node
-      , el: node.parentNode
-      , nodeName: node.nodeName
-      }, Ant.directives.text))
+    if(token.hasToken(node.nodeValue)) {
+      var tokens = token.parseToken(node)
+        , textMap = tokens.textMap
+        , el = node.parentNode
+        ;
+      
+      //将{{key}}分割成单独的文本节点
+      if(textMap.length > 1) {
+        textMap.forEach(function(text) {
+          var tn = doc.createTextNode(text);
+          el.insertBefore(tn, node);
+          checkText(tn, vm);
+        });
+        el.removeChild(node);
+      }else{
+        tokens.forEach(function(token) {
+          setBinding(vm, extend(token, token.escape ? Ant.directives.text : Ant.directives.html, {
+            el: node
+          }));
+        });
+      }
     }
   }
   
@@ -504,12 +530,21 @@ function isAntAttr(attrName) {
       attrName = attr.nodeName;
       dirName = attrName.slice(prefix.length);
       if(attrName.indexOf(prefix) === 0 && (dirName in directives)) {
-        dir = directives[dirName];
-      }else if(hasToken(attr.nodeValue)) {
-        dir = directives['attr'];
+        dir = extend({}, directives[dirName]);
+        dir.dirName = dirName
+      }else if(token.hasToken(attr.value)) {
+        dir = extend({}, directives['attr']);
+        dir.dirs = token.parseToken(attr);
+        dir.dirName = attrName.indexOf(prefix) === 0 ? dirName : attrName ;
+      }else{
+        dir = false;
+      }
+      
+      if(token.hasToken(attrName)) {
+        //TODO 属性名
       }
       if(dir) {
-        dirs.push(extend({el: el, node: attr, nodeName: attrName}, dir));
+        dirs.push(extend({el: el, node: attr, nodeName: attrName, path: attr.value}, dir));
       }
     }
     dirs.sort(function(d0, d1) {
@@ -518,18 +553,19 @@ function isAntAttr(attrName) {
     return dirs;
   }
   
+
   //el: 该节点的所属元素. 
   function checkBinding(vm, dir) {
     var node = dir.node
       , el = dir.el
       ;
       
-    var hasTokenName = hasToken(node.nodeName)
-      , hasTokenValue = hasToken(node.nodeValue)
+    var hasTokenName = token.hasToken(node.nodeName)
+      , hasTokenValue = token.hasToken(node.nodeValue)
       ;
       
     if(hasTokenValue || hasTokenName){
-      var tokens = parseTokens(node, el, hasTokenName)
+      var tokens = token.parseTokens(node, el, hasTokenName)
         , textMap = tokens.textMap
         , valTokens
         ;
@@ -538,28 +574,46 @@ function isAntAttr(attrName) {
         textMap.forEach(function(text) {
           var tn = doc.createTextNode(text);
           el.insertBefore(tn, node);
-          checkBinding(vm, tn, el);
+          checkText(tn, vm);
         });
         el.removeChild(node);
       }else{
         //<tag {{attr}}={{value}} />
         if(hasTokenName && hasTokenValue){
-          valTokens = parseTokens(node, el);
+          valTokens = token.parseTokens(node, el);
           valTokens.forEach(function(token){
             token.baseTokens = tokens;
             addBinding(vm, token);
           });
         }
-        tokens.forEach(function(token){
-          setBinding(vm, extend(dir, token));
-        });
+        
+        setBinding(vm, dir, tokens);
       }
     }
   }
   
   function setBinding(vm, dir) {
+    if(dir.replace) {
+      var el = dir.el;
+      if(isFunction(dir.replace)) {
+        dir.node = dir.replace();
+      }else{
+        dir.node = doc.createComment(dir.type + ' = ' + dir.path);
+      }
+      
+      dir.el = dir.el.parentNode;
+      dir.el.replaceChild(dir.node, el);
+    }
+    
     dir.init(vm);
-    new Watcher(vm, dir);
+    
+    if(dir.dirs) {
+      dir.dirs.forEach(function(token) {
+        new Watcher(vm, extend({}, dir, token));
+      });
+    }else{
+      new Watcher(vm, dir);
+    }
   }
   
   function addBinding(vm, dir) {
@@ -696,89 +750,12 @@ function isAntAttr(attrName) {
   };
   
   
-  var tokenReg = /{{({([^}\n]+)}|[^}\n]+)}}/g;
-  var attrPostReg = /\?$/;
-  
-  //字符串中是否包含模板占位符标记
-  function hasToken(str) {
-    tokenReg.lastIndex = 0;
-    return str && tokenReg.test(str);
-  }
-  
-  function parseTokens(node, el, parseNodeName) {
-    var tokens = []
-      , textMap = []
-      , start = 0
-      , value = node.nodeValue
-      , nodeName = node.nodeName
-      , condiAttr, isAttrName
-      , val, token
-      ;
-    
-    if(node.nodeType === NODETYPE.ATTR){
-      //attribute with prefix.
-      if(nodeName.indexOf(prefix) === 0 && !isAntAttr(nodeName)){
-        nodeName = node.nodeName.slice(prefix.length);
-      }
-      
-      if(attrPostReg.test(nodeName)){
-        //attribute with postfix
-        //attr?={{condition}}
-        nodeName = nodeName.slice(0, nodeName.length - 1);
-        condiAttr = true;
-      }
-      if(parseNodeName){
-        value = nodeName;//属性名
-        isAttrName = true;
-      }
-    }
-    
-    tokenReg.lastIndex = 0;
-    
-    while((val = tokenReg.exec(value))){
-      if(tokenReg.lastIndex - start > val[0].length){
-        textMap.push(value.slice(start, tokenReg.lastIndex - val[0].length));
-      }
-      
-      token = {
-        escape: !val[2]
-      , path: (val[2] || val[1]).trim()
-      , position: textMap.length
-      , el: el
-      , node: node
-      , nodeName: nodeName
-      , textMap: textMap
-      };
-      if(condiAttr){ token.condiAttr = true; }
-      if(isAttrName){ token.isAttrName = true; }
-      
-      tokens.push(token);
-      
-      //一个引用类型(数组)作为节点对象的文本图, 这样当某一个引用改变了一个值后, 其他引用取得的值都会同时更新
-      textMap.push(val[0]);
-      
-      start = tokenReg.lastIndex;
-    }
-    
-    if(value.length > start){
-      textMap.push(value.slice(start, value.length));
-    }
-    
-    tokens.textMap = textMap;
-    
-    return tokens;
-  }
-  
   var pertialReg = /^>\s*(?=.+)/;
   
   //buid in bindings
   var baseBindings = [
-    function(vm, token){
-      return new Watcher(vm, token);
-    }
-    
     //局部模板. {{> anotherant}}
-  , function(vm, token) {
+    function(vm, token) {
       var pName, ant, opts, node;
       if(token.nodeName === '#text' && pertialReg.test(token.path)){
         pName = token.path.replace(pertialReg, '');
@@ -823,9 +800,7 @@ function isAntAttr(attrName) {
     this.el = token.el;
     this.val = NaN;
     
-    if(callback){
-      this.callback = callback;
-    }
+    this.update = callback ? callback : token.update;
     
     token.path && exParse.call(this, token.path);
     
@@ -873,10 +848,14 @@ function isAntAttr(attrName) {
           vals[key] = this.relativeVm.$getData(key)
         }
       }
-      var newVal = this.getValue(vals);
+      
+      var newVal = this.getValue(vals)
+        , dir = this.token
+        ;
+        
       if(newVal !== this.val){
         try{
-          this.token.update(newVal, this.val);
+          this.update.call(this.token, newVal, this.val);
           this.val = newVal;
         }catch(e){
           console.error(e);
@@ -901,31 +880,7 @@ function isAntAttr(attrName) {
         val = textMap.join('');
         
         if(nodeName === '#text') {
-          if(token.escape){
-            node.nodeValue = val;
-          }else{
-            var div = doc.createElement('div')
-              , nodes
-              ;
-            
-            token.unescapeNodes = token.unescapeNodes || [];
-            
-            div.innerHTML = val;
-            nodes = div.childNodes;
-            
-            token.unescapeNodes.forEach(function(_node) {
-              _node.parentNode && _node.parentNode.removeChild(_node);
-            });
-            token.unescapeNodes = [];
-            for(var i = 0, l = nodes.length; i < l; i++){
-              token.unescapeNodes.push(nodes[i]);
-              node.parentNode.insertBefore(nodes[i], node);
-              i--;
-              l--;
-            }
-            
-            node.nodeValue = '';
-          }
+          
         }else{
           //{{}} token in attribute value, which nodeName is dynamic
           //baseTokens is about attribute name
@@ -983,27 +938,6 @@ function isAntAttr(attrName) {
       return val;
     }
   });
-  
-  //IE 浏览器很多属性通过 `setAttribute` 设置后无效. 
-  //这些通过 `el[attr] = value` 设置的属性却能够通过 `removeAttribute` 清除.
-  function setAttr(el, attr, val){
-    try{
-      if(((attr in el) || attr === 'class')){
-        if(attr === 'style' && el.style.setAttribute){
-          el.style.setAttribute('cssText', val);
-        }else if(attr === 'class'){
-          el.className = val;
-        }else{
-          el[attr] = typeof el[attr] === 'boolean' ? true : val;
-        }
-      }
-    }catch(e){}
-    try{
-      //chrome setattribute with `{{}}` will throw an error
-      el.setAttribute(attr, val);
-    }catch(e){ console.warn(e) }
-  }
-  
   
   //---
   function callRepeater(vmArray, method, args){

@@ -1,12 +1,19 @@
 "use strict";
 
-var utils = require('./utils.js');
+var utils = require('./utils.js')
+  ;
 
 //为 Ant 构造函数添加指令 (directive). `Ant.directive`
 function directive(key, opts) {
   var dirs = this.directives = this.directives || {};
   
-  dirs[key] = utils.extend({
+  return dirs[key] = new Directive(key, opts);
+}
+
+exports.directive = directive;
+
+function Directive(key, opts) {
+  utils.extend(this, {
     priority: 0
   , type: key
   , terminal: false
@@ -15,5 +22,3 @@ function directive(key, opts) {
   , init: utils.noop
   }, opts);
 }
-
-exports.directive = directive;
