@@ -17,10 +17,11 @@ module.exports = {
     if(this.dirName === this.type) {
       for(var attr in val) {
         setAttr(this.el, attr, val[attr]);
-        if(val[attr]) {
+        //if(val[attr]) {
           delete this.attrs[attr];
-        }
+        //}
       }
+      
       for(var attr in this.attrs) {
         this.el.removeAttribute(attr);
       }

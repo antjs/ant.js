@@ -3,7 +3,12 @@
 var utils = require('./utils.js')
   ;
 
-//为 Ant 构造函数添加指令 (directive). `Ant.directive`
+/**
+ * 为 Ant 构造函数添加指令 (directive). `Ant.directive`
+ * @param {String} key 指令名称
+ * @param {Object} opts 指令参数
+ * 
+ */
 function directive(key, opts) {
   var dirs = this.directives = this.directives || {};
   
@@ -18,8 +23,11 @@ function Directive(key, opts) {
   , type: key
   , terminal: false
   , replace: false
-  , update: utils.noop
-  , init: utils.noop
-  , tearDown: utils.noop
   }, opts);
 }
+
+Directive.prototype = {
+  init: utils.noop
+, update: utils.noop
+, tearDown: utils.noop
+};

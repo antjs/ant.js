@@ -1,6 +1,8 @@
 "use strict";
 
-var doc = require('../document.js');
+var doc = require('../document.js')
+  , utils = require('../utils.js')
+  ;
 
 var dirs = {};
 
@@ -9,7 +11,7 @@ dirs.text = {
   terminal: true
 , replace: function() { return doc.createTextNode('') }
 , update: function(val) {
-    this.node.nodeValue = val;
+    this.node.nodeValue = utils.isUndefined(val) ? '' : val;
   }
 };
 
@@ -22,7 +24,7 @@ dirs.html = {
   }
 , update: function(val) {
     var el = document.createElement('div');
-    el.innerHTML = val;
+    el.innerHTML = utils.isUndefined(val) ? '' : val;
     
     var node;
     while(node = this.nodes.pop()) {
@@ -36,12 +38,7 @@ dirs.html = {
     }
   }
 };
-  
-  
-dirs.repeat = {
-  priority: 10000
-, terminal: true
-};
+
   
 dirs['if'] = {
   init: function() {
@@ -59,15 +56,30 @@ dirs['if'] = {
     this.state = val;
   }
 };
-  
-dirs.attr = require('./attr.js');
-dirs.model = require('./model.js')
-  
+
+
 dirs.partial = {
   terminal: true
-, init: function() {
-    ;
+, replace: true
+, init: function(vm) {
+    var that = this;
+    var pName, ant, opts;
+    pName = this.path;
+    ant = vm.$root.$ant;
+    opts = ant.options;
+    
+    ant.setPartial({
+      name: pName
+    , content: opts && opts.partials && opts.partials[pName]
+    , target: function(el) { that.el.insertBefore(el, that.node) }
+    , escape: this.escape
+    , path: vm.$getKeyPath()
+    });
   }
 };
+  
+dirs.repeat = require('./repeat.js');
+dirs.attr = require('./attr.js');
+dirs.model = require('./model.js');
 
 module.exports = dirs;

@@ -442,11 +442,6 @@ function isAntAttr(attrName) {
   
   //遍历属性
   function checkAttr(el, vm) {
-    var repeatAttr = el.getAttributeNode(antAttr.REPEAT)
-      , ifAttr = el.getAttributeNode(antAttr.IF)
-      , attr, gen = repeatAttr || ifAttr
-      ;
-    
     var prefix = Ant.prefix
       , dirs = getDir(el, Ant.directives, prefix)
       , dir
@@ -474,19 +469,17 @@ function isAntAttr(attrName) {
     if(terminal) {
       return true;
     }
-    
-    // return;
-    // if(gen){
-      // checkBinding(vm, gen, el);
-      // return true;
-    // }
   }
   
+  var partialReg = /^>\s*(?=.+)/;
+  //处理文本节点中的绑定占位符({{...}})
   function checkText(node, vm) {
     if(token.hasToken(node.nodeValue)) {
       var tokens = token.parseToken(node.nodeValue)
         , textMap = tokens.textMap
         , el = node.parentNode
+        
+        , t, dir
         ;
       
       //将{{key}}分割成单独的文本节点
@@ -498,11 +491,18 @@ function isAntAttr(attrName) {
         });
         el.removeChild(node);
       }else{
-        tokens.forEach(function(token) {
-          setBinding(vm, extend(token, token.escape ? Ant.directives.text : Ant.directives.html, {
-            el: node
-          }));
-        });
+        t = tokens[0];
+        //内置各占位符处理. 
+        //定义新的参数, 将其放到 directive 中处理?
+        if(partialReg.test(t.path)) {
+          t.path = t.path.replace(partialReg, '');
+          dir = create(Ant.directives.partial);
+        }else{
+          dir = create(t.escape ? Ant.directives.text : Ant.directives.html);
+        }
+        setBinding(vm, extend(dir, t, {
+          el: node
+        }));
       }
     }
   }
@@ -541,7 +541,6 @@ function isAntAttr(attrName) {
     return dirs;
   }
   
-
   function setBinding(vm, dir) {
     if(dir.replace) {
       var el = dir.el;
@@ -559,10 +558,10 @@ function isAntAttr(attrName) {
     
     if(dir.dirs) {
       dir.dirs.forEach(function(token) {
-        new Watcher(vm, extend(dir, token));
+        addWatcher(vm, extend(dir, token));
       });
     }else{
-      new Watcher(vm, dir);
+      addWatcher(vm, dir);
     }
   }
   
@@ -683,40 +682,21 @@ function isAntAttr(attrName) {
     }
   };
   
-  
-  var pertialReg = /^>\s*(?=.+)/;
-  
   //buid in bindings
   var baseBindings = [
-    //局部模板. {{> anotherant}}
-    function(vm, token) {
-      var pName, ant, opts, node;
-      if(token.nodeName === '#text' && pertialReg.test(token.path)){
-        pName = token.path.replace(pertialReg, '');
-        ant = vm.$root.$ant;
-        opts = ant.options;
-        node = doc.createTextNode('');
-        token.el.insertBefore(node, token.node);
-        token.el.removeChild(token.node);
-        
-        ant.setPartial({
-          name: pName
-        , content: opts && opts.partials && opts.partials[pName]
-        , target: function(el) { token.el.insertBefore(el, node) }
-        , escape: token.escape
-        , path: vm.$getKeyPath()
-        });
-        return false;
-      }
-    }
-    
     //if / repeat
-  , function(vm, token) {
+    function(vm, token) {
       if(token.nodeName === antAttr.IF || token.nodeName === antAttr.REPEAT){
         return new Generator(vm, token);
       }
     }
   ];
+  
+  function addWatcher(vm, dir, callback) {
+    if(dir.path) {
+      return new Watcher(vm, dir, callback);
+    }
+  }
   
   var exParse = function(path) {
     var that = this;
@@ -776,8 +756,6 @@ function isAntAttr(attrName) {
         key = this.locals[i];
         if(key in this.relativeVm.$assignment){
           vals[key] = this.relativeVm.$assignment[key].$getData();
-        // }else if(key === '.'){
-          // vals = this.relativeVm.$getData();
         }else{
           vals[key] = this.relativeVm.$getData(key)
         }
@@ -787,7 +765,7 @@ function isAntAttr(attrName) {
         , dir = this.token
         ;
         
-      if(newVal !== this.val){
+      if(newVal !== this.val || isObject(newVal)){
         try{
           this.update.call(this.token, newVal, this.val);
           this.val = newVal;
@@ -882,12 +860,7 @@ function isAntAttr(attrName) {
         this.els = [];
         this.vm = relativeVm.$getVM(this.paths[0]);
         
-        if(type === antAttr.IF){
-          //if 属性不用切换作用域
-          travelEl(this.el, relativeVm);
-        }else{
-          this.vm.$repeat = true;
-        }
+        this.vm.$repeat = true;
         
       }
     , callback: function(data, old) {
@@ -899,17 +872,6 @@ function isAntAttr(attrName) {
             return;
           }
           data && this.splice([0, this.els.length].concat(data), data);
-        }else{
-          if(data) {
-            if(!that.lastIfState) {
-              that.anchor.parentNode.insertBefore(that.el, that.anchor);
-            }
-          }else{
-            if(that.lastIfState) {
-              that.el.parentNode.removeChild(that.el);
-            }
-          }
-          that.lastIfState = data;
         }
         
       }
