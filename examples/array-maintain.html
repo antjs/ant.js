@@ -20,9 +20,9 @@
     <button class=sort>排序</button>
     <button class=reverse>翻转</button>
     <ul>
-      <li a-repeat={{list}}>{{.}} <button class='edit' title="编辑">编辑</button><button class='del' title="删除">删除</button></li>
+      <li a-repeat="item in list">{{item}} <button class='edit' title="编辑">编辑</button><button class='del' title="删除">删除</button></li>
     </ul>
-    <form onsubmit='return false;'><label><input type="text" a-model='{{cur}}'></label><input type="submit" value="{{index ? '确定修改': '添加'}}"><button a-if={{index}} class='cancel-edit'>取消编辑</button></form>
+    <form onsubmit='return false;'><label><input type="text" a-model='cur'></label><input type="submit" value="{{index ? '确定修改': '添加'}}"><button a-if=index class='cancel-edit'>取消编辑</button></form>
   </div>
 <script type="text/javascript">
 var ant = new Ant(document.getElementById('template'), {

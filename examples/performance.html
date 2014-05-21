@@ -7,7 +7,7 @@
 </head>
 <body>
 <ul id="tpl">
-<li a-repeat="{{c in list}}">{{$index + 1}}: {{c.name}} {{c.time}}</li>
+<li a-repeat="c in list">{{c.$index + 1}}: {{c.name}} {{c.time}}</li>
 </ul>
 <script>
 var arr = [];

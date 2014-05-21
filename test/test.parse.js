@@ -55,38 +55,38 @@ describe('literal 直接量', function() {
 });
 
 describe('variable 变量', function() {
-  it('parse: a + b', function() {
-    var l = {};
-    parse('a + b', function(key, type) {
-      l[key] = type
-    });
-    expect(l.a).to.be.ok();
-    expect(l.b).to.be.ok();
-  });
-  it('parse: a.abc', function() {
-    var l = {};
-    parse('a.abc', function(key, type) {
-      l[key] = type
-    });
-    expect(l.a).to.be.ok();
-    expect(l.abc).to.not.be.ok();
-  });
-  it('parse: a[abc]', function() {
-    var l = {};
-    parse('a[abc]', function(key, type) {
-      l[key] = type
-    });
-    expect(l.a).to.be.ok();
-    expect(l.abc).to.be.ok();
-  });
-  it('parse: a["abc"]', function() {
-    var l = {};
-    parse('a["abc"]', function(key, type) {
-      l[key] = type
-    });
-    expect(l.a).to.be.ok();
-    expect(l.abc).to.not.be.ok();
-  });
+  // it('parse: a + b', function() {
+    // var l = {};
+    // parse('a + b', function(key, type) {
+      // l[key] = type
+    // });
+    // expect(l.a).to.be.ok();
+    // expect(l.b).to.be.ok();
+  // });
+  // it('parse: a.abc', function() {
+    // var l = {};
+    // parse('a.abc', function(key, type) {
+      // l[key] = type
+    // });
+    // expect(l.a).to.be.ok();
+    // expect(l.abc).to.not.be.ok();
+  // });
+  // it('parse: a[abc]', function() {
+    // var l = {};
+    // parse('a[abc]', function(key, type) {
+      // l[key] = type
+    // });
+    // expect(l.a).to.be.ok();
+    // expect(l.abc).to.be.ok();
+  // });
+  // it('parse: a["abc"]', function() {
+    // var l = {};
+    // parse('a["abc"]', function(key, type) {
+      // l[key] = type
+    // });
+    // expect(l.a).to.be.ok();
+    // expect(l.abc).to.not.be.ok();
+  // });
 });
 
 describe('expression 表达式', function() {

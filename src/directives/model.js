@@ -1,11 +1,13 @@
 "use strict";
 
-var utils = require('../utils.js');
+var utils = require('../utils.js')
+  , hasToken = require('../token.js').hasToken
+  ;
 
 module.exports = {
   teminal: true
 , priority: 1
-, init: function(vm) {
+, link: function(vm) {
     var keyPath = this.path;
     
     if(!keyPath) { return false; }
@@ -91,7 +93,7 @@ module.exports = {
             }
           };
         }
-        //isSetDefaut = isSetDefaut && !hasToken(el[value]);
+        isSetDefaut = isSetDefaut && !hasToken(el[value]);
       break;
     }
     

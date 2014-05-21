@@ -441,6 +441,7 @@ var make_parse = function () {
         this.arity = "binary";
         if(context === 'repeat'){
           // `in` at repeat block
+          left.arity = 'assignment';
           this.assignment = true;
         }
         return this;

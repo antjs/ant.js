@@ -3,7 +3,7 @@
 var attrPostReg = /\?$/;
 
 module.exports = {
-  init: function() {
+  link: function() {
     if(this.dirName === this.type) {//attr binding
       this.attrs = {};
     }else {
@@ -14,24 +14,25 @@ module.exports = {
     }
   }
 , update: function(val) {
+    var el = this.el;
     if(this.dirName === this.type) {
       for(var attr in val) {
-        setAttr(this.el, attr, val[attr]);
+        setAttr(el, attr, val[attr]);
         //if(val[attr]) {
           delete this.attrs[attr];
         //}
       }
       
       for(var attr in this.attrs) {
-        this.el.removeAttribute(attr);
+        el.removeAttribute(attr);
       }
       this.attrs = val;
     }else{
       if(this.conditionalAttr) {
-        val ? setAttr(this.el, this.dirName, val) : this.el.removeAttribute(this.dirName);
+        val ? setAttr(el, this.dirName, val) : el.removeAttribute(this.dirName);
       }else{
         this.textMap[this.position] = val && (val + '');
-        setAttr(this.el, this.dirName, this.textMap.join(''));
+        setAttr(el, this.dirName, this.textMap.join(''));
       }
     }
   }

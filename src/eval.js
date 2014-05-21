@@ -53,8 +53,6 @@ var operators = {
   , 'in': function(l, r){
       if(this.assignment) {
         //repeat
-        delete summary.locals[l];
-        summary.assignments[l] = true;
         return r;
       }else{
         return l in r;
@@ -123,6 +121,9 @@ var evaluate = function(tree) {
     break;
     case 'literal':
       res = value;
+    break;
+    case 'assignment':
+      summary.assignments[value] = true;
     break;
     case 'name':
       summary.locals[value] = true;

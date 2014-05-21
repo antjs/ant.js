@@ -19,7 +19,7 @@ dirs.text = {
 dirs.html = {
   terminal: true
 , replace: true
-, init: function() {
+, link: function() {
     this.nodes = [];
   }
 , update: function(val) {
@@ -41,9 +41,9 @@ dirs.html = {
 
   
 dirs['if'] = {
-  init: function() {
+  link: function() {
     var parent = this.parent = this.el.parentNode;
-    this.anchor = doc.createComment(this.type + ' = ' + this.path)
+    this.anchor = doc.createTextNode('');
     parent.insertBefore(this.anchor, this.el);
     parent.removeChild(this.el);
   }
@@ -61,12 +61,14 @@ dirs['if'] = {
 dirs.partial = {
   terminal: true
 , replace: true
-, init: function(vm) {
+, link: function(vm) {
     var that = this;
     var pName, ant, opts;
     pName = this.path;
     ant = vm.$root.$ant;
     opts = ant.options;
+    
+    this.path = '';
     
     ant.setPartial({
       name: pName
@@ -75,6 +77,13 @@ dirs.partial = {
     , escape: this.escape
     , path: vm.$getKeyPath()
     });
+  }
+};
+
+dirs.template = {
+  priority: 10000
+, link: function() {
+    
   }
 };
   

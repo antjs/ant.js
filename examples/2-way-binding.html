@@ -31,27 +31,27 @@
     <form name=form0 action="test" method=get>
       <fieldset>
         <legend>普通文本框: </legend>
-        <label>文本框: <input type="text" a-model={{text}} /> </label> <input type="text" {{password}}={{text}}  /> {{text.length || 0}}
-        <label>密码框: <input disabled?={{checkbox}} type="password" a-model={{password}} /> </label>
-        <label>多行文本: <textarea name=ta a-model={{textarea}}>&ltem&gtwho is your daddy&lt/em&gt</textarea></label>
+        <label>文本框: <input type="text" a-model=text /> </label> <input type="text" /> {{text.length || 0}}
+        <label>密码框: <input disabled?={{checkbox}} type="password" a-model=password /> </label>
+        <label>多行文本: <textarea name=ta a-model=textarea>&ltem&gtwho is your daddy&lt/em&gt</textarea></label>
       </fieldset>
       
       <fieldset>
         <legend>HTML5 表单元素(请使用 chrome): </legend>
-        <label>范围: <input type="range" min=0 max=100 a-model={{range}} /> </label>
-        <label>取色: <input type="color" value="#ffffaa" a-model={{color}} /> </label>
-        <label>日期: <input type="date" value="2013-09-03" a-model={{date}} /> </label>
+        <label>范围: <input type="range" min=0 max=100 a-model=range /> </label>
+        <label>取色: <input type="color" value="#ffffaa" a-model=color /> </label>
+        <label>日期: <input type="date" value="2013-09-03" a-model=date /> </label>
       </fieldset>
       
       <fieldset>
         <legend>单选 / 复选 / 下拉: </legend>
-        <label>复选框: <input type="checkbox" name=cb a-model={{checkbox}} /></label>
+        <label>复选框: <input type="checkbox" name=cb a-model=checkbox /></label>
         <div class='radio-box'>单选框: 
-          <label>red: <input type="radio" a-model={{radio}} value=red name=rd /></label>
-          <label>blue: <input type="radio" checked a-model={{radio}} value=blue name=rd /></label>
-          <label>green: <input type="radio" a-model={{radio}} value=green name=rd /></label>
+          <label>red: <input type="radio" a-model=radio value=red name=rd /></label>
+          <label>blue: <input type="radio" checked a-model=radio value=blue name=rd /></label>
+          <label>green: <input type="radio" a-model=radio value=green name=rd /></label>
         </div>
-        <label>下拉列表1: <select a-model={{select1}}>
+        <label>下拉列表1: <select a-model=select1>
             <option value="ant">ant</option>
             <option selected value="bee">bee</option>
             <optgroup label='分组'>
@@ -59,19 +59,19 @@
               <option value="dragonfly">dragonfly</option>
             </optgroup>
           </select></label>
-        <label>下拉列表2: <select name=select2 multiple a-model={{select2}}>
+        <label>下拉列表2: <select name=select2 multiple a-model=select2>
             <option value="ant">ant</option>
             <option value="bee">bee</option>
             <option value="cicada">cicada</option>
             <option value="dragonfly">dragonfly</option>
           </select></label>
-        <label>下拉列表3: <select name=select3 a-model={{select3}}>
-            <option a-repeat="{{i in select2}}" value="{{i}}">{{i}}</option>
+        <label>下拉列表3: <select name=select3 a-model=select3>
+            <option a-repeat="i in select2" value="{{i}}">{{i}}</option>
           </select></label>
       </fieldset>
       <fieldset>
         <legend>可编辑 HTML: </legend>
-        <div a-model='{{edit}}' contenteditable>
+        <div a-model='edit' contenteditable>
           <p><em>任意一个可编辑标签</em></p>
         </div>
       </fieldset>
@@ -84,7 +84,7 @@
       	<li>多行文本框: {{{textarea}}}</li>
       	<li>下拉框1: <span  a-class='{{select1}}'>{{select1}}</span></li>
       	<li>下拉框2: {{select2}} {{select2.length}}</li>
-      	<li a-if={{!checkbox}}>下拉框3: {{select3}}</li>
+      	<li a-if="!checkbox">下拉框3: {{select3}}</li>
         <li a-style="background-color: {{color}}; width: {{range}}%">范围框/取色框/日期框: <span>{{range}} / {{color}} / {{date}}</span></li>
         <li>子模板: {{> partial}}<!-- {{{> partial}}} --> !</li>
         <li>可编辑文本: {{edit}}</li>
