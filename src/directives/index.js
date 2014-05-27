@@ -41,17 +41,17 @@ dirs.html = {
 
   
 dirs['if'] = {
-  link: function() {
-    var parent = this.parent = this.el.parentNode;
-    this.anchor = doc.createTextNode('');
-    parent.insertBefore(this.anchor, this.el);
+  anchor: true
+, link: function() {
+    var parent = this.el.parentNode;
     parent.removeChild(this.el);
   }
 , update: function(val) {
+    var parent = this.anchors.end.parentNode;
     if(val) {
-      if(!this.state) { this.parent.insertBefore(this.el, this.anchor); }
+      if(!this.state) { parent.insertBefore(this.el, this.anchors.end); }
     }else{
-      if(this.state) { this.parent.removeChild(this.el); }
+      if(this.state) { parent.removeChild(this.el); }
     }
     this.state = val;
   }
@@ -76,6 +76,7 @@ dirs.partial = {
     , target: function(el) { that.el.insertBefore(el, that.node) }
     , escape: this.escape
     , path: vm.$getKeyPath()
+    , context: this
     });
   }
 };

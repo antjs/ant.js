@@ -16,7 +16,7 @@ module.exports = {
       , ev = 'change'
       , attr, value = attr = 'value'
       , ant = vm.$root.$ant
-      , cur = vm.$getVM(keyPath)
+      , cur = vm.$getVM(keyPath, {assignment: this.assignment})
       , isSetDefaut = utils.isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
       , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
       , callback = function(val) {

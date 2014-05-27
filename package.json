@@ -36,6 +36,7 @@
     "pygmentize-bundled": "~2.1.0",
     "grunt-contrib-watch": "~0.6.1",
     "grunt-browserify": "~2.0.8",
-    "browserify": "~3.44.2"
+    "browserify": "~3.44.2",
+    "tape": "~2.13.1"
   }
 }

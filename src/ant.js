@@ -119,7 +119,6 @@ function Ant(tpl, opts) {
   if(opts.data){
     this.render(data);
   }
-  this.init.apply(this, arguments);
 }
 
 //静态方法及属性
@@ -285,12 +284,10 @@ extend(Ant.prototype, Event, {
         }
       }
       
-      travelEl(els, vm);
-      //this.isRendered && vm.$set(deepGet(path, this.data), false, true);
+      vm.$build(els, partialInfo.context && partialInfo.context.assignment)
     }
     return this;
   }
-, init: utils.noop
 
 , watch: function(keyPath, callback) {
     if(keyPath && callback){
@@ -359,7 +356,7 @@ function buildViewModel() {
   });
   
   this._vm = vm;
-  travelEl(this.el, vm);
+  vm.$build(this.el);
 }
 
 var NODETYPE = {
@@ -369,11 +366,13 @@ var NODETYPE = {
 };
 
 //遍历元素及其子元素的所有属性节点及文本节点
-function travelEl(el, vm) {
+function travelEl(el, vm, assignment) {
+  assignment = create(assignment || {});
+  
   if(el.length && isUndefined(el.nodeType)){
     //node list
     for(var i = 0, l = el.length; i < l; i++) {
-      travelEl(el[i], vm);
+      travelEl(el[i], vm, assignment);
     }
     return;
   }
@@ -383,24 +382,24 @@ function travelEl(el, vm) {
     return;
   }else if(el.nodeType === NODETYPE.TEXT){
     //文本节点
-    checkText(el, vm);
+    checkText(el, vm, assignment);
     return;
   }
   
   //遇到 terminal 为 true 的 directive 属性不再遍历
-  if(checkAttr(el, vm)){
+  if(checkAttr(el, vm, assignment)){
     return;
   }
   
   for(var child = el.firstChild, next; child; ){
     next = child.nextSibling;
-    travelEl(child, vm);
+    travelEl(child, vm, assignment);
     child = next;
   }
 }
 
 //遍历属性
-function checkAttr(el, vm) {
+function checkAttr(el, vm, assignment) {
   var prefix = Ant.prefix
     , dirs = getDir(el, Ant.directives, prefix)
     , dir
@@ -409,6 +408,7 @@ function checkAttr(el, vm) {
   
   for (var i = 0, l = dirs.length; i < l; i++) {
     dir = dirs[i];
+    dir.assignment = assignment;
    
     //对于 terminal 为 true 的 directive, 在解析完其相同权重的 directive 后中断遍历该元素
     if(terminalPriority > dir.priority) {
@@ -432,7 +432,7 @@ function checkAttr(el, vm) {
 
 var partialReg = /^>\s*(?=.+)/;
 //处理文本节点中的绑定占位符({{...}})
-function checkText(node, vm) {
+function checkText(node, vm, assignment) {
   if(token.hasToken(node.nodeValue)) {
     var tokens = token.parseToken(node.nodeValue)
       , textMap = tokens.textMap
@@ -446,7 +446,7 @@ function checkText(node, vm) {
       textMap.forEach(function(text) {
         var tn = doc.createTextNode(text);
         el.insertBefore(tn, node);
-        checkText(tn, vm);
+        checkText(tn, vm, assignment);
       });
       el.removeChild(node);
     }else{
@@ -461,6 +461,7 @@ function checkText(node, vm) {
       }
       setBinding(vm, extend(dir, t, {
         el: node
+      , assignment: assignment
       }));
     }
   }
@@ -472,7 +473,8 @@ function getDir(el, directives, prefix) {
   directives = directives || {};
   
   var attr, attrName, dirName
-    , dirs = [], dir
+    , dirs = [], dir, anchors = {}
+    , parent = el.parentNode
     ;
     
   for(var i = el.attributes.length - 1; i >= 0; i--){
@@ -491,7 +493,19 @@ function getDir(el, directives, prefix) {
     }
     
     if(dir) {
-      dirs.push(extend(dir, {el: el, node: attr, nodeName: attrName, path: attr.value}));
+      if(dir.anchor && !anchors.start) {
+        //同一个元素上的 directive 共享同一对锚点
+        anchors.start = doc.createTextNode('');
+        parent.insertBefore(anchors.start, el);
+        
+        anchors.end = doc.createTextNode('');
+        if(el.nextSibling) {
+          parent.insertBefore(anchors.end, el.nextSibling);
+        }else{
+          parent.appendChild(anchors.end);
+        }
+      }
+      dirs.push(extend(dir, {el: el, node: attr, nodeName: attrName, path: attr.value, anchors: dir.anchor ? anchors : null}));
     }
   }
   dirs.sort(function(d0, d1) {
@@ -517,8 +531,8 @@ function setBinding(vm, dir) {
   dir.link(vm);
   
   if(dir.dirs) {
-    dir.dirs.forEach(function(token) {
-      addWatcher(vm, extend(create(dir), token));
+    dir.dirs.forEach(function(d) {
+      addWatcher(vm, extend(create(dir), d));
     });
   }else{
     addWatcher(vm, dir);
@@ -550,25 +564,21 @@ function Watcher(relativeVm, token) {
   
   exParse.call(this, token.path);
   
-  var scope = relativeVm
-    , run = !this.locals.length //When there is no variable in a binding, evaluate it immediately.
-    , paths
-    ;
-  
   for(var i = 0, l = this.paths.length; i < l; i++){
-    // paths = utils.parseKeyPath(this.paths[i]);
-    // if(paths[0] in relativeVm.$assignment) {
-      // scope = relativeVm.$assignment[paths[0]];
-    // }else{
-      // scope = relativeVm.$root;
-    // }
-    // run = run || scope !== relativeVm;//引用父级 VM 时, 立即计算
-    relativeVm.$getVM(this.paths[i]).$watchers.push(this);
+    relativeVm.$getVM(this.paths[i], {assignment: token.assignment}).$watchers.push(this);
+  }
+  
+  var run;
+  for(var i = 0, l = this.locals.length; i < l; i++) {
+    run = run || (this.locals[i] in token.assignment) && token.assignment[this.locals[i]] !== relativeVm;
   }
   
   this.state = Watcher.STATE_READY
   
-  if(run || this.ant.isRendered) {
+  //evaluate it immediately:
+  //1. rendered
+  //2. there is no variable in a directive
+  if(this.ant.isRendered || !this.locals.length || run) {
     this.fn();
   }
 }
@@ -579,16 +589,20 @@ extend(Watcher, {
 }, Class);
 
 extend(Watcher.prototype, {
-  fn: function() {
-    var vals = {}, key;
+  fn: function(vals) {
+    var key
+      , dir = this.token
+      , newVal
+      ;
+      
+    vals = vals || {}
+    
     for(var i = 0, l = this.locals.length; i < l; i++){
       key = this.locals[i];
-      vals[key] = this.relativeVm.$getVM(key).$getData();
+      vals[key] = this.relativeVm.$getVM(key, {assignment: dir.assignment}).$getData();
     }
     
-    var newVal = this.getValue(vals)
-      , dir = this.token
-      ;
+    newVal = this.getValue(vals);
       
     if(newVal !== this.val){
       try{
@@ -625,7 +639,6 @@ function ViewModel(opts) {
     $key: ''
   , $root: this
   , $watchers: []
-  , $assignment: {}
   }, opts);
 }
 
@@ -635,26 +648,27 @@ ViewModel.prototype = {
 
 , $ant: null
 , $key: null
-//, $repeat: false
-, $assignment: null
 
 , $watchers: null
 
+, $index: null
 , $value: NaN
   
-//获取子 vm
-//strict, false(default): 不存在的话将新建一个. true: 不存在则返回 null
+//获取 vm 不存在的话将新建一个.
+//opts.strict  不自动新建 vm
+//opts.scope
 , $getVM: function(path, opts) {
     path = path + '';
     opts = opts || {};
     
-    var key, vm
+    var key
       , cur = opts.scope || this.$root
+      , assignment = opts.assignment || {}
       , keyChain = utils.parseKeyPath(path)
       ;
       
-    if(keyChain[0] in this.$assignment) {
-      cur = this.$assignment[keyChain[0]];
+    if(keyChain[0] in assignment) {
+      cur = assignment[keyChain[0]];
       keyChain.shift();
     }
     if(path){
@@ -663,14 +677,11 @@ ViewModel.prototype = {
         
         if(!cur[key]){
           if(opts.strict){ return null; }
-          vm = new ViewModel({
+          cur[key] = new ViewModel({
             $parent: cur
           , $root: cur.$root
-          , $assignment: extend({}, cur.$assignment)
           , $key: key
           });
-          
-          cur[key] = vm;
         }
         
         cur = cur[key];
@@ -729,8 +740,8 @@ ViewModel.prototype = {
       }
     }
   }
-, $build: function(el) {
-    travelEl(el, this);
+, $build: function(el, assignment) {
+    travelEl(el, this, assignment);
   }
 };
 
