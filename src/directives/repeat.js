@@ -75,7 +75,7 @@ module.exports = {
           if(fixVm){
             vm = this.vm[newI] = this.vm[oldI];
             vm.$key = newI + '';
-            vm['$index'] && vm['$index'].$set(vm.$key);
+            vm['$index'] && vm['$index'].$update(vm.$key);
           }
         }else{
           break;
@@ -99,7 +99,7 @@ module.exports = {
       frag.appendChild(el);
       vm.$build(el, assignment);
       
-      fixVm && vm['$index'] && vm['$index'].$set(vm.$key);
+      fixVm && vm['$index'] && vm['$index'].$update(vm.$key);
       
       newEls.push(el);
     }
@@ -135,7 +135,7 @@ module.exports = {
         vms[l - i - 1] = vm;
       }
       
-      fixVm && vm['$index'] && vm['$index'].$set(vm.$key);
+      fixVm && vm['$index'] && vm['$index'].$update(vm.$key);
       
       this.els[i]['$index'] = l - i - 1;
       
@@ -160,7 +160,7 @@ function callRepeater(vmArray, method, args){
       fixVm = false;
     }
   }
-  vmArray.__vm__.length && vmArray.__vm__.length.$set(vmArray.length, false, true);
+  vmArray.__vm__.length && vmArray.__vm__.length.$update(vmArray.length, false, true);
 }
 var arrayMethods = {
   splice: afterFn([].splice, function() {

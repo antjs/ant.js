@@ -346,7 +346,7 @@ function update (keyPath, data, isExtend, isBubble) {
   }
   
   if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
-  vm.$set(data, isExtend, isBubble !== false);
+  vm.$update(data, isExtend, isBubble !== false);
   return this;
 }
 
@@ -575,9 +575,10 @@ function Watcher(relativeVm, token) {
   
   this.state = Watcher.STATE_READY
   
-  //evaluate it immediately:
-  //1. rendered
-  //2. there is no variable in a directive
+  //立即计算的情况:
+  //1. 渲染过后新加入的模板
+  //2. 没有变量的表达式
+  //3. 子作用域引用父级作用域
   if(this.ant.isRendered || !this.locals.length || run) {
     this.fn();
   }
@@ -616,14 +617,15 @@ extend(Watcher.prototype, {
   }
 , getValue: function(vals) {
     var filters = this.filters
-      , ant = this.ant, val
+      , val
+      , ant = this.ant
       ;
     
-    for(var i = 0, l = filters.length; i < l; i++){
-      if(!ant.filters[filters[i]]){
-        console.error('Filter: ' + filters[i] + ' not found!');
-      }
-    }
+    // for(var i = 0, l = filters.length; i < l; i++){
+      // if(!ant.filters[filters[i]]){
+        // console.error('Filter: ' + filters[i] + ' not found!');
+      // }
+    // }
     
     try{
       val = evaluate.eval(this._ast, {locals: vals, filters: ant.filters});
@@ -710,7 +712,7 @@ ViewModel.prototype = {
   }
 
 
-, $set: function (data, isExtend, isBubble) {
+, $update: function (data, isExtend, isBubble) {
     var map = isExtend ? data : this
       , parent = this
       ;
@@ -727,7 +729,7 @@ ViewModel.prototype = {
         //传入的数据键值不能和 vm 中的自带属性名相同.
         //所以不推荐使用 '$' 作为 JSON 数据键值的开头.
         if(this.hasOwnProperty(path) && (!(path in ViewModel.prototype))){
-          this[path].$set(data ? data[path] : void(0), isExtend);
+          this[path].$update(data ? data[path] : void(0), isExtend);
         }
       }
     }
@@ -751,3 +753,5 @@ Ant._summary = evaluate.summary;
 Ant.version = '%VERSION';
 
 module.exports = Ant;
+
+window.Ant = Ant;
