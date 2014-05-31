@@ -20,16 +20,17 @@ function directive(key, opts) {
 exports.directive = directive;
 
 function Directive(key, opts) {
-  utils.extend(this, {
-    priority: 0
-  , type: key
-  , terminal: false
-  , replace: false
-  }, opts);
+  this.type = key;
+  utils.extend(this, opts);
 }
 
 Directive.prototype = {
-  link: utils.noop
+  priority: 0
+, link: utils.noop
 , update: utils.noop
 , tearDown: utils.noop
+, terminal: false
+, replace: false
+, anchor: false
+, anchors: null
 };

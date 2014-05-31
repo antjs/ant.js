@@ -42,7 +42,7 @@ var operators = {
       return l[r];
     }
   , '[': function(l, r) {
-      if(r){
+      if(typeof r !== 'undefined'){
         path = path + '.' + r;
       }
       return l[r];

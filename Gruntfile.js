@@ -1,4 +1,6 @@
 var exec = require('child_process').exec
+  //, exorcist = require('exorcist')
+  , path = require('path')
   ;
 
 module.exports = function(grunt) {
@@ -35,17 +37,6 @@ module.exports = function(grunt) {
         }
       }
     },
-    mocha: {
-      all: {
-        src: ['test/*.html'],
-        mocha: {
-          ignoreLeaks: false
-        },
-        options: {
-          run: true
-        }
-      }
-    },
     watch: {
       test: {
         files: ['src/*.js', 'src/*/*.js'],
@@ -62,6 +53,7 @@ module.exports = function(grunt) {
         dest: 'dist/ant.js',
         options: {
           exclude: ['jsdom'],
+          //transform: [exorcist(path.join(__dirname, 'ant.js.map'))],
           bundleOptions: {
             debug: true,
             standalone: 'Ant'
@@ -77,7 +69,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-mocha');
   grunt.loadNpmTasks('grunt-browserify');
 
   grunt.registerTask('site', '生成 HTML', function() {
@@ -85,14 +76,14 @@ module.exports = function(grunt) {
     require('./docs/build.js')(done)
   });
   
-  grunt.registerTask('test', '全面测试 phantomJs / nodeJs', function() {
+  grunt.registerTask('testling', '全面测试 phantomJs / nodeJs', function() {
     console.log('phantom.js test start');
-    grunt.task.run('mocha', 'testNode');
+    grunt.task.run('test', 'test:node');
   });
   
-  grunt.registerTask('testNode', 'test for nodeJs', function() {
+  grunt.registerTask('test', 'test for nodeJs', function() {
     var done = this.async();
-    var cp = exec('npm run-script mocha', function(err, stdout, stderr){
+    var cp = exec('npm test', function(err, stdout, stderr){
       done(err);
     });
     cp.stdout.pipe(process.stdout);

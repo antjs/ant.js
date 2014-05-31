@@ -23,7 +23,7 @@ dirs.html = {
     this.nodes = [];
   }
 , update: function(val) {
-    var el = document.createElement('div');
+    var el = doc.createElement('div');
     el.innerHTML = utils.isUndefined(val) ? '' : val;
     
     var node;
@@ -32,9 +32,9 @@ dirs.html = {
     }
     
     var nodes = el.childNodes;
-    for(var i = 0, l = nodes.length; i < l; i ++) {
-      this.nodes.push(nodes[i])
-      this.el.insertBefore(this.nodes[i], this.node);
+    while(node = nodes[0]) {
+      this.nodes.push(node);
+      this.el.insertBefore(node, this.node);
     }
   }
 };

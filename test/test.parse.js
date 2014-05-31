@@ -1,95 +1,114 @@
-if(typeof require === 'function' && typeof exports === 'object'){
-  expect = require('expect.js');
-  Ant = require('../');
-  console.log('node test start');
-}else{
-  typeof console === 'object' && console.log('browser test start');
-}
+var test = require('tape');
 
-var evalu = Ant._eval;
-var parse = Ant._parse;
+var parse = require('../src/parse.js').parse;
+var evaluate = require('../src/eval.js')
+  , evalu = evaluate.eval
+  , summary = evaluate.summary
+  ;
 
-describe('literal 直接量', function() {
-  it('Number: 1', function() {
-    expect(evalu(parse('1'))).to.be(1);
-  });
-  it('Number: 1.2', function() {
-    expect(evalu(parse('1.2'))).to.be(1.2);
-  });
-  it('String: "a"', function() {
-    expect(evalu(parse('"a"'))).to.be("a");
-  });
-  it("String: 'ab'", function() {
-    expect(evalu(parse("'ab'"))).to.be("ab");
-  });
-  it("String: 'a\"b'", function() {
-    expect(evalu(parse("'a\"b'"))).to.be("a\"b");
-  });
-  it("String: 'a\\'b'", function() {
-    expect(evalu(parse("'a\\\'b'"))).to.be("a\'b");
-  });
-  it('String: "a\\"b"', function() {
-    expect(evalu(parse('"a\\\"b"'))).to.be("a\"b");
-  });
-  it('Array: []', function() {
+test('literal 直接量', function(t) {
+  t.equal(evalu(parse('1')), 1, 'Number: 1');
+  
+  t.equal(evalu(parse('1.2')), 1.2, 'Number: 1.2');
+  
+  t.equal(evalu(parse('"a"')), "a", 'String: "a"');
+  
+  t.equal(evalu(parse("'ab'")), "ab", "String: 'ab'");
+  
+  t.equal(evalu(parse("'a\"b'")), "a\"b", "String: 'a\"b'");
+  
+  t.equal(evalu(parse("'a\\\'b'")), "a\'b", "String: 'a\\'b'");
+  
+  t.equal(evalu(parse('"a\\\"b"')), "a\"b", 'String: "a\\"b"');
+  
+  t.test('Array: []', function(t) {
     var a = evalu(parse("[]"));
-    expect(Array.isArray(a)).to.be.ok();
-    expect(a.length).to.be(0);
-  });
-  it('Array: [1, "2"]', function() {
-    var a = evalu(parse('[1, "2"]'));
-    expect(Array.isArray(a)).to.be.ok();
-    expect(a[0]).to.be(1);
-    expect(a[1]).to.be("2");
-    expect(a.length).to.be(2);
+    t.ok(Array.isArray(a));
+    t.equal(a.length, 0);
+    
+    t.end();
   });
   
-  describe('字符串中的符号', function() {
+  t.test('Array: [1, "2"]', function(t) {
+    var a = evalu(parse('[1, "2"]'));
+    
+    t.ok(Array.isArray(a));
+    t.equal(a[0], 1);
+    t.equal(a[1], "2");
+    t.equal(a.length, 2);
+    
+    t.end();
+  });
+  
+  t.test('字符串中的符号', function(t) {
     var symbols = ["+", "-", "*", "/", "true", "false", "%"]
     symbols.forEach(function(s) {
-      it('String: ' + s, function() {
-        expect(evalu(parse('"' + s + '"'))).to.be(s);
-      })
-    })
-  })
+      t.equal(evalu(parse('"' + s + '"')), s, 'String: ' + s);
+    });
+    
+    t.end();
+  });
+  
+  t.end();
 });
 
-describe('variable 变量', function() {
-  // it('parse: a + b', function() {
-    // var l = {};
-    // parse('a + b', function(key, type) {
-      // l[key] = type
-    // });
-    // expect(l.a).to.be.ok();
-    // expect(l.b).to.be.ok();
-  // });
-  // it('parse: a.abc', function() {
-    // var l = {};
-    // parse('a.abc', function(key, type) {
-      // l[key] = type
-    // });
-    // expect(l.a).to.be.ok();
-    // expect(l.abc).to.not.be.ok();
-  // });
-  // it('parse: a[abc]', function() {
-    // var l = {};
-    // parse('a[abc]', function(key, type) {
-      // l[key] = type
-    // });
-    // expect(l.a).to.be.ok();
-    // expect(l.abc).to.be.ok();
-  // });
-  // it('parse: a["abc"]', function() {
-    // var l = {};
-    // parse('a["abc"]', function(key, type) {
-      // l[key] = type
-    // });
-    // expect(l.a).to.be.ok();
-    // expect(l.abc).to.not.be.ok();
-  // });
+test('variable 变量', function(t) {
+  t.test('parse: a + b', function(t) {
+    var l = summary(parse('a + b')).locals;
+    
+    t.equal(l.length, 2);
+    t.equal(l[0], 'a');
+    t.equal(l[1], 'b');
+    
+    t.end();
+  });
+  
+  t.test('parse: a.abc', function(t) {
+    var s = summary(parse('a.abc'))
+      , l = s.locals
+      ;
+    
+      t.equal(l.length, 1);
+      t.equal(l[0], 'a');
+      
+      t.equal(s.paths.length, 1);
+      t.equal(s.paths[0], 'a.abc');
+      
+      t.end();
+  });
+  
+  t.test('parse: a[abc]', function(t) {
+    var s = summary(parse('a[abc]'))
+      , l = s.locals
+      ;
+    
+      t.equal(l.length, 2);
+      t.equal(l[0], 'a');
+      t.equal(l[1], 'abc');
+      
+      t.equal(s.paths.length, 2);
+      t.equal(s.paths[0], 'a');
+      t.equal(s.paths[1], 'abc');
+      
+      t.end();
+  });
+  
+  t.test('parse: a["abc"]', function(t) {
+    var s = summary(parse('a["abc"]'))
+      , l = s.locals
+      ;
+    
+      t.equal(l.length, 1);
+      t.equal(l[0], 'a');
+      
+      t.equal(s.paths.length, 1);
+      t.equal(s.paths[0], 'a.abc');
+      
+      t.end();
+  });
 });
 
-describe('expression 表达式', function() {
+test('expression 表达式', function(t) {
   var exps = [
     '1 + 1'
   , '-1 + 2'
@@ -126,33 +145,45 @@ describe('expression 表达式', function() {
   , '"0" !== 0'
   , '"0" != 2'
   ];
+  
   for(var i = 0, l = exps.length; i < l; i++){
     (function(i){
       var val = eval(exps[i]);
-      it(exps[i] + ' = ' + val, function() {
+      t.test(exps[i] + ' = ' + val, function(t) {
         if(isNaN(val)){
-          expect(isNaN(evalu(parse(exps[i])))).to.be.ok();
+          t.ok(isNaN(evalu(parse(exps[i]))));
         }else{
-          expect(evalu(parse(exps[i]))).to.be(val);
+          t.equal(evalu(parse(exps[i])), val);
         }
+        
+        t.end();
       });
     })(i)
   }
 });
 
-describe('locals', function() {
-  it('23 | filter:abc', function() {
-    var locals = {
+
+test('context summary', function(t) {
+  t.test('23 | filter:abc', function(t) {
+    var context = {
       locals: {a: 1, b: 1, c:1}
     , filters: {filter: 1, fi: 1}
     , paths: {'a.b': 1, 'b.c': 1, b: 1, 'a.bc': 1, 'c.0': 1}
     };
-    var tree = parse('a.b + b["c"] * b | filter:a.bc |fi:[1]:c[0]', function(val, type) {
-      expect(locals[type][val]).to.be.ok();
-      delete locals[type][val];
-    });
-    expect(Object.keys(locals.locals).length).to.be(0);
-    expect(Object.keys(locals.filters).length).to.be(0);
-    expect(Object.keys(locals.paths).length).to.be(0);
+    
+    var s = summary(parse('a.b + b["c"] * b | filter:a.bc |fi:[1]:c[0]'));
+    
+    for(var type in s) {
+      for(var i = 0, l = s[type].length; i < l; i++) {
+        t.equal(context[type][s[type][i]], 1);
+        delete context[type][s[type][i]];
+      }
+    }
+    
+    t.equal(Object.keys(context.locals).length, 0);
+    t.equal(Object.keys(context.filters).length, 0);
+    t.equal(Object.keys(context.paths).length, 0);
+    
+    t.end();
   })
 });

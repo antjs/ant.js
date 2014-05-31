@@ -299,7 +299,7 @@ extend(Ant.prototype, Event, {
     var vm = this._vm.$getVM(keyPath, {strict: true});
     if(vm){
       for(var i = vm.$watchers.length - 1; i >= 0; i--){
-        if(vm.$watchers[i].callback === callback){
+        if(vm.$watchers[i].token.update === callback){
           vm.$watchers.splice(i, 1);
         }
       }
@@ -386,7 +386,6 @@ function travelEl(el, vm, assignment) {
     return;
   }
   
-  //遇到 terminal 为 true 的 directive 属性不再遍历
   if(checkAttr(el, vm, assignment)){
     return;
   }
@@ -415,10 +414,10 @@ function checkAttr(el, vm, assignment) {
       break;
     }
     
+    el.removeAttribute(dir.nodeName);
+    
     setBinding(vm, dir);
    
-    el.removeAttribute(dir.node.nodeName);
-    
     if(dir.terminal) {
       terminal = true;
       terminalPriority = dir.priority;
@@ -556,6 +555,8 @@ var exParse = function(path) {
 };
 
 function Watcher(relativeVm, token) {
+  var ass = token.assignment;
+  
   this.token = token;
   this.relativeVm = relativeVm;
   this.ant = relativeVm.$root.$ant;
@@ -565,12 +566,12 @@ function Watcher(relativeVm, token) {
   exParse.call(this, token.path);
   
   for(var i = 0, l = this.paths.length; i < l; i++){
-    relativeVm.$getVM(this.paths[i], {assignment: token.assignment}).$watchers.push(this);
+    relativeVm.$getVM(this.paths[i], {assignment: ass}).$watchers.push(this);
   }
   
   var run;
   for(var i = 0, l = this.locals.length; i < l; i++) {
-    run = run || (this.locals[i] in token.assignment) && token.assignment[this.locals[i]] !== relativeVm;
+    run = run || ass && (this.locals[i] in ass) && ass[this.locals[i]] !== relativeVm;
   }
   
   this.state = Watcher.STATE_READY
@@ -631,6 +632,7 @@ extend(Watcher.prototype, {
       val = evaluate.eval(this._ast, {locals: vals, filters: ant.filters});
     }catch(e){
       val = '';
+      console.error(e);
     }
     return val;
   }
@@ -747,11 +749,6 @@ ViewModel.prototype = {
   }
 };
 
-Ant._parse = parse;
-Ant._eval = evaluate.eval;
-Ant._summary = evaluate.summary;
 Ant.version = '%VERSION';
 
 module.exports = Ant;
-
-window.Ant = Ant;

@@ -1,275 +1,62 @@
-if(typeof require === 'function' && typeof exports === 'object'){
-  expect = require('expect.js');
-  Ant = require('../');
-  console.log('node test start');
-}else{
-  typeof console === 'object' && console.log('browser test start');
-}
+var test = require('tape');
+var Ant = require('../');
+var $ = require('jquery')(typeof window === 'undefined' ? Ant.doc.createWindow() : window);
 
-var doc = Ant.doc;
-
-//hacks for IE6/7/8
-function _$(selector, context){
-  return typeof $ === 'function' ? $(selector, context).get() : context.querySelectorAll(selector);
-}
-
-function getText(el){
-  return typeof $ === 'function' ? $(el).text() : el.textContent;
-}
-
-describe('接口可用性', function() {
-  it('Ant 基本接口', function() {
-    var ant = new Ant('');
-    expect(Ant).to.be.a('function');
-    expect(Ant.extend).to.be.a('function');
-    expect(ant.on).to.be.a('function');
-    expect(ant.off).to.be.a('function');
-    expect(ant.trigger).to.be.a('function');
-    expect(ant.render).to.be.a('function');
-    //expect(ant.update).to.be.a('function');
-    expect(ant.set).to.be.a('function');
-    expect(ant.get).to.be.a('function');
-    expect(ant.clone).to.be.a('function');
-  });
+test('构造函数', function(t) {
+  t.equal(typeof Ant, 'function');
+  t.equal(typeof Ant.extend, 'function');
+  t.equal(typeof Ant.prototype.on, 'function');
+  t.equal(typeof Ant.prototype.off, 'function');
+  t.equal(typeof Ant.prototype.trigger, 'function');
+  t.equal(typeof Ant.prototype.render, 'function');
+  t.equal(typeof Ant.prototype.set, 'function');
+  t.equal(typeof Ant.prototype.get, 'function');
+  t.equal(typeof Ant.prototype.clone, 'function');
+  t.end();
 });
 
-describe('Ant.js 的继承', function(){
-  var Bproto = {
-    defaults: {
-      data: {text: 'abc', deep: { path: 'asdfasdf' }}
-    , events: {'render': function(){} }
-    , filters: {}
-    }
-  };
-  var Cproto = {
-    defaults: {
-      data: { greed: 'good' }
-    , filters: { big: function(str){ return str.big() } }
-    }
-  };
-  var btpl = '{{text|honey}}';
-  var ctpl = '{{{greed|big}}}'
-
-  var Bee = Ant.extend(Bproto);
-  var bee = new Bee(btpl, {
-    filters: { honey: function(str){ return str + 'so many'} }
-  , events: { 'update': function() {  } }
-  });
-  var Cicada = Bee.extend(Cproto);
-  var cicada = new Cicada(ctpl, {data:{ashin: 'ness'}});
-
-  it('Ant.extend prototype chain', function() {
-    expect(bee instanceof Ant).to.be.ok();
-    expect(cicada instanceof Ant).to.be.ok();
-    expect(cicada instanceof Bee).to.be.ok();
-  });
-
-  it('__super__', function() {
-    expect(Bee.__super__).to.be(Ant.prototype);
-    expect(Cicada.__super__).to.be(Bee.prototype);
-  });
-
-  it('default data', function() {
-    expect(bee.data.text).to.be(Bproto.defaults.data.text);
-    expect(bee.data.greed).to.be(undefined);
-    expect(cicada.data.text).to.be(undefined);
-    expect(Cicada.prototype.defaults.data.ashin).to.be(undefined);
-    expect(bee.data.deep.path).to.be(Bproto.defaults.data.deep.path);
-  });
-
-  it('default deeppath data', function() {
-    expect(bee.data.deep).to.not.be(Bproto.defaults.data.deep);
-    bee.set('deep.path', '123');
-    expect(Bproto.defaults.data.deep.path).to.not.be('123');
-  });
-
-  it('no opt.data, no auto render', function() {
-    expect(bee.el.innerHTML).to.not.be(btpl);
-    expect(cicada.el.innerHTML).to.not.be(ctpl);
-  });
-
-  it('default filters', function() {
-    expect(bee.filters.big).to.be(undefined);
-    expect(bee.filters.honey).to.be.a('function');
-    expect(Bproto.defaults.filters.honey).to.be(undefined);
-    //expect(cicada.filters.big).to.be(Cproto.defaults.filters.big); //bind
-    expect(cicada.el.innerHTML).to.be(Cproto.defaults.filters.big(cicada.data.greed));
-    expect(bee.el.innerHTML).to.be(bee.filters.honey(bee.data.text));
-  });
-});
-
-describe('实例接口', function(){
-  var tpl = '{{person}} - {{person.name}}';
-  var ant = new Ant(tpl);
-  //doc.body.appendChild(ant.el);
-  it('ant.el', function() {
-    expect(ant.el.nodeName).to.be('DIV');
-    //expect(ant.el.innerHTML).to.be(tpl);
-  });
-  
-  it('ant.clone', function() {
-    var ant1 = ant.clone();
-    expect(ant1.el.nodeName).to.be('DIV');
-    //expect(ant1.el.innerHTML).to.be(tpl);
-    expect(ant1.el).not.to.be(ant.el);
-  });
-  
-  describe('ant.set', function() {
-    var ant = new Ant(tpl)
-      , val0 = 'ant', path0 = 'person';
-    it('基本 ant.set(name, val)', function() {
-      ant.set(path0, val0);
-      expect(ant.get(path0)).to.be(val0);
-    });
-    
-    var val1 = 'ant', path1 = 'path.to';
-    it('深度 ant.set(path.name, val)', function() {
-      ant.set(path1, val1);
-      expect(ant.get(path1)).to.be(val1);
-    });
-    
-    var path2 = 'path1.to', val2 = {};
-    it('set 一个对象 ant.set(path, obj)', function() {
-      ant.set(path2, val2);
-      expect(JSON.stringify(ant.get(path2))).to.be(JSON.stringify(val2));
-    });
-    
-    var path3 = 'person.name', val3 = 'Ant';
-    it('将基本类型数据当做父节点', function() {
-      ant.set(path3, val3);
-      expect(ant.get('person') + '').to.be(val0);
-      expect(ant.get(path3)).to.be(val3);
-    });
-    
-    var o0 = {age: 25}, o1 = {to1: 'Bee'}, o2 = {to: 'Cyn'}
-      , o = {person: o0, path: o1, path1: o2}
-    it('扩展 ant.set(obj)', function() {
-      var o3 = ant.data.person
-        , o4 = ant.data.path
-        , o5 = ant.data.path1
-        ;
-      ant.set(o);
-      expect(ant.data.person).to.be(o3);
-      expect(ant.data.path).to.be(o4);
-      expect(ant.data.path1).to.be(o5);
-      expect(ant.data.path.to1).to.be('Bee');
-      expect(ant.data.path.to).to.be(val1);
-      expect(ant.data.path1.to).to.be('Cyn');
-      expect(ant.data.person.age).to.be(25);
-      expect(ant.data.person.name).to.be(val3);
-      expect(ant.data.person + '').to.be(val0);
-    });
-    
-    it('替换 ant.set(obj, {isExtend: false})', function() {
-      ant.set({only: 1}, {isExtend: false});
-      expect(ant.data.person).to.be();
-      expect(ant.data.path).to.be();
-      expect(ant.data.only).to.be(1);
-    });
-    
-    0 && it('ant.set, opt.silence', function(done) {
-      var handler = function(data) {
-        if(data.silence){
-          throw new Error('不应触发 update 事件');
-        }else{
-          done();
-        }
-      };
-      ant.on('update', handler);
-      ant.set('silence', true, {silence: true});
-      expect(ant.data.silence).to.be(true);
-      ant.set('silence', false);
-      expect(ant.data.silence).to.be(false);
-      ant.off('update', handler);
-    });
-    
-    it('ant.isRendered. 调用 ant.render 前', function() {
-      expect(ant.isRendered).to.be(false);
-    });
-    it('ant.data 是绑定数据的一个拷贝', function() {
-      var arr = [1, 2]
-        , data = {abc: 234, arr1: arr, arr2: arr}
-        ;
-      ant.render(data);
-      expect(ant.data).not.to.be(data);
-      expect(JSON.stringify(ant.data)).to.be(JSON.stringify(data));
-      expect(ant.data.arr1).not.to.be(arr);
-      expect(ant.data.arr2).not.to.be(arr);
-      expect(ant.data.arr1).not.to.be(ant.data.arr2);
-    });
-    it('ant.isRendered. 调用 ant.render 后', function() {
-      expect(ant.isRendered).to.be(true);
-    });
-    
-  });
-  
-  describe('filters', function() {
-    var tpl = '{{path | twice}}'
-      , twice = function(val) {
-          return val * 2;
-        }
-      , ant
-      ;
-    
-    it('new Ant("tpl", { filters: {} })', function() {
-      ant = new Ant(tpl, {filters: {
-        twice: twice
-      }, data: {path: 5}});
-      expect(ant.el.innerHTML).to.be('10');
-    });
-    
-    it('ant.setFilter', function() {
-      ant = new Ant(tpl);
-      ant.setFilter('twice', twice);
-      ant.render({path: 5});
-      expect(ant.el.innerHTML).to.be('10');
-    });
-    
-    // it('ant.getFilter', function() {
-      // expect(ant.getFilter('twice')).to.be(twice);
-    // });
-    it('ant.removeFilter', function() {
-      ant.removeFilter('twice');
-      expect(ant.filters['twice']).to.be(undefined);
-    });
-  });
-});
-
-describe('模板语法', function() {
-  describe('a-if', function() {
+test('模板语法', function(t) {
+  t.test('a-if', function(t) {
     var tpl = '<span a-if=true>{{val}}</span>'
       ;
     var Bee = Ant.extend({defaults: { data: {key: true, val: 1234} }});
 
-    it('单个变量', function() {
+    t.test('单个变量', function(t) {
       var tpl = '<span a-if=key>{{val}}</span>';
       var b = new Bee(tpl);
-      expect(b.el.innerHTML).to.be.ok();
+      t.ok(b.el.innerHTML);
       b.set('key', false);
-      expect(b.el.innerHTML).to.not.be.ok();
+      t.notOk(b.el.innerHTML);
 
       b.set('key', 123);
-      expect(b.el.innerHTML).to.be.ok();
+      t.ok(b.el.innerHTML);
+
+      t.end();
     });
-    it('直接量', function() {
+    t.test('直接量', function(t) {
       var b = new Bee(tpl);
-      expect(b.el.innerHTML).to.be.ok();
+      t.ok(b.el.innerHTML);
+      
+      t.end();
     });
-    it('表达式', function() {
+    t.test('表达式', function(t) {
       var tpl = '<span a-if="key && key2 || key3">{{val}}</span>';
       var b = new Bee(tpl);
-      expect(b.el.innerHTML).to.not.be.ok();
+      t.notOk(b.el.innerHTML);
       b.set('key2', true);
-      expect(b.el.innerHTML).to.be.ok();
+      t.ok(b.el.innerHTML);
 
       b.set('key2', 0);
-      expect(b.el.innerHTML).to.not.be.ok();
+      t.notOk(b.el.innerHTML);
       b.set('key3', 1);
-      expect(b.el.innerHTML).to.be.ok();
+      t.ok(b.el.innerHTML);
+      
+      t.end();
     });
   });
-  
-  describe('a-repeat 属性', function() {
+
+
+  t.test('a-repeat 属性', function(t) {
     var tpl = '<li a-repeat="item in list">{{item}}</li>'
       , data = {list: ['ant', 'bee']}
       , ant = new Ant(tpl, {data: data});
@@ -282,122 +69,145 @@ describe('模板语法', function() {
         , postfix = postfix || ''
         , key = opts.key
         ;
-      expect(els.length).to.be(arr.length);
+      t.equal(els.length, arr.length);
       for(var i = 0, l = arr.length; i < l; i++){
-        expect(els[i].innerHTML).to.be(prefix + (key ? arr[i][key] : arr[i]) + postfix);
+        t.equal(els[i].innerHTML, prefix + (key ? arr[i][key] : arr[i]) + postfix);
       }
     }
     
-    it('基本列表', function() {
+    t.test('基本列表', function(t) {
       check(ant.el.getElementsByTagName('li'), data.list);
+      t.end();
     });
-    
-    describe('数组方法', function() {
-      it('.push', function() {
+
+
+    t.test('数组方法', function(t) {
+      t.test('.push', function(t) {
         var el = ant.el.getElementsByTagName('li')[0];
         
         ant.data.list.push('cicada');
         check(ant.el.getElementsByTagName('li'), ant.data.list);
         
         //push 操作应该不影响原有的列表元素
-        expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+        t.equal(el, ant.el.getElementsByTagName('li')[0]);
+
+        t.end();
       });
       
-      it('.pop', function() {
+      t.test('.pop', function(t) {
         var el = ant.el.getElementsByTagName('li')[0];
         
         ant.data.list.pop();
         check(ant.el.getElementsByTagName('li'), ant.data.list);
         
-        expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+        t.equal(el, ant.el.getElementsByTagName('li')[0]);
+
+        t.end();
       });
       
-      it('.unshift', function() {
+      t.test('.unshift', function(t) {
         var el = ant.el.getElementsByTagName('li')[0];
         
         ant.data.list.unshift('000');
         check(ant.el.getElementsByTagName('li'), ant.data.list);
         
-        expect(el).to.be(ant.el.getElementsByTagName('li')[1]);
+        t.equal(el, ant.el.getElementsByTagName('li')[1]);
+
+        t.end();
       });
       
-      it('.shift', function() {
+      t.test('.shift', function(t) {
         var el = ant.el.getElementsByTagName('li')[1];
         
         ant.data.list.shift();
         check(ant.el.getElementsByTagName('li'), ant.data.list);
         
-        expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+        t.equal(el, ant.el.getElementsByTagName('li')[0]);
+
+        t.end();
       });
       
-      it('.reverse', function() {
+      t.test('.reverse', function(t) {
         var el = ant.el.getElementsByTagName('li')[0];
         
         ant.data.list.reverse();
         check(ant.el.getElementsByTagName('li'), ant.data.list);
         
-        expect(el).to.be(ant.el.getElementsByTagName('li')[ant.data.list.length - 1]);
+        t.equal(el, ant.el.getElementsByTagName('li')[ant.data.list.length - 1]);
+
+        t.end();
       });
       
-      it('.sort', function() {
+      t.test('.sort', function(t) {
         var el = ant.el.getElementsByTagName('li')[0];
         
         ant.data.list.sort();
         check(ant.el.getElementsByTagName('li'), ant.data.list);
         
+        t.end();
       });
       
-      describe('.splice', function() {
-        it('splice()', function() {
+      t.test('.splice', function(t) {
+        t.test('splice()', function(t) {
           var el = ant.el.getElementsByTagName('li')[0];
           
           ant.data.list.splice();
           check(ant.el.getElementsByTagName('li'), ant.data.list);
           
-          expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+          t.equal(el, ant.el.getElementsByTagName('li')[0]);
+
+          t.end();
         });
         
-        it('splice(2, 0, "cicada")', function() {
+        t.test('splice(2, 0, "cicada")', function(t) {
           var el = ant.el.getElementsByTagName('li')[0];
           
           ant.data.list.splice(2, 0, 'cicada');
           check(ant.el.getElementsByTagName('li'), ant.data.list);
           
-          expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+          t.equal(el, ant.el.getElementsByTagName('li')[0]);
+
+          t.end();
         });
         
-        it('splice(2, 1)', function() {
+        t.test('splice(2, 1)', function(t) {
           var el = ant.el.getElementsByTagName('li')[0];
           
           ant.data.list.splice(2, 1);
           check(ant.el.getElementsByTagName('li'), ant.data.list);
           
-          expect(el).to.be(ant.el.getElementsByTagName('li')[0]);
+          t.equal(el, ant.el.getElementsByTagName('li')[0]);
+
+          t.end();
         });
         
-        it('splice(0, 0, "000")', function() {
+        t.test('splice(0, 0, "000")', function(t) {
           var el = ant.el.getElementsByTagName('li')[0];
           
           ant.data.list.splice(0, 0, "000");
           check(ant.el.getElementsByTagName('li'), ant.data.list);
           
-          expect(el).to.be(ant.el.getElementsByTagName('li')[1]);
+          t.equal(el, ant.el.getElementsByTagName('li')[1]);
+
+          t.end();
         });
         
-        it('splice(0, 1, "111")', function() {
+        t.test('splice(0, 1, "111")', function(t) {
           var el = ant.el.getElementsByTagName('li')[1];
           
           ant.data.list.splice(0, 1, "111");
           check(ant.el.getElementsByTagName('li'), ant.data.list);
           
-          expect(el).to.be(ant.el.getElementsByTagName('li')[1]);
+          t.equal(el, ant.el.getElementsByTagName('li')[1]);
+
+          t.end();
         });
         
       });
       
     });
     
-    describe('一个数组对应多个 DOM 列表', function() {
+    t.test('一个数组对应多个 DOM 列表', function(t) {
       var tpl = '<ul class="list0"><li a-repeat="item in list">{{item}}</li></ul><ul class="list1"><li a-repeat="item in list">{{item}}</li></ul>'
         , ant = new Ant(tpl, {data: data})
         ;
@@ -407,35 +217,43 @@ describe('模板语法', function() {
         check(ant.el.getElementsByTagName('ul')[1].getElementsByTagName('li'), ant.data.list, {key: key});
       }
        
-      it('基本渲染情况', function(){
+      t.test('基本渲染情况', function(t){
         listCheck();
+
+        t.end();
       });
       
-      it('修改数组: .push', function() {
+      t.test('修改数组: .push', function(t) {
         ant.data.list.push('cicada');
         listCheck();
+
+        t.end();
       });
       
-      it('修改数组: .reverse', function() {
+      t.test('修改数组: .reverse', function(t) {
         ant.data.list.reverse();
         listCheck();
+
+        t.end();
       });
       
-      //Phantomjs failed. pass it
-      if(typeof navigator === 'undefined' || !/PhantomJS/.test(navigator.userAgent)){
-        it('修改数组: .set', function() {
-          ant.set('list[0]', 'ANT');
-          listCheck();
-        });
-      }
+      t.test('修改数组: .set', function(t) {
+        ant.set('list[0]', 'ANT');
+        listCheck();
+
+        t.end();
+      });
       
-      it('替换数组', function(){
+      t.test('替换数组', function(t){
         ant.set('list', data.list);
-      })
+        listCheck();
+
+        t.end();
+      });
     });
     
     
-    describe('同时拥有 repeat 和 if 属性', function() {
+    t.test('同时拥有 repeat 和 if 属性', function(t) {
       var data = {
         list: [
           {
@@ -459,30 +277,41 @@ describe('模板语法', function() {
         check(ant.el.getElementsByTagName('ul')[0].getElementsByTagName('li'), vlist, {key: 'name'});
       }
       
-      it('基本渲染情况', function() {
+      t.test('基本渲染情况', function(t) {
         listCheck();
+
+        t.end();
       });
       
-      it('修改数组: .push', function() {
+      t.test('修改数组: .push', function(t) {
         ant.data.list.push({name: 'cicada', state: true});
         listCheck();
+
+        t.end();
       });
-      it('修改数组: .set', function() {
+      t.test('修改数组: .set', function(t) {
         ant.set('list[0].name', 'Ant');
         listCheck();
+
+        t.end();
       });
       
-      it('修改状态: true -> false', function() {
+      t.test('修改状态: true -> false', function(t) {
         ant.set('list[0].state', false);
         listCheck();
+
+        t.end();
       });
       
-      it('修改状态: false -> true', function() {
+      t.test('修改状态: false -> true', function(t) {
         ant.set('list[0].state', true);
         listCheck();
+
+        t.end();
       });
       
-      it('替换数组并更改状态', function(){
+      //TODO
+      /* t.test('替换数组并更改状态', function(t){
         var list = data.list.slice();
         list[0].state = false;
         list[1].state = true;
@@ -491,20 +320,24 @@ describe('模板语法', function() {
         listCheck();
         ant.set('list[1].name', 'Bee');
         listCheck();
-      })
+
+        t.end();
+      }) */
       
     });
 
-    it('深度变量', function() {
+    t.test('深度变量', function(t) {
       var tpl = '<li a-repeat="item in path.list">{{item}}</li>'
         , data = {path: {list: ['ant', 'bee']}}
         , ant = new Ant(tpl, {data: data})
         ;
 
         check(ant.el.getElementsByTagName('li'), data.path.list);
+
+        t.end();
     });
     
-    describe('多层数组', function() {
+    t.test('多层数组', function(t) {
       var tpl = '\
           <li a-repeat="p in province"><span>{{p.name}}</span>\
             <ul>\
@@ -517,18 +350,21 @@ describe('模板语法', function() {
         ;
         
       //TODO
+      t.end()
     })
   });
 
-  it('非转义模板 {{{token}}}', function() {
+  t.test('非转义模板 {{{token}}}', function(t) {
     var tpl = 'This is a unescape code: <span>{{{unescape}}}</span> !!'
       , html = '...<span>1</span><code>222</code>..'
       ;
     var ant = new Ant(tpl, {data: {unescape: html}});
-    expect(ant.el.innerHTML.toLowerCase()).to.be(tpl.replace(/{{{unescape}}}/, html).toLowerCase());
+    t.equal(ant.el.innerHTML.toLowerCase(), tpl.replace(/{{{unescape}}}/, html).toLowerCase());
+    
+    t.end();
   });
   
-  describe('子模板', function() {
+  t.test('子模板', function(t) {
     var prefix = '下面有个子节点: ', postfix = ' !'
       , getTpl = function(unescape){
           var partial = unescape ? '{{{>content}}}' : '{{> content}}';
@@ -537,7 +373,8 @@ describe('模板语法', function() {
       , content = '-- <span>这里是子节点, 里面可以包含变量标签: </span>{{title}}<span>。。。</span> --'
       , ant
       ;
-    it('字符串子模板, {{>partial}}', function() {
+      
+    t.test('字符串子模板, {{>partial}}', function(t) {
       ant = new Ant(getTpl(), {
         data: {
           title: '标题'
@@ -546,10 +383,11 @@ describe('模板语法', function() {
           content: content
         }
       });
-      expect(getText(_$('p', ant.el)[0])).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
+      t.equal($('p', ant.el).text(), prefix + content.replace('{{title}}', ant.data.title) + postfix);
+      t.end();
     });
     
-    it('字符串非转义子模板, {{{>partial}}}', function() {
+    t.test('字符串非转义子模板, {{{>partial}}}', function(t) {
       
       ant = new Ant(getTpl(true), {
         data: {
@@ -559,11 +397,13 @@ describe('模板语法', function() {
           content: content
         }
       });
-      expect(_$('p', ant.el)[0].innerHTML.toLowerCase()).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
+      t.equal($('p', ant.el).html().toLowerCase(), prefix + content.replace('{{title}}', ant.data.title) + postfix);
+      
+      t.end();
     });
     
-    it('DOM 子模板', function() {
-      var content = doc.createElement('div');
+    t.test('DOM 子模板', function(t) {
+      var content = Ant.doc.createElement('div');
       var html = content.innerHTML = '<span>{{title}}</span><pre>这里是子节点</pre>';
       ant = new Ant(getTpl(), {
         data: {
@@ -573,11 +413,13 @@ describe('模板语法', function() {
           content: content
         }
       });
-      expect(_$('p>div', ant.el)[0]).to.be(content);
-      expect(content.innerHTML.toLowerCase()).to.be(html.replace('{{title}}', ant.data.title))
+      t.equal($('p>div', ant.el)[0], content);
+      t.equal(content.innerHTML.toLowerCase(), html.replace('{{title}}', ant.data.title));
+      
+      t.end();
     });
-    
-    0 && it('Ant 子模板', function() {
+
+   /*  t.test('Ant 子模板', function(t) {
       var Child = Ant.extend({
         getTitle: function() {
           return this.data.title;
@@ -595,14 +437,14 @@ describe('模板语法', function() {
         }
       });
       
-      //$('body').append(ant.el);
+      t.equal($('p>div', ant.el)[0], child.el);
+      t.equal(child.el.innerHTML.toLowerCase(), tpl.replace('{{title}}', ant.data.title));
       
-      expect(_$('p>div', ant.el)[0]).to.be(child.el);
-      expect(child.el.innerHTML.toLowerCase()).to.be(tpl.replace('{{title}}', ant.data.title));
-    });
+      t.end();
+    }); */
     
-    it('子模板根元素带有 repeat 属性', function() {
-      var content = '<span>{{title}}</span><span class=repeat a-repeat="{{item in list}}">{{item}}</span>'
+    t.test('子模板根元素带有 repeat 属性', function(t) {
+      var content = '<span>{{title}}</span><span class=repeat a-repeat="item in list">{{item}}</span>'
         , ant = new Ant(getTpl(true), {
             data: {
               title: 'Ant'
@@ -613,25 +455,29 @@ describe('模板语法', function() {
             }
           })
         ;
-      var partial = _$('p', ant.el)[0]
-        , repeats = _$('.repeat', partial)
+      var partial = $('p', ant.el)[0]
+        , repeats = $('.repeat', partial)
         , span
         ;
-      expect(repeats.length).to.be(ant.data.list.length);
+      t.equal(repeats.length, ant.data.list.length);
       for(var i = 0, l = repeats.length; i < l; i++){
         span = repeats[i];
-        expect(span.innerHTML).to.be(ant.data.list[i]);
+        t.equal(span.innerHTML, ant.data.list[i]);
       };
-    })
+      
+      t.end();
+    });
     
-    it('异常情况: 有子模板标记, 没有子模板数据', function() {
+    t.test('异常情况: 有子模板标记, 没有子模板数据', function(t) {
       var ant = new Ant(getTpl(), {
         data: {}
       });
-      expect(getText(_$('p', ant.el)[0])).to.be(prefix + postfix);
+      t.equal($('p', ant.el).text(), prefix + postfix);
+      
+      t.end();
     });
     
-    it('延时添加子模板. ant.addPartial', function() {
+    t.test('延时添加子模板. ant.addPartial', function(t) {
       var ant = new Ant(getTpl(), {
         data: {title: 'Ant'}
       });
@@ -639,14 +485,16 @@ describe('模板语法', function() {
         name: 'content'
       , content: content
       });
-      expect(getText(_$('p', ant.el)[0])).to.be(prefix + content.replace('{{title}}', ant.data.title) + postfix);
+      t.equal($('p', ant.el).text(), prefix + content.replace('{{title}}', ant.data.title) + postfix);
+      
+      t.end();
     })
   });
 
-  describe('属性模板', function(){  
-    describe('普通属性及 "a-" 前缀属性', function() {
+  t.test('属性模板', function(t){  
+    t.test('普通属性及 "a-" 前缀属性', function(t) {
       var tpl = '<span data-test="{{test}}" a-style="width:{{width}}px" a-class="{{className}}"></span>'
-      it('带有 "a-" 前缀的非 ant 功能属性在渲染后, 将会被转成正常属性', function() {
+      t.test('带有 "a-" 前缀的非 ant 功能属性在渲染后, 将会被转成正常属性', function() {
         var ant = new Ant(tpl, {
               data: {
                 test: '测试'
@@ -657,18 +505,21 @@ describe('模板语法', function() {
           , el = (ant.el).children[0]
           ;
         
-        expect(el.getAttribute('a-style')).to.not.be.ok();
-        expect(el.getAttribute('style')).to.be.ok();
-        expect(el.getAttribute('a-class')).to.not.be.ok();
-        expect(el.className).to.be.ok();
-        expect(el.getAttribute('data-test')).to.be(ant.data.test);
-        expect(el.style.width).to.be(ant.data.width + 'px');
-        expect(el.className).to.be(ant.data.className);
+        t.notOk(el.getAttribute('a-style'));
+        t.ok(el.getAttribute('style'));
+        t.notOk(el.getAttribute('a-class'));
+        t.ok(el.className);
+        t.equal(el.getAttribute('data-test'), ant.data.test);
+        t.equal(el.style.width, ant.data.width + 'px');
+        t.equal(el.className, ant.data.className);
+      
+        t.end();
       })
     });
 
-    describe('属性名', function(){
-      it('独占属性 <span {{attr}}>{{text}}</span>', function(){
+    //v 0.3 不再支持
+    /* t.test('属性名', function(t){
+      t.test('独占属性 <span {{attr}}>{{text}}</span>', function(t){
         var tpl = '<span {{attr}}>{{text}}</span>'
         var data = {attr: 'attr', text: 'test'};
         var ant = new Ant(tpl, {
@@ -676,17 +527,21 @@ describe('模板语法', function() {
         });
         var el = (ant.el).children[0];
 
-        expect(el.getAttribute(ant.data.attr)).to.not.be(null);
-        expect(el.getAttribute('{{attr}}')).to.be(null);
-        expect(el.innerHTML).to.be(ant.data.text);
+        t.notEqual(el.getAttribute(ant.data.attr), null);
+        t.equal(el.getAttribute('{{attr}}'), null);
+        t.equal(el.innerHTML, ant.data.text);
 
         ant.set('attr', 'otherattr');
 
-        expect(el.getAttribute(ant.data.attr)).to.not.be(null);
-        expect(el.getAttribute('{{attr}}')).to.be(null);
-        expect(el.innerHTML).to.be(ant.data.text);
+        t.notEqual(el.getAttribute(ant.data.attr), null);
+        t.equal(el.getAttribute('{{attr}}'), null);
+        t.equal(el.innerHTML, ant.data.text);
+      
+        t.end();
       });
 
+    return;
+    
       it('混合属性名 <span data-{{attr}}-attr>{{text}}</span>', function(){
         var tpl = '<span data-{{attr}}-attr>{{text}}</span>'
         var data = {attr: 'attr', text: 'test'};
@@ -746,12 +601,12 @@ describe('模板语法', function() {
         expect(el.getAttribute('data-' + data2.attr)).to.be(data2.val);
 
       });
-    })
-  })
+    }) */
+  });
 
 });
 
-describe('ant.watch / ant.unwatch', function() {
+test('ant.watch / ant.unwatch', function(t) {
   var ant = new Ant('', {data: {}})
     , val1, val2
     ;
@@ -762,34 +617,43 @@ describe('ant.watch / ant.unwatch', function() {
   };
    
   ant.watch('key', watcher);
-  it('base watch', function(){
+  t.test('base watch', function(t){
     ant.set('key', 'abc');
-    expect(val1).to.be('abc');
+    t.equal(val1, 'abc');
+    
+    t.end();
   });
-  it('deep watch', function() {
+  
+  t.test('deep watch', function(t) {
     ant.watch('path.val', function(newVal, oldVal) {
       val1 = newVal;
       val2 = oldVal;
     });
     ant.set('path.val', '123');
-    expect(val1).to.be('123');
+    t.equal(val1, '123');
+    
+    t.end();
   });
-  it('bubbling', function() {
+  
+  t.test('bubbling', function(t) {
     ant.watch('path', function(newVal, oldVal) {
       val1 = newVal;
       val2 = oldVal;
     });
     
     ant.set('path.val2', 'Zz');
-    expect(val1.val2).to.be('Zz');
+    t.equal(val1.val2, 'Zz');
+    
+    t.end();
   });
   
-  it('unwatch', function() {
+  t.test('unwatch', function(t) {
     ant.set('key', 'ant');
-    expect(val1).to.be('ant');
+    t.equal(val1, 'ant');
     ant.unwatch('key', watcher);
-    ant.set('key', 'Zz');
-    expect(val1).to.be('ant');
+    ant.set('key', 'unwatch');
+    t.equal(val1, 'ant', 'unwatch 之后');
+    
+    t.end();
   });
 });
-
