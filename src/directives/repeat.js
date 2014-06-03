@@ -10,10 +10,23 @@ module.exports = {
 , anchor: true
 , terminal: true
 , link: function(vm) {
+    var parent = this.anchors.end.parentNode
+      , nodes = this.getNodes()
+      ;
+      
     this.els = [];
     this.relativeVm = vm;
     
-    this.el.parentNode.removeChild(this.el);
+    if(this.el.content) {
+      this.frag = this.el.content;
+      this.el.parentNode.removeChild(this.el);
+    }else{
+      this.frag = doc.createDocumentFragment();
+      
+      for(var i = 0, l = nodes.length; i < l; i++) {
+        this.frag.appendChild(nodes[i]);
+      }
+    }
     
     //TODO: cache vm
   }
@@ -46,7 +59,7 @@ module.exports = {
       , newEls = []
       , frag = doc.createDocumentFragment()
       , pn = this.anchors.start.parentNode
-      , el, vm
+      , vm
       ;
     
     if(utils.isUndefined(n)){
@@ -57,7 +70,12 @@ module.exports = {
       if(i < index + n){
         //删除
         //对于拥有 if 属性并且不显示的节点, 其并不存在于 DOM 树中
-        try{ pn.removeChild(els[i]); }catch(e){}
+        try{ 
+          setList(els[i], function() {
+            pn.removeChild(this)
+          });
+          //pn.removeChild(els[i]); 
+        }catch(e){}
         fixVm && delete this.vm[i];
       }else{
         if(n || m){
@@ -71,10 +89,13 @@ module.exports = {
             oldI = newI + (n - m);
           }
           
-          els[oldI]['$index'] = newI;
+          //els[oldI]['$index'] = newI;
+          setList(els[oldI], function() {this['$index'] = newI});
+          
           if(fixVm){
             vm = this.vm[newI] = this.vm[oldI];
             vm.$key = newI + '';
+            vm['$index'] && vm['$index'].$update(vm.$key);
             vm['$index'] && vm['$index'].$update(vm.$key);
           }
         }else{
@@ -84,9 +105,9 @@ module.exports = {
     }
     
     //新增
-    var assignment;
+    var assignment, el, nodes;
     for(var j = 0; j < m; j++){
-      el = this.el.cloneNode(true);
+      el = this.frag.cloneNode(true);
       fixVm && delete this.vm[index + j];
       vm = this.vm.$getVM(index + j, {scope: this.vm, assignment: this.assignment});
       
@@ -95,16 +116,21 @@ module.exports = {
         assignment[this.assignments[a]] = vm;
       }
       
-      el['$index'] = index + j;
-      frag.appendChild(el);
       vm.$build(el, assignment);
+      
+      nodes = [].slice.call(el.childNodes);
+      
+      frag.appendChild(el);
       
       fixVm && vm['$index'] && vm['$index'].$update(vm.$key);
       
-      newEls.push(el);
+      //el['$index'] = index + j;
+      setList(nodes, function() {this['$index'] = index + j});
+      
+      newEls.push(nodes);
     }
     if(newEls.length){
-      pn.insertBefore(frag, els[index + n] || this.anchors.end);
+      pn.insertBefore(frag, els[index + n] && els[index + n][0] || this.anchors.end);
     }
     
     //需要清除缩短后多出的部分
@@ -137,9 +163,13 @@ module.exports = {
       
       fixVm && vm['$index'] && vm['$index'].$update(vm.$key);
       
-      this.els[i]['$index'] = l - i - 1;
+      setList(this.els[i], function() {this['$index'] = l - i - 1});
+      //this.els[i]['$index'] = l - i - 1;
       
-      frag.appendChild(this.els[l - i - 1]);
+      setList(this.els[l - i - 1], function() {
+        frag.appendChild(this)
+      });
+      //frag.appendChild(this.els[l - i - 1]);
     }
     anchor.parentNode.insertBefore(frag, anchor);
     this.els.reverse();
@@ -150,7 +180,7 @@ module.exports = {
   }
 };
 
-//---
+
 function callRepeater(vmArray, method, args){
   var watchers = vmArray.__vm__.$watchers;
   var fixVm = true;
@@ -191,4 +221,12 @@ var arrayMethods = {
     callRepeater(this, 'reverse');
   })
 };
+
+//nodelist 批量处理
+function setList(nodeList, fn) {
+  fn = fn || utils.noop;
+  for(var i = 0, l = nodeList.length; i < l; i++) {
+    fn.call(nodeList[i]);
+  }
+}
   

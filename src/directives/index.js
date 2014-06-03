@@ -9,7 +9,7 @@ var dirs = {};
 
 dirs.text = {
   terminal: true
-, replace: function() { return doc.createTextNode('') }
+, replace: true
 , update: function(val) {
     this.node.nodeValue = utils.isUndefined(val) ? '' : val;
   }
@@ -43,17 +43,36 @@ dirs.html = {
 dirs['if'] = {
   anchor: true
 , link: function() {
-    var parent = this.el.parentNode;
-    parent.removeChild(this.el);
+    if(this.el.content) {
+      this.frag = this.el.content;
+      this.el.parentNode.removeChild(this.el);
+    }else{
+      this.frag = doc.createDocumentFragment()
+      this.hide();
+    }
   }
 , update: function(val) {
-    var parent = this.anchors.end.parentNode;
     if(val) {
-      if(!this.state) { parent.insertBefore(this.el, this.anchors.end); }
+      if(!this.state) { this.show() }
     }else{
-      if(this.state) { parent.removeChild(this.el); }
+      if(this.state) { this.hide(); }
     }
     this.state = val;
+  }
+  
+, show: function() {
+    var anchor = this.anchors.end;
+    
+    anchor.parentNode.insertBefore(this.frag, anchor);
+  }
+, hide: function() {
+    var parent = this.anchors.end.parentNode
+      , nodes = this.getNodes()
+      ;
+    
+    for(var i = 0, l = nodes.length; i < l; i++) {
+      this.frag.appendChild(nodes[i]);
+    }
   }
 };
 
@@ -83,8 +102,20 @@ dirs.partial = {
 
 dirs.template = {
   priority: 10000
+, anchor: true
 , link: function() {
+    var nodes = this.el.childNodes
+      , parent = this.anchors.end.parentNode
+      , frag = doc.createDocumentFragment()
+      ;
+      
+    while(nodes[0]) {
+      frag.appendChild(nodes[0]);
+    }
     
+    this.el.content = frag;
+    
+    //parent.removeChild(this.el);
   }
 };
   

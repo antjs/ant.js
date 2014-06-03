@@ -42,10 +42,10 @@ module.exports = function(grunt) {
         files: ['src/*.js', 'src/*/*.js'],
         tasks: ['browserify', 'test']
       }
-    , build: {
-        files: ['src/*.js', 'src/*/*.js'],
-        tasks: ['browserify']
-      }
+    // , build: {
+        // files: ['src/*.js', 'src/*/*.js'],
+        // tasks: ['browserify']
+      // }
     },
     browserify: {
       ant: {
@@ -95,6 +95,6 @@ module.exports = function(grunt) {
   
   
   // Default task(s).
-  grunt.registerTask('default', ['browserify', 'test', 'concat', 'uglify', 'site']);
+  grunt.registerTask('default', ['browserify', 'test', /* 'concat',  */'uglify', 'site']);
 
 };

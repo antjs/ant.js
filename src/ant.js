@@ -363,13 +363,18 @@ var NODETYPE = {
   ATTR: 2
 , TEXT: 3
 , COMMENT: 8
+, FRAGMENT: 11
 };
 
 //遍历元素及其子元素的所有属性节点及文本节点
 function travelEl(el, vm, assignment) {
   assignment = create(assignment || {});
   
-  if(el.length && isUndefined(el.nodeType)){
+  if(el.nodeType === NODETYPE.FRAGMENT) {
+    el = el.childNodes;
+  }
+  
+  if(('length' in el) && isUndefined(el.nodeType)){
     //node list
     for(var i = 0, l = el.length; i < l; i++) {
       travelEl(el[i], vm, assignment);
@@ -390,6 +395,12 @@ function travelEl(el, vm, assignment) {
     return;
   }
   
+  //template
+  if(el.content) {
+    travelEl(el.content, vm, assignment);
+    return;
+  }
+  
   for(var child = el.firstChild, next; child; ){
     next = child.nextSibling;
     travelEl(child, vm, assignment);
@@ -400,7 +411,7 @@ function travelEl(el, vm, assignment) {
 //遍历属性
 function checkAttr(el, vm, assignment) {
   var prefix = Ant.prefix
-    , dirs = getDir(el, Ant.directives, prefix)
+    , dirs = Ant.directive.getDir(el, Ant.directives, prefix)
     , dir
     , terminalPriority, terminal
     ;
@@ -464,53 +475,6 @@ function checkText(node, vm, assignment) {
       }));
     }
   }
-}
-
-//获取一个元素上所有用 HTML 属性定义的指令
-function getDir(el, directives, prefix) {
-  prefix = prefix || '';
-  directives = directives || {};
-  
-  var attr, attrName, dirName
-    , dirs = [], dir, anchors = {}
-    , parent = el.parentNode
-    ;
-    
-  for(var i = el.attributes.length - 1; i >= 0; i--){
-    attr = el.attributes[i];
-    attrName = attr.nodeName;
-    dirName = attrName.slice(prefix.length);
-    if(attrName.indexOf(prefix) === 0 && (dirName in directives)) {
-      dir = create(directives[dirName]);
-      dir.dirName = dirName
-    }else if(token.hasToken(attr.value)) {
-      dir = create(directives['attr']);
-      dir.dirs = token.parseToken(attr.value);
-      dir.dirName = attrName.indexOf(prefix) === 0 ? dirName : attrName ;
-    }else{
-      dir = false;
-    }
-    
-    if(dir) {
-      if(dir.anchor && !anchors.start) {
-        //同一个元素上的 directive 共享同一对锚点
-        anchors.start = doc.createTextNode('');
-        parent.insertBefore(anchors.start, el);
-        
-        anchors.end = doc.createTextNode('');
-        if(el.nextSibling) {
-          parent.insertBefore(anchors.end, el.nextSibling);
-        }else{
-          parent.appendChild(anchors.end);
-        }
-      }
-      dirs.push(extend(dir, {el: el, node: attr, nodeName: attrName, path: attr.value, anchors: dir.anchor ? anchors : null}));
-    }
-  }
-  dirs.sort(function(d0, d1) {
-    return d1.priority - d0.priority;
-  });
-  return dirs;
 }
 
 function setBinding(vm, dir) {
@@ -621,12 +585,6 @@ extend(Watcher.prototype, {
       , val
       , ant = this.ant
       ;
-    
-    // for(var i = 0, l = filters.length; i < l; i++){
-      // if(!ant.filters[filters[i]]){
-        // console.error('Filter: ' + filters[i] + ' not found!');
-      // }
-    // }
     
     try{
       val = evaluate.eval(this._ast, {locals: vals, filters: ant.filters});
