@@ -1,4 +1,4 @@
-//ES5 shim for Ant.js
+//ES5 and other staff shim for Ant.js
 
 if(!Array.prototype.forEach){
   Array.prototype.forEach = function(fn, scope) {
@@ -69,5 +69,17 @@ if (!Object.keys) {
       }
     }
     return k;
+  }
+}
+
+
+var noop = function() {};
+if (!window.console) {
+  window.console = {
+    log: noop
+  , info: noop
+  , debug: noop
+  , warn: noop
+  , error: noop
   }
 }

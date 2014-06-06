@@ -66,9 +66,7 @@ dirs['if'] = {
     anchor.parentNode.insertBefore(this.frag, anchor);
   }
 , hide: function() {
-    var parent = this.anchors.end.parentNode
-      , nodes = this.getNodes()
-      ;
+    var nodes = this.getNodes();
     
     for(var i = 0, l = nodes.length; i < l; i++) {
       this.frag.appendChild(nodes[i]);
@@ -102,20 +100,18 @@ dirs.partial = {
 
 dirs.template = {
   priority: 10000
-, anchor: true
 , link: function() {
     var nodes = this.el.childNodes
-      , parent = this.anchors.end.parentNode
       , frag = doc.createDocumentFragment()
       ;
-      
+
     while(nodes[0]) {
       frag.appendChild(nodes[0]);
     }
     
     this.el.content = frag;
     
-    //parent.removeChild(this.el);
+    //this.el.setAttribute(this.nodeName, '');
   }
 };
   

@@ -10,23 +10,11 @@ module.exports = {
 , anchor: true
 , terminal: true
 , link: function(vm) {
-    var parent = this.anchors.end.parentNode
-      , nodes = this.getNodes()
-      ;
-      
-    this.els = [];
+
+    this._anchors = [];
     this.relativeVm = vm;
     
-    if(this.el.content) {
-      this.frag = this.el.content;
-      this.el.parentNode.removeChild(this.el);
-    }else{
-      this.frag = doc.createDocumentFragment();
-      
-      for(var i = 0, l = nodes.length; i < l; i++) {
-        this.frag.appendChild(nodes[i]);
-      }
-    }
+    this.el.parentNode.removeChild(this.el);
     
     //TODO: cache vm
   }
@@ -34,47 +22,73 @@ module.exports = {
     if(!this.vm) {
       this.vm = this.relativeVm.$getVM(this.paths[0], {assignment: this.assignment});
     }
+    var fixVm
+      , watchers = this.vm.$watchers
+      ;
     if(val) {
       if(utils.isArray(val)) {
         if(val.splice !== arrayMethods.splice) {
           utils.extend(val, arrayMethods);
           val.__vm__ = this.vm;
         }
-        this.splice([0, this.els.length].concat(val), val);
+        
+        for(var i = 0, l = watchers.length; i < l; i++) {
+          if(watchers[i].token.type === 'repeat'){
+            fixVm = watchers[i].token === this;
+            break;
+          }
+        }
+        
+        this.splice([0, this._anchors.length].concat(val), val, fixVm);
       }else{
         console.warn('需要一个数组');
       }
     }
+  }
+  
+  //获取当次遍历的所有节点
+, getRepeatNodes: function(index, fn) {
+    var anchor = this._anchors[index]
+      , endAnchor = this._anchors[index + 1]
+      , nodes = []
+      ;
+     
+    fn = fn || utils.noop;
+     
+    for(var node = anchor, next; node && node !==  endAnchor && node !== this.anchors.end; node = next) {
+      next = node.nextSibling;
+      nodes.push(node);
+      fn.call(node);
+    }
+    return nodes;
   }
   //精确控制 DOM 列表
   //args: [index, n/*, items...*/]
   //arr: 数组数据
   //fixVm: 是否维护 viewmodel 索引
 , splice: function(args, arr, fixVm) {
-    var els = this.els
+    var anchors = this._anchors
+      , newAnchors = []
       , items = args.slice(2)
       , index = args[0] * 1
       , n = args[1] * 1
       , m = items.length
-      , newEls = []
-      , frag = doc.createDocumentFragment()
       , pn = this.anchors.start.parentNode
       , vm
       ;
     
     if(utils.isUndefined(n)){
-      args[1] = n = els.length - index;
+      args[1] = n = anchors.length - index;
     }
     
-    for(var i = index, l = els.length; i < l; i++){
+    for(var i = index, l = anchors.length; i < l; i++){
       if(i < index + n){
         //删除
         //对于拥有 if 属性并且不显示的节点, 其并不存在于 DOM 树中
         try{ 
-          setList(els[i], function() {
+          this.getRepeatNodes(i, function() {
             pn.removeChild(this)
           });
-          //pn.removeChild(els[i]); 
         }catch(e){}
         fixVm && delete this.vm[i];
       }else{
@@ -89,15 +103,13 @@ module.exports = {
             oldI = newI + (n - m);
           }
           
-          //els[oldI]['$index'] = newI;
-          setList(els[oldI], function() {this['$index'] = newI});
+          this.getRepeatNodes(oldI, function() {this['$index'] = newI});
           
           if(fixVm){
             vm = this.vm[newI] = this.vm[oldI];
             vm.$key = newI + '';
-            vm['$index'] && vm['$index'].$update(vm.$key);
-            vm['$index'] && vm['$index'].$update(vm.$key);
           }
+          vm['$index'] && vm['$index'].$update(vm.$key);
         }else{
           break;
         }
@@ -105,9 +117,16 @@ module.exports = {
     }
     
     //新增
-    var assignment, el, nodes;
+    var assignment, el, anchor
+      , frag = doc.createDocumentFragment()
+      ;
     for(var j = 0; j < m; j++){
-      el = this.frag.cloneNode(true);
+      el = this.el.cloneNode(true);
+      anchor = doc.createTextNode('');
+      
+      if(this.el.content) {
+        el.content = this.el.content.cloneNode(true);
+      }
       fixVm && delete this.vm[index + j];
       vm = this.vm.$getVM(index + j, {scope: this.vm, assignment: this.assignment});
       
@@ -116,21 +135,20 @@ module.exports = {
         assignment[this.assignments[a]] = vm;
       }
       
+      frag.appendChild(anchor);
+      frag.appendChild(el);
       vm.$build(el, assignment);
       
-      nodes = [].slice.call(el.childNodes);
+      vm['$index'] && vm['$index'].$update(vm.$key);
       
-      frag.appendChild(el);
+      newAnchors.push(anchor);
       
-      fixVm && vm['$index'] && vm['$index'].$update(vm.$key);
-      
-      //el['$index'] = index + j;
-      setList(nodes, function() {this['$index'] = index + j});
-      
-      newEls.push(nodes);
+      for(var node = anchor; node; node = node.nextSibling) {
+        node['$index'] = index + j;
+      }
     }
-    if(newEls.length){
-      pn.insertBefore(frag, els[index + n] && els[index + n][0] || this.anchors.end);
+    if(newAnchors.length){
+      pn.insertBefore(frag, anchors[index + n] || this.anchors.end);
     }
     
     //需要清除缩短后多出的部分
@@ -144,15 +162,15 @@ module.exports = {
       arr.__vm__ = this.vm;
     }
     
-    args = args.slice(0, 2).concat(newEls);
-    els.splice.apply(els, args);
+    args = args.slice(0, 2).concat(newAnchors);
+    anchors.splice.apply(anchors, args);
   }
 , reverse: function(args, arr, fixVm) {
     var vms = this.vm, vm
       , anchor = this.anchors.end
       , frag = doc.createDocumentFragment()
       ;
-    for(var i = 0, l = this.els.length; i < l; i++){
+    for(var i = 0, l = this._anchors.length; i < l; i++){
       if(fixVm && i < 1/2){
         vm = vms[i];
         vms[i] = vms[l - i - 1];
@@ -163,16 +181,13 @@ module.exports = {
       
       fixVm && vm['$index'] && vm['$index'].$update(vm.$key);
       
-      setList(this.els[i], function() {this['$index'] = l - i - 1});
-      //this.els[i]['$index'] = l - i - 1;
-      
-      setList(this.els[l - i - 1], function() {
+      this.getRepeatNodes(l - i - 1, function() {
+        this['$index'] = i;
         frag.appendChild(this)
       });
-      //frag.appendChild(this.els[l - i - 1]);
     }
     anchor.parentNode.insertBefore(frag, anchor);
-    this.els.reverse();
+    this._anchors.reverse();
   }
 , sort: function(fn){
     //TODO 进行精确高还原的排序?
@@ -221,12 +236,3 @@ var arrayMethods = {
     callRepeater(this, 'reverse');
   })
 };
-
-//nodelist 批量处理
-function setList(nodeList, fn) {
-  fn = fn || utils.noop;
-  for(var i = 0, l = nodeList.length; i < l; i++) {
-    fn.call(nodeList[i]);
-  }
-}
-  

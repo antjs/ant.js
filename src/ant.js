@@ -50,6 +50,7 @@ function setPrefix(newPrefix) {
  */
 function Ant(tpl, opts) {
   if(isPlainObject(tpl)) {
+    opts = tpl;
     tpl = opts.tpl;
   }
   opts = opts || {};
@@ -105,11 +106,9 @@ function Ant(tpl, opts) {
   for(var event in events) {
     this.on(event, events[event]);
   }
-
-  for(var filterName in filters){
-    this.setFilter(filterName, filters[filterName]);
-  }
-  
+    
+  extend(this.filters, filters);
+    
   buildViewModel.call(this);
   
   //这里需要合并可能存在的 this.data
@@ -290,7 +289,7 @@ extend(Ant.prototype, Event, {
   }
 
 , watch: function(keyPath, callback) {
-    if(keyPath && callback){
+    if(callback){
       addWatcher(this._vm, {path: keyPath, update: callback});
     }
     return this;
@@ -305,17 +304,6 @@ extend(Ant.prototype, Event, {
       }
     }
     return this;
-  }
-  
-  
-, setFilter: function(name, filter) {
-    this.filters[name] = filter.bind(this);
-  }
-, getFilter: function(name) {
-    return this.filters[name]
-  }
-, removeFilter: function(name) {
-    delete this.filters[name];
   }
 });
 
@@ -376,7 +364,8 @@ function travelEl(el, vm, assignment) {
   
   if(('length' in el) && isUndefined(el.nodeType)){
     //node list
-    for(var i = 0, l = el.length; i < l; i++) {
+    //对于 nodelist 如果其中有包含 {{text}} 直接量的表达式, 文本节点会被分割, 其节点数量可能会动态增加
+    for(var i = 0; i < el.length; i++) {
       travelEl(el[i], vm, assignment);
     }
     return;
@@ -398,6 +387,7 @@ function travelEl(el, vm, assignment) {
   //template
   if(el.content) {
     travelEl(el.content, vm, assignment);
+    el.parentNode && el.parentNode.replaceChild(el.content, el);
     return;
   }
   
@@ -508,14 +498,14 @@ function addWatcher(vm, dir) {
   }
 }
 
-var exParse = function(path) {
+function exParse(path) {
   var that = this;
   var ast = parse(path, this.token.type);
   var summary = evaluate.summary(ast);
     
   extend(this.token, summary);
   extend(this, summary);
-  this._ast = ast;
+  this.ast = ast;
 };
 
 function Watcher(relativeVm, token) {
@@ -526,6 +516,8 @@ function Watcher(relativeVm, token) {
   this.ant = relativeVm.$root.$ant;
   
   this.val = NaN;
+  
+  this.state = Watcher.STATE_READY;
   
   exParse.call(this, token.path);
   
@@ -538,13 +530,11 @@ function Watcher(relativeVm, token) {
     run = run || ass && (this.locals[i] in ass) && ass[this.locals[i]] !== relativeVm;
   }
   
-  this.state = Watcher.STATE_READY
   
   //立即计算的情况:
-  //1. 渲染过后新加入的模板
-  //2. 没有变量的表达式
-  //3. 子作用域引用父级作用域
-  if(this.ant.isRendered || !this.locals.length || run) {
+  //1. 没有变量的表达式
+  //2. 引用父级作用域 //TODO 
+  if(!this.locals.length || run) {
     this.fn();
   }
 }
@@ -555,29 +545,32 @@ extend(Watcher, {
 }, Class);
 
 extend(Watcher.prototype, {
-  fn: function(vals) {
+  fn: function() {
     var key
       , dir = this.token
       , newVal
+      , vals = {}
       ;
       
-    vals = vals || {}
-    
     for(var i = 0, l = this.locals.length; i < l; i++){
       key = this.locals[i];
       vals[key] = this.relativeVm.$getVM(key, {assignment: dir.assignment}).$getData();
-    }
-    
-    newVal = this.getValue(vals);
       
-    if(newVal !== this.val){
+      if(dir.assignment && dir.assignment[key] && this.paths.indexOf(key + '.$index') >= 0) {
+        vals[key] = extend({'$index': dir.assignment[key]['$key'] * 1}, vals[key])
+      }
+    }
+
+    newVal = this.getValue(vals);
+
+    //if(newVal !== this.val){//引用类型???
       try{
         this.token.update(newVal, this.val);
         this.val = newVal;
       }catch(e){
         console.error(e);
       }
-    }
+    //}
     this.state = Watcher.STATE_CALLED;
   }
 , getValue: function(vals) {
@@ -587,7 +580,7 @@ extend(Watcher.prototype, {
       ;
     
     try{
-      val = evaluate.eval(this._ast, {locals: vals, filters: ant.filters});
+      val = evaluate.eval(this.ast, {locals: vals, filters: ant.filters});
     }catch(e){
       val = '';
       console.error(e);
@@ -671,7 +664,6 @@ ViewModel.prototype = {
     return curVal;
   }
 
-
 , $update: function (data, isExtend, isBubble) {
     var map = isExtend ? data : this
       , parent = this
@@ -702,8 +694,17 @@ ViewModel.prototype = {
       }
     }
   }
+, $set: function(val) {
+    
+  }
 , $build: function(el, assignment) {
     travelEl(el, this, assignment);
+    var ant = this.$root.$ant;
+    
+    //对于渲染过后新加入的模板, 加入后更新
+    if(ant.isRendered) {
+      this.$update(ant.get(this.$getKeyPath()), true);
+    }
   }
 };
 

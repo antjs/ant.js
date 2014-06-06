@@ -167,6 +167,7 @@ exports.eval = function(tree, _context) {
 };
 
 //表达式摘要
+//return: {filters:[], locals:[], paths: [], assignments: []}
 exports.summary = function(tree) {
   reset();
   

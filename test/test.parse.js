@@ -151,9 +151,9 @@ test('expression 表达式', function(t) {
       var val = eval(exps[i]);
       t.test(exps[i] + ' = ' + val, function(t) {
         if(isNaN(val)){
-          t.ok(isNaN(evalu(parse(exps[i]))));
+          t.ok(isNaN(evalu(parse(exps[i]))), exps[i]);
         }else{
-          t.equal(evalu(parse(exps[i])), val);
+          t.equal(evalu(parse(exps[i])), val, exps[i]);
         }
         
         t.end();

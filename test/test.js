@@ -607,20 +607,26 @@ test('模板语法', function(t) {
 });
 
 test('ant.watch / ant.unwatch', function(t) {
-  var ant = new Ant('', {data: {}})
+  var ant = new Ant({data: {}})
     , val1, val2
     ;
 
+  function clean () {
+    val1 = void(0);
+    val2 = void(0);
+  }
+    
   var watcher = function(newVal, oldVal) {
     val1 = newVal;
     val2 = oldVal;
   };
-   
+
   ant.watch('key', watcher);
   t.test('base watch', function(t){
     ant.set('key', 'abc');
     t.equal(val1, 'abc');
     
+    clean ();
     t.end();
   });
   
@@ -632,18 +638,27 @@ test('ant.watch / ant.unwatch', function(t) {
     ant.set('path.val', '123');
     t.equal(val1, '123');
     
+    clean ();
     t.end();
   });
   
   t.test('bubbling', function(t) {
     ant.watch('path', function(newVal, oldVal) {
+      console.log(newVal);
+      console.log(oldVal);
       val1 = newVal;
       val2 = oldVal;
     });
     
     ant.set('path.val2', 'Zz');
-    t.equal(val1.val2, 'Zz');
+    t.equal(val1.val2, 'Zz', '1');
     
+    clean ();
+    
+    ant.set('path.val2', 'Aa');
+    t.equal(val1.val2, 'Aa', '2');
+    
+    clean ();
     t.end();
   });
   
