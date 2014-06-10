@@ -54,7 +54,7 @@ function Ant(tpl, opts) {
     tpl = opts.tpl;
   }
   opts = opts || {};
-  var el
+  var el, that = this
     , defaults = this.defaults || {}
     ;
 
@@ -63,6 +63,7 @@ function Ant(tpl, opts) {
   var data = opts.data || {}
     , events = opts.events || {}
     , filters = opts.filters || {}
+    , watchers = opts.watchers || {}
     ;
   
   el = tplParse(tpl, opts.el);
@@ -106,10 +107,16 @@ function Ant(tpl, opts) {
   for(var event in events) {
     this.on(event, events[event]);
   }
-    
-  extend(this.filters, filters);
+  
+  extend(this.filters, filters, function(a, b) {
+    return b.bind(that)
+  });
     
   buildViewModel.call(this);
+  
+  for(var keyPath in watchers) {
+    this.watch(keyPath, watchers[keyPath].bind(this));
+  }
   
   //这里需要合并可能存在的 this.data
   //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
@@ -521,20 +528,14 @@ function Watcher(relativeVm, token) {
   
   exParse.call(this, token.path);
   
+  relativeVm.$$sPaths = relativeVm.$$sPaths || [];
+  
   for(var i = 0, l = this.paths.length; i < l; i++){
-    relativeVm.$getVM(this.paths[i], {assignment: ass}).$watchers.push(this);
+    relativeVm.$getVM(this.paths[i], {assignment: ass, sPaths: relativeVm.$$sPaths}).$watchers.push(this);
   }
   
-  var run;
-  for(var i = 0, l = this.locals.length; i < l; i++) {
-    run = run || ass && (this.locals[i] in ass) && ass[this.locals[i]] !== relativeVm;
-  }
-  
-  
-  //立即计算的情况:
-  //1. 没有变量的表达式
-  //2. 引用父级作用域 //TODO 
-  if(!this.locals.length || run) {
+  //没有变量的表达式
+  if(!this.locals.length) {
     this.fn();
   }
 }
@@ -601,6 +602,7 @@ ViewModel.prototype = {
   $root: null
 , $parent: null
 
+, $$sPaths: null
 , $ant: null
 , $key: null
 
@@ -620,11 +622,23 @@ ViewModel.prototype = {
       , cur = opts.scope || this.$root
       , assignment = opts.assignment || {}
       , keyChain = utils.parseKeyPath(path)
+      , sPaths = opts.sPaths || []
+      , update, shiftScope
       ;
+    
+    for(var key in assignment) {
+      shiftScope = true;
+      break;
+    }
       
     if(keyChain[0] in assignment) {
       cur = assignment[keyChain[0]];
       keyChain.shift();
+      if(cur !== this) {
+        update = true;
+      }
+    }else{
+      update = shiftScope;
     }
     if(path){
       for(var i = 0, l = keyChain.length; i < l; i++){
@@ -641,6 +655,9 @@ ViewModel.prototype = {
         
         cur = cur[key];
       }
+    }
+    if(update) {
+      sPaths.push(cur.$getKeyPath());
     }
     return cur;
   }
@@ -694,16 +711,21 @@ ViewModel.prototype = {
       }
     }
   }
-, $set: function(val) {
-    
-  }
 , $build: function(el, assignment) {
     travelEl(el, this, assignment);
     var ant = this.$root.$ant;
     
     //对于渲染过后新加入的模板, 加入后更新
-    if(ant.isRendered) {
+    //if(ant.isRendered) {
       this.$update(ant.get(this.$getKeyPath()), true);
+    //}
+    
+    //引用父级作用域变量时, 自动运算
+    if(this.$$sPaths) {
+      for(var i = 0, l = this.$$sPaths.length; i < l; i++) {
+        this.$getVM(this.$$sPaths[i]).$update(ant.get(this.$$sPaths[i]), true);
+      }
+      this.$$sPaths = null;
     }
   }
 };

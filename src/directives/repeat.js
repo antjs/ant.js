@@ -18,14 +18,14 @@ module.exports = {
     
     //TODO: cache vm
   }
-, update: function(val) {
+, update: function(val, old) {
     if(!this.vm) {
       this.vm = this.relativeVm.$getVM(this.paths[0], {assignment: this.assignment});
     }
     var fixVm
       , watchers = this.vm.$watchers
       ;
-    if(val) {
+    if(val && val !== old) {
       if(utils.isArray(val)) {
         if(val.splice !== arrayMethods.splice) {
           utils.extend(val, arrayMethods);

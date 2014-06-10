@@ -24,12 +24,12 @@ module.exports = {
       }
       
       for(var attr in this.attrs) {
-        el.removeAttribute(attr);
+        removeAttr(el, attr);
       }
       this.attrs = val;
     }else{
       if(this.conditionalAttr) {
-        val ? setAttr(el, this.dirName, val) : el.removeAttribute(this.dirName);
+        val ? setAttr(el, this.dirName, val) : removeAttr(el, this.dirName);
       }else{
         this.textMap[this.position] = val && (val + '');
         setAttr(el, this.dirName, this.textMap.join(''));
@@ -57,4 +57,9 @@ function setAttr(el, attr, val){
     //chrome setattribute with `{{}}` will throw an error
     el.setAttribute(attr, val);
   }catch(e){ console.warn(e) }
+}
+
+function removeAttr(el, attr) {
+  el.removeAttribute(attr);
+  delete el[attr];
 }

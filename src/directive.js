@@ -39,7 +39,7 @@ Directive.prototype = {
   //当 anchor 为 true 时, 获取两个锚点之间的所有节点.
 , getNodes: function() {
     var nodes = [], node = this.anchors.start.nextSibling;
-    if(this.anchor) {
+    if(this.anchor && node) {
       while(node !== this.anchors.end){
         nodes.push(node);
         node = node.nextSibling;

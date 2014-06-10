@@ -63,13 +63,15 @@ dirs['if'] = {
 , show: function() {
     var anchor = this.anchors.end;
     
-    anchor.parentNode.insertBefore(this.frag, anchor);
+    anchor.parentNode && anchor.parentNode.insertBefore(this.frag, anchor);
   }
 , hide: function() {
     var nodes = this.getNodes();
     
-    for(var i = 0, l = nodes.length; i < l; i++) {
-      this.frag.appendChild(nodes[i]);
+    if(nodes) {
+      for(var i = 0, l = nodes.length; i < l; i++) {
+        this.frag.appendChild(nodes[i]);
+      }
     }
   }
 };
