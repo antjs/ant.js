@@ -17,12 +17,10 @@ var isObject = utils.isObject
   , isFunction = utils.isFunction
   , isArray = utils.isArray
   , isPlainObject = utils.isPlainObject
-  , afterFn = utils.afterFn
   , parseKeyPath = utils.parseKeyPath
   , deepSet = utils.deepSet
   , deepGet = utils.deepGet
   , extend = utils.extend
-  , ie = utils.ie
   , tplParse = utils.tplParse
   , create = utils.create
   ;
@@ -94,24 +92,14 @@ function Ant(tpl, opts) {
    * @type {Object} 数据对象, 不应该是数组.
    */
   this.data = {};
-  /**
-   * ### ant.isRendered
-   * 该模板是否已经绑定数据
-   * @type {Boolean} 在调用 `render` 方法后, 该属性将为 `true`
-   */
-  this.isRendered = false;
   
   this.partials = {};
-  this.filters = {};
+  this.filters = filters;
   
   for(var event in events) {
     this.on(event, events[event]);
   }
   
-  extend(this.filters, filters, function(a, b) {
-    return b.bind(that)
-  });
-    
   buildViewModel.call(this);
   
   for(var keyPath in watchers) {
@@ -142,7 +130,7 @@ Ant.setPrefix('a-');
 for(var dir in dirs) {
   Ant.directive(dir, dirs[dir]);
 }
-  
+
 //实例方法
 //----
 extend(Ant.prototype, Event, {
@@ -153,7 +141,6 @@ extend(Ant.prototype, Event, {
   render: function(data) {
     data = data || this.data;
     this.set(data, {isExtend: false});
-    this.isRendered = true;
     this.trigger('render');
     return this;
   }
@@ -545,9 +532,19 @@ extend(Watcher, {
 , STATE_CALLED: 1
 }, Class);
 
+function watcherUpdate (val) {
+  try{
+    this.token.update(val, this.val);
+    this.val = val;
+  }catch(e){
+    console.error(e);
+  }
+}
+
 extend(Watcher.prototype, {
   fn: function() {
     var key
+      , that = this
       , dir = this.token
       , newVal
       , vals = {}
@@ -563,25 +560,26 @@ extend(Watcher.prototype, {
     }
 
     newVal = this.getValue(vals);
+    
+    if(newVal && newVal.then) {
+      //a promise
+      newVal.then(function(val) {
+        watcherUpdate.call(that, val);
+      });
+    }else{
+      watcherUpdate.call(this, newVal);
+    }
 
-    //if(newVal !== this.val){//引用类型???
-      try{
-        this.token.update(newVal, this.val);
-        this.val = newVal;
-      }catch(e){
-        console.error(e);
-      }
-    //}
     this.state = Watcher.STATE_CALLED;
   }
 , getValue: function(vals) {
-    var filters = this.filters
+    var dir = this.token
       , val
-      , ant = this.ant
+      , filters = extend({}, this.ant.filters, function(a, b) {  return b.bind(dir); })
       ;
     
     try{
-      val = evaluate.eval(this.ast, {locals: vals, filters: ant.filters});
+      val = evaluate.eval(this.ast, {locals: vals, filters: filters});
     }catch(e){
       val = '';
       console.error(e);
@@ -715,10 +713,8 @@ ViewModel.prototype = {
     travelEl(el, this, assignment);
     var ant = this.$root.$ant;
     
-    //对于渲染过后新加入的模板, 加入后更新
-    //if(ant.isRendered) {
-      this.$update(ant.get(this.$getKeyPath()), true);
-    //}
+    //新加入模板后更新
+    this.$update(ant.get(this.$getKeyPath()), true);
     
     //引用父级作用域变量时, 自动运算
     if(this.$$sPaths) {

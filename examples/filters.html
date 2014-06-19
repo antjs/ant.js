@@ -1,16 +1,15 @@
 <!DOCTYPE HTML>
 <html lang="en-US">
   <head>
-    <meta name="generator" content="HTML Tidy for Windows (vers 14 February 2006), see www.w3.org">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="generator" content="HTML Tidy for Windows (vers 14 February 2006), see www.w3.org"/>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>
       Filters in ant.js
     </title>
-    <script type="text/javascript" src="../dist/ant.js">
-</script>
-    <script type="text/javascript" src="../extensions/filters.js">
-</script>
+    <script type="text/javascript" src="../dist/ant.js"></script>
+    <script type="text/javascript" src="../extensions/filters.js"></script>
+    <script src="../third-part/jquery.min.js"></script>
   </head>
   <body>
     <div id="template">
@@ -24,7 +23,7 @@
           </h2>
           <p>
             {{text | capitalize}}<br>
-            <input type='text' value='antjs' a-model="{{text}}">
+            <input type='text' value='antjs' a-model="text">
           </p>
         </div>
         <div>
@@ -41,7 +40,7 @@
           </h2>
           <p>
             {{longStr | ellipsis : 7}}
-          </p><input type="text" value="这里是一大段文字" a-model="{{longStr}}">
+          </p><input type="text" value="这里是一大段文字" a-model="longStr">
         </div>
         <div>
           <h2>
@@ -62,8 +61,10 @@
           You got {{ money | rmb : type }} !!
         </div>
         <div>
-          <input value="50" type="range" a-model="{{money}}" min="0" max="100" autofocus=""> <label>$: <input type="radio" name="type" a-model='{{type }}' value='dol' checked></label> <label>￥: <input type="radio" name="type" a-model='{{ type }}' value='rmb'></label>
+          <input value="50" type="range" a-model="money" min="0" max="100" autofocus=""> <label>$: <input type="radio" name="type" a-model='type' value='dol' checked></label> <label>￥: <input type="radio" name="type" a-model='type' value='rmb'></label>
         </div>
+        
+        <pre>{{money|ajax}}</pre>
       </div>
     </div><script type="text/javascript">
     var ant = new Ant(document.getElementById('template'), {
@@ -83,6 +84,9 @@
             g = prefixO(Math.round(127 + (1.28 * 2 * (100 - val))).toString(16), 2)
           }
           return 'background-color: #' + r + g + '00';
+        }
+      , ajax: function(money) {
+          return $.ajax('attr.html', {contentType: 'text'})
         }
       }
     });

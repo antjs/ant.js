@@ -10,7 +10,7 @@ var error = function (message, t) {
     t = t || this;
     t.name = "SyntaxError";
     t.message = message;
-    throw t;
+    console.error(t);
 };
 
 var noop = function() {};
