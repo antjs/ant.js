@@ -124,7 +124,7 @@ module.exports = {
       el = this.el.cloneNode(true);
       anchor = doc.createTextNode('');
       
-      if(this.el.content) {
+      if(this.el.content && !el.content) {
         el.content = this.el.content.cloneNode(true);
       }
       fixVm && delete this.vm[index + j];
@@ -144,7 +144,7 @@ module.exports = {
       newAnchors.push(anchor);
       
       for(var node = anchor; node; node = node.nextSibling) {
-        node['$index'] = index + j;
+        if(node.nodeType == 1){ node['$index'] = index + j; }
       }
     }
     if(newAnchors.length){

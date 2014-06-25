@@ -379,7 +379,8 @@ function travelEl(el, vm, assignment) {
   }
   
   //template
-  if(el.content) {
+  //meta element has content, too.
+  if(el.content && el.content.nodeType) {
     travelEl(el.content, vm, assignment);
     el.parentNode && el.parentNode.replaceChild(el.content, el);
     return;

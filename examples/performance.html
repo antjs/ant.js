@@ -9,9 +9,10 @@
 <ul id="tpl">
 <li a-repeat="c in list">{{c.$index + 1}}: {{c.name}} {{c.time}}</li>
 </ul>
+<button onclick="start();">start</button>
 <script>
 var arr = [];
-var i = 1000;
+var i = 100;
 while(i--){
   arr.push({
     name: String.fromCharCode(65 + Math.round(Math.random() * 26))
@@ -19,10 +20,13 @@ while(i--){
   })
 }
 
+function start() {
+  var ant = new Ant(document.getElementById('tpl'), {
+    data: {list: arr}
+  });
+}
 var s = Date.now();
-var ant = new Ant(document.getElementById('tpl'), {
-  data: {list: arr}
-});
+start()
 alert(Date.now() - s);
 </script>
 </body>
