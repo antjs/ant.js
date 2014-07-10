@@ -88,6 +88,7 @@
         <li a-style="background-color: {{color}}; width: {{range}}%">范围框/取色框/日期框: <span>{{range}} / {{color}} / {{date}}</span></li>
         <li>子模板: {{> partial}}<!-- {{{> partial}}} --> !</li>
         <li>可编辑文本: {{edit}}</li>
+        <li>{{radio === 'red' ? '红' : (radio === 'blue' ? '蓝' : '其他')}}</li>
       </ul>
       {{ "{{" }} unescape }}
   </div>

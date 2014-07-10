@@ -32,8 +32,18 @@
     "pygmentize-bundled": "~2.1.0",
     "grunt-contrib-watch": "~0.6.1",
     "grunt-browserify": "~2.0.8",
-    "browserify": "~3.44.2",
     "tape": "~2.13.1",
     "jquery": "~1.11.1"
+  },
+  "testling": {
+    "files": "test/test*.js",
+    "browsers": [
+      "ie/6..latest",
+      "chrome/latest",
+      "firefox/latest",
+      "safari/latest",
+      "iphone/5..latest",
+      "android-browser/2..latest"
+    ]
   }
 }

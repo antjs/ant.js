@@ -62,6 +62,7 @@ function Ant(tpl, opts) {
     , events = opts.events || {}
     , filters = opts.filters || {}
     , watchers = opts.watchers || {}
+    , partials = opts.partials || {}
     ;
   
   el = tplParse(tpl, opts.el);
@@ -93,8 +94,10 @@ function Ant(tpl, opts) {
    */
   this.data = {};
   
-  this.partials = {};
   this.filters = filters;
+  this.partials = partials;
+  
+  this._partialInfo = {};
   
   for(var event in events) {
     this.on(event, events[event]);
@@ -236,21 +239,21 @@ extend(Ant.prototype, Event, {
    * @param {String} [info.name] 子模板标示符
    * @param {HTMLElement|function} [info.target] 子模板的目标节点
    * @param {Boolean} [info.escape] 是否转义字符串子模板
-   * @param {String} [info.path] 指定子模板中变量在数据中的作用域
    */
 , setPartial: function(partialInfo) {
     if(!partialInfo){ return; }
     
-    partialInfo = extend({}, this.partials[partialInfo.name], partialInfo);
+    partialInfo = extend({}, this._partialInfo[partialInfo.name], partialInfo);
     
     var els, _els, vm
       , name = partialInfo.name
       , target = partialInfo.target
-      , partial = partialInfo.content
+      , partial = partialInfo.content || this.partials[name]
       , path = partialInfo.path || ''
       ;
+      
     if(name){
-      this.partials[name] = partialInfo;
+      this._partialInfo[name] = partialInfo;
     }
     if(partial) {
       vm = this._vm.$getVM(path);
@@ -277,7 +280,7 @@ extend(Ant.prototype, Event, {
         }
       }
       
-      vm.$build(els, partialInfo.context && partialInfo.context.assignment)
+      vm.$build(els, partialInfo.context);
     }
     return this;
   }
@@ -349,8 +352,9 @@ var NODETYPE = {
 };
 
 //遍历元素及其子元素的所有属性节点及文本节点
-function travelEl(el, vm, assignment) {
-  assignment = create(assignment || {});
+function travelEl(el, vm, context) {
+  context = create(context || {});
+  context.assignment = create(context.assignment || {});
   
   if(el.nodeType === NODETYPE.FRAGMENT) {
     el = el.childNodes;
@@ -360,7 +364,7 @@ function travelEl(el, vm, assignment) {
     //node list
     //对于 nodelist 如果其中有包含 {{text}} 直接量的表达式, 文本节点会被分割, 其节点数量可能会动态增加
     for(var i = 0; i < el.length; i++) {
-      travelEl(el[i], vm, assignment);
+      travelEl(el[i], vm, context);
     }
     return;
   }
@@ -370,31 +374,31 @@ function travelEl(el, vm, assignment) {
     return;
   }else if(el.nodeType === NODETYPE.TEXT){
     //文本节点
-    checkText(el, vm, assignment);
+    checkText(el, vm, context);
     return;
   }
   
-  if(checkAttr(el, vm, assignment)){
+  if(checkAttr(el, vm, context)){
     return;
   }
   
   //template
   //meta element has content, too.
   if(el.content && el.content.nodeType) {
-    travelEl(el.content, vm, assignment);
+    travelEl(el.content, vm, context);
     el.parentNode && el.parentNode.replaceChild(el.content, el);
     return;
   }
   
   for(var child = el.firstChild, next; child; ){
     next = child.nextSibling;
-    travelEl(child, vm, assignment);
+    travelEl(child, vm, context);
     child = next;
   }
 }
 
 //遍历属性
-function checkAttr(el, vm, assignment) {
+function checkAttr(el, vm, context) {
   var prefix = Ant.prefix
     , dirs = Ant.directive.getDir(el, Ant.directives, prefix)
     , dir
@@ -403,7 +407,8 @@ function checkAttr(el, vm, assignment) {
   
   for (var i = 0, l = dirs.length; i < l; i++) {
     dir = dirs[i];
-    dir.assignment = assignment;
+    dir.context = context;
+    dir.assignment = context.assignment;
    
     //对于 terminal 为 true 的 directive, 在解析完其相同权重的 directive 后中断遍历该元素
     if(terminalPriority > dir.priority) {
@@ -427,7 +432,7 @@ function checkAttr(el, vm, assignment) {
 
 var partialReg = /^>\s*(?=.+)/;
 //处理文本节点中的绑定占位符({{...}})
-function checkText(node, vm, assignment) {
+function checkText(node, vm, context) {
   if(token.hasToken(node.nodeValue)) {
     var tokens = token.parseToken(node.nodeValue)
       , textMap = tokens.textMap
@@ -441,7 +446,7 @@ function checkText(node, vm, assignment) {
       textMap.forEach(function(text) {
         var tn = doc.createTextNode(text);
         el.insertBefore(tn, node);
-        checkText(tn, vm, assignment);
+        checkText(tn, vm, context);
       });
       el.removeChild(node);
     }else{
@@ -456,7 +461,8 @@ function checkText(node, vm, assignment) {
       }
       setBinding(vm, extend(dir, t, {
         el: node
-      , assignment: assignment
+      , context: context
+      , assignment: context.assignment
       }));
     }
   }
@@ -607,7 +613,6 @@ ViewModel.prototype = {
 
 , $watchers: null
 
-, $index: null
 , $value: NaN
   
 //获取 vm 不存在的话将新建一个.
@@ -710,8 +715,8 @@ ViewModel.prototype = {
       }
     }
   }
-, $build: function(el, assignment) {
-    travelEl(el, this, assignment);
+, $build: function(el, context) {
+    travelEl(el, this, context || {});
     var ant = this.$root.$ant;
     
     //新加入模板后更新

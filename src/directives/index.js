@@ -76,30 +76,6 @@ dirs['if'] = {
   }
 };
 
-
-dirs.partial = {
-  terminal: true
-, replace: true
-, link: function(vm) {
-    var that = this;
-    var pName, ant, opts;
-    pName = this.path;
-    ant = vm.$root.$ant;
-    opts = ant.options;
-    
-    this.path = '';
-    
-    ant.setPartial({
-      name: pName
-    , content: opts && opts.partials && opts.partials[pName]
-    , target: function(el) { that.el.insertBefore(el, that.node) }
-    , escape: this.escape
-    , path: vm.$getKeyPath()
-    , context: this
-    });
-  }
-};
-
 dirs.template = {
   priority: 10000
 , link: function() {
@@ -116,7 +92,8 @@ dirs.template = {
     //this.el.setAttribute(this.nodeName, '');
   }
 };
-  
+
+dirs.partial = require('./partial.js');
 dirs.repeat = require('./repeat.js');
 dirs.attr = require('./attr.js');
 dirs.model = require('./model.js');

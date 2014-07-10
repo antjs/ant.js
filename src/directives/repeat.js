@@ -137,7 +137,7 @@ module.exports = {
       
       frag.appendChild(anchor);
       frag.appendChild(el);
-      vm.$build(el, assignment);
+      vm.$build(el, {assignment: assignment});
       
       vm['$index'] && vm['$index'].$update(vm.$key);
       
