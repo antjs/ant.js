@@ -30,15 +30,15 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   
 ```html
 <section id="main">
-  <input a-model="{{completedAll}}" type="checkbox" a-if="{{todos.length}}" />
+  <input a-model="completedAll" type="checkbox" a-if="todos.length" />
   <ul id="todo-list">
-    <li a-repeat="{{todos}}" a-if="{{show}}" class="{{completed && 'completed'}}">
+    <li a-repeat="todo in todos" a-if="todo.show" class="{{todo.completed ? 'completed' : ''}}">
       <div class="view">
-        <input type="checkbox" class="toggle" a-model="{{completed}}" />
-        <label>{{{title}}}</label>
+        <input type="checkbox" class="toggle" a-model="todo.completed" />
+        <label>{{toto.title}}</label>
         <button class="destroy"></button>
       </div>
-      <input type="text" a-model="{{title}}" class="edit"/>
+      <input type="text" a-model="todo.title" class="edit"/>
     </li>
   </ul>
 </section>
@@ -54,14 +54,14 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   
 ### 条件
 
-  `a-if="{{condition}}"`
+  `a-if="condition"`
 
-  有 `a-if` 属性的节点会根据 `{{condition}}` 的值来决定该节点是否存在于 DOM 树中.
+  有 `a-if` 属性的节点会根据 `condition` 的值来决定该节点是否存在于 DOM 树中.
   
   如模板: 
   
 ```html
-<ul a-if="{{todos.length}}"><ul>
+<ul a-if="todos.length"><ul>
 ```
 
   对应数据 `{todos: []}`, 由于 `todos` 数组的长度为零, 所以该 `ul` 将不会出现在 DOM 树中.
@@ -75,7 +75,7 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   
 ### 循环
 
-  `a-repeat="{{list}}"`
+  `a-repeat="item in list"`
 
   带有 `a-repeat` 属性的元素将根据对应数组而重复. 并且该元素及其子元素的变量占位符的作用域将会切换到数组数据当中. 类似 mustache, 如果想使用数组之外的父辈变量, 直接使用其变量名即可.
   
@@ -85,8 +85,8 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   
 ```html
 <ul>
-  <li a-repeat="{{todos}}">
-    {{$index + 1}}. {{title}}
+  <li a-repeat="todo in todos">
+    {{todo.$index + 1}}. {{todo.title}}
   <li>
 </ul>
 ```
@@ -113,7 +113,7 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
 
 ### 双向绑定
 
-  `a-model="{{val}}"` 
+  `a-model="val"` 
   
   而所谓的双向绑定, 即是在数据和表单值中任何一个发生了变化, 都会将该变化自动更新到另一层中.
   
@@ -126,8 +126,8 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   2. 单选框 
   
     ```html
-    <input type=radio value=red, a-model={{color}} />
-    <input type=radio value=blue, a-model={{color}} />
+    <input type=radio value=red, a-model=color />
+    <input type=radio value=blue, a-model=color />
     ```
   
   单选框往往是一组出现的, 同一组单选框应该有同一个 `a-model`, 与 `a-model` 绑定的是当前选中单选框的 `value` 值. 如: 用户选中 `value=red` 的单选框时, `color` 的值将设成 `red`.
@@ -135,11 +135,11 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   3. 下拉框
   
     ```html
-    <select a-model='{{select}}'>
+    <select a-model='select'>
       <option value='option1'>option1</option>
       <option value='option2'>option2</option>
     </select>
-    <select a-model='{{selects}}' multiple='true'>
+    <select a-model='selects' multiple='true'>
       <option value='option1'>option1</option>
       <option value='option2'>option2</option>
     </select>
