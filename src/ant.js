@@ -500,10 +500,19 @@ function addWatcher(vm, dir) {
 }
 
 function exParse(path) {
-  var that = this;
-  var ast = parse(path, this.token.type);
-  var summary = evaluate.summary(ast);
+  var that = this
+    , ast = {}
+    , summary
+    ;
     
+  try{
+    ast = parse(path, this.token.type);
+  }catch(e) {
+    e.message = 'SyntaxError in "' + path + '" | ' + e.message;
+    console.error(e);
+  }
+  
+  summary = evaluate.summary(ast);
   extend(this.token, summary);
   extend(this, summary);
   this.ast = ast;
@@ -590,6 +599,9 @@ extend(Watcher.prototype, {
     }catch(e){
       val = '';
       console.error(e);
+    }
+    if(isUndefined(val) || val === null) {
+      val = '';
     }
     return val;
   }

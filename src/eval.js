@@ -117,6 +117,7 @@ var evaluate = function(tree) {
         res = getOperator(arity, value).apply(tree, args);
       }catch(e){
         //console.debug(e);
+        res = null;
       }
     break;
     case 'literal':
