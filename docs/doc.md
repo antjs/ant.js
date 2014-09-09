@@ -11,7 +11,7 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
 ----
 
   - [开发版](dist/ant.js)
-  - [压缩版](dist/ant.min.js) (9kb Packed and gziped)
+  - [压缩版](dist/ant.min.js) (10kb Packed and gziped)
 
   
 在 NodeJs 中可以使用 npm 直接安装:
@@ -30,15 +30,15 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   
 ```html
 <section id="main">
-  <input a-model="{{completedAll}}" type="checkbox" a-if="{{todos.length}}" />
+  <input a-model="completedAll" type="checkbox" a-if="todos.length" />
   <ul id="todo-list">
-    <li a-repeat="{{todos}}" a-if="{{show}}" class="{{completed && 'completed'}}">
+    <li a-repeat="todo in todos" a-if="todo.show" class="{{todo.completed ? 'completed' : ''}}">
       <div class="view">
-        <input type="checkbox" class="toggle" a-model="{{completed}}" />
-        <label>{{{title}}}</label>
+        <input type="checkbox" class="toggle" a-model="todo.completed" />
+        <label>{{toto.title}}</label>
         <button class="destroy"></button>
       </div>
-      <input type="text" a-model="{{title}}" class="edit"/>
+      <input type="text" a-model="todo.title" class="edit"/>
     </li>
   </ul>
 </section>
@@ -54,14 +54,14 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   
 ### 条件
 
-  `a-if="{{condition}}"`
+  `a-if="condition"`
 
-  有 `a-if` 属性的节点会根据 `{{condition}}` 的值来决定该节点是否存在于 DOM 树中.
+  有 `a-if` 属性的节点会根据 `condition` 的值来决定该节点是否存在于 DOM 树中.
   
   如模板: 
   
 ```html
-<ul a-if="{{todos.length}}"><ul>
+<ul a-if="todos.length"><ul>
 ```
 
   对应数据 `{todos: []}`, 由于 `todos` 数组的长度为零, 所以该 `ul` 将不会出现在 DOM 树中.
@@ -75,7 +75,7 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   
 ### 循环
 
-  `a-repeat="{{list}}"`
+  `a-repeat="item in list"`
 
   带有 `a-repeat` 属性的元素将根据对应数组而重复. 并且该元素及其子元素的变量占位符的作用域将会切换到数组数据当中. 类似 mustache, 如果想使用数组之外的父辈变量, 直接使用其变量名即可.
   
@@ -85,8 +85,8 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   
 ```html
 <ul>
-  <li a-repeat="{{todos}}">
-    {{$index + 1}}. {{title}}
+  <li a-repeat="todo in todos">
+    {{todo.$index + 1}}. {{todo.title}}
   <li>
 </ul>
 ```
@@ -113,7 +113,7 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
 
 ### 双向绑定
 
-  `a-model="{{val}}"` 
+  `a-model="val"` 
   
   而所谓的双向绑定, 即是在数据和表单值中任何一个发生了变化, 都会将该变化自动更新到另一层中.
   
@@ -126,8 +126,8 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   2. 单选框 
   
     ```html
-    <input type=radio value=red, a-model={{color}} />
-    <input type=radio value=blue, a-model={{color}} />
+    <input type=radio value=red, a-model=color />
+    <input type=radio value=blue, a-model=color />
     ```
   
   单选框往往是一组出现的, 同一组单选框应该有同一个 `a-model`, 与 `a-model` 绑定的是当前选中单选框的 `value` 值. 如: 用户选中 `value=red` 的单选框时, `color` 的值将设成 `red`.
@@ -135,11 +135,11 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   3. 下拉框
   
     ```html
-    <select a-model='{{select}}'>
+    <select a-model='select'>
       <option value='option1'>option1</option>
       <option value='option2'>option2</option>
     </select>
-    <select a-model='{{selects}}' multiple='true'>
+    <select a-model='selects' multiple='true'>
       <option value='option1'>option1</option>
       <option value='option2'>option2</option>
     </select>
@@ -173,27 +173,32 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   `{{val | filter1:arg1:arg2 | filter2}}`
 
   Filter 是实际上一些可以接受参数的函数. 每个 Filter 都以前面表达式的值为第一个参数, 其他的参数可以用 `:` 表示. Filter 可以同其他表达式混合使用.
+  
+  Filter 操作符 `|` 和 `:` 有着最低的操作符优先级.
 
-  如: `{{(val | filter1:arg1:arg2 | filter2) + " -- " + (val2 * val4 | filter3)}}`
 
 ### 表达式
 
   `{{ val1 + val2 }}`
 
-  Ant 的表达式是 javascript 表达式的不严格子集, filter 操作符 `|` 属于表达式的一部分.
+  类似 [anglularjs](https://docs.angularjs.org/guide/expression) 的表达式, Ant 的表达式是 javascript 表达式的不严格子集. 如下面都是合法的 ant 表达式:
 
-  - 字符串操作:  `{{'String'}}`, `{{'String ' + "concat"}}`
-  - 数学运算: `{{ 1 + 2}}`, `{{ (1 - 2) * 4 / 2 }}`
-  - 逻辑运算: `{{0 === false}}`, `{{ 2 >= 1 }}`, `{{ val && 1 }}`, `{{ val || 1 }}`, `{{ val ? 0 : 1 }}`, `{{ !val }}`
-  - 部分函数调用: `{{Math.round(num)}}`, `{{'a'.toUpperCase()}}`, `{{(Math.random()).toFixed(2)}}`
-
-
-  关于表达式需要注意的一点是, `{{}}`占位符在不同的位置所允许使用的表达式将有所不同. 分为几种情况: 
+  - 直接量: `1`, `'String'`, `"String"`, `false`, `["Array"]`, `{key: "object"}`
+  - 变量取值: `key`, `key.path`, `key[path]`, `key["path"]`
+  - 字符串拼接:  `'String ' + "concat"`
+  - 数学运算: ` 1 + 2`, `(1 - 2) * 4 / 2`
+  - 逻辑运算: `0 === false`, `2 >= 1`, `val && 1`, `val || 1`, `val ? 0 : 1`, `!val`
+  - 原型方法调用及使用部分全局变量: `{{Math.round(num)}}`, `{{'a'.toUpperCase()}}`, `{{(Math.random()).toFixed(2)}}`
   
-
-  1. 文本、属性值 (包括条件属性) 和 `a-if` 允许使用所有的表达式. 
-  2. 属性名支持有限的表达式. 在 nodeJs 和现代浏览器 (IE 10+) 中属性名也可以使用除等号(`=`)外的大部分表达式元素. 而 IE 10 以前的 IE 浏览器中表达式不能包含字符串. 
-  3. `a-model`, `a-repeat` 中不能使用表达式. 
+  Ant 表达式与 javascript 表达式也有明显的不同: 
+  
+  - Ant 表达式支持 filter 操作符 `|`.
+  - 宽限异常. TypeError 会被当做 `null`, 而 ReferenceError 会被处理成 `undefined`.
+  
+      如: 
+        `notDefined.property === null`  `//true`
+        `notafunction() === null`       `//true`
+        `notDefined === undefined`      `//true`
 
 
 API

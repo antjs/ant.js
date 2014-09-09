@@ -14,16 +14,17 @@
 	<div id="main">
 		<h1>Simple Markdown editor</h1>
 		<div class="left">
-      <textarea a-model="{{md}}" autofocus placeholder="Input markdown here."></textarea>
-      <a a-if="{{h5.download}}" href="data:text/x-markdown;charset=UTF-8,{{md|urlEncode}}" download>Download this markdown</a>
+      <textarea a-model="md" autofocus placeholder="Input markdown here."></textarea>
+      <a a-if="h5.download" href="data:text/x-markdown;charset=UTF-8,{{md|urlEncode}}" download>Download this markdown</a>
     </div>
 		<div class="right">
       <div class="output">
-        {{{md|marked}}}
+        {{{md.toUpperCase() | marked}}}
+        {{ asd () === null }}
       </div>
     </div>
 	</div>
-  <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
+  <script type="text/javascript" src="../src/ant-shim.js"></script>
   <script type="text/javascript" src="../dist/ant.js"></script>
   <script type="text/javascript" src="../extensions/filters.js"></script>
   <script type="text/javascript" src="../third-part/marked.js"></script>

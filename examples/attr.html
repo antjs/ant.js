@@ -1,0 +1,32 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Attributes</title>
+  <!--[if lt IE 9]>
+  <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
+  <![endif]-->
+  <script type="text/javascript" src="../dist/ant.js"></script>
+</head>
+<body>
+  <h1>a-attr=object </h1>
+	<div id=template>
+    <div class="show" a-attr="{style: 'width:' + width + '%; color: ' + color + '; height:' + height * 2 + 'px; background-color:' + bgcolor}">lllafasdf</div>
+    <div class="control" a-attr="attr">
+      <label for="width">width<input type="range" value=50 a-model=width id="width"></label>
+      <label for="height">height<input type="range" a-model=height id="height"></label>
+      <label for="color" a-style="color: {{color}}">文字颜色<input type="color" a-model=color value="#0044ff" id="color"></label>
+      <label for="bgcolor">背景颜色<input type="color" a-model=bgcolor value="#efefef" id="bgcolor"></label>
+    </div>
+  </div>
+<script type="text/javascript">
+  var ant = new Ant(document.getElementById('template'), {
+    data: {
+      attr: {
+        style: 'color: red'
+      }
+    }
+  });
+</script>
+</body>
+</html>

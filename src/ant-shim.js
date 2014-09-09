@@ -1,4 +1,4 @@
-//ES5 shim for Ant.js
+//ES5 and other staff shim for Ant.js
 
 if(!Array.prototype.forEach){
   Array.prototype.forEach = function(fn, scope) {
@@ -11,7 +11,7 @@ if(!Array.prototype.forEach){
 }
 
 if(!Array.isArray){
-  Array.isArray = function(val) {//是否数组
+  Array.isArray = function(val) {
     return ({}).toString.call(val) === '[object Array]'
   }
 }
@@ -55,4 +55,31 @@ if (!Function.prototype.bind) {
 
     return fBound;
   };
+}
+
+if (!Object.keys) {
+  Object.keys = function(o) {
+    if (o !== Object(o)){
+      throw new TypeError('Object.keys called on a non-object');
+    }
+    var k=[], p;
+    for (p in o) {
+      if (Object.prototype.hasOwnProperty.call(o,p)) {
+        k.push(p);
+      }
+    }
+    return k;
+  }
+}
+
+
+var noop = function() {};
+if (!window.console) {
+  window.console = {
+    log: noop
+  , info: noop
+  , debug: noop
+  , warn: noop
+  , error: noop
+  }
 }

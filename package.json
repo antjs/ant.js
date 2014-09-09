@@ -1,14 +1,13 @@
 {
   "name": "ant.js",
-  "version": "0.2.3",
+  "version": "0.3.0-dev",
   "description": "数据驱动 HTML 模板",
-  "main": "dist/ant.js",
+  "main": "src/ant.js",
   "directories": {
     "example": "examples"
   },
   "scripts": {
-    "test": "grunt test",
-    "mocha": "mocha"
+    "test": "tape test/test*.js"
   },
   "repository": {
     "type": "git",
@@ -27,14 +26,24 @@
     "jsdom": "~0.10.4"
   },
   "devDependencies": {
-    "grunt-contrib-concat": "~0.3.0",
-    "grunt-contrib-uglify": "~0.2.2",
+    "grunt-contrib-concat": "~0.4.0",
+    "grunt-contrib-uglify": "~0.4.0",
     "grunt": "~0.4.1",
-    "mocha": "~1.13.0",
-    "expect.js": "~0.3.1",
-    "grunt-mocha": "~0.4.1",
     "pygmentize-bundled": "~2.1.0",
-    "requirejs": "~2.1.9",
-    "grunt-contrib-watch": "~0.5.3"
+    "grunt-contrib-watch": "~0.6.1",
+    "grunt-browserify": "~2.0.8",
+    "tape": "~2.13.1",
+    "jquery": "~1.11.1"
+  },
+  "testling": {
+    "files": "test/test*.js",
+    "browsers": [
+      "ie/6..latest",
+      "chrome/latest",
+      "firefox/latest",
+      "safari/latest",
+      "iphone/5..latest",
+      "android-browser/2..latest"
+    ]
   }
 }

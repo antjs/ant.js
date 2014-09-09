@@ -3,7 +3,7 @@
   window.Ant = Ant.extend({
     defaults: {
       filters: {
-        //capitalize Ê××ÖÄ¸´óĞ´
+        //capitalize é¦–å­—æ¯å¤§å†™
         capitalize: function(str) {
           return (str || '').charAt(0).toUpperCase() + str.slice(1);
         }
@@ -12,9 +12,6 @@
         }
       , json: function(obj) {
           return JSON.stringify(obj);
-        }
-      , defaults: function(val, defaults) {
-          return typeof val === 'undefined' ? (typeof defaults === 'undefined' ? '' : defaults) : val;
         }
       , ellipsis: function(str, maxLength, tail) {
           maxLength = maxLength || 80;
@@ -28,8 +25,8 @@
     }
   });
   
-  //ÈÕÆÚ¸ñÊ½»¯
-  //À´×Ô: http://blog.stevenlevithan.com/archives/date-time-format
+  //æ—¥æœŸæ ¼å¼åŒ–
+  //æ¥è‡ª: http://blog.stevenlevithan.com/archives/date-time-format
   /*
    * Date Format 1.2.3
    * (c) 2007-2009 Steven Levithan <stevenlevithan.com>
