@@ -1,16 +1,18 @@
 更新日志
 ----
-Version **[0.3.0]** 
+Version **[0.3.0-dev]** 
 
 * 使用 CommonJs(browserify) 代替 AMD(requirejs) 作为内部模块规范.
 * 迭代指令使用 `in` 和 repeat 的方式.
 * 废弃 mustache 式的变量向上查找机制.
-* 绑定的 promise 支持.
 * 移除 `.isRendered` 属性.
 * 移除 `.update` 方法.
 * 移除 `update, beforeInit, afterInit` 事件.
 * 移除了对 opts.init 参数的自动调用.
+* 更加友好明确的报错提示.
 * 新增 opts.watchers 参数.
+* 绑定的 promise 支持.
+* 新增 `a-attr` 指令.
 
 Version **[0.2.3]** -- 2014-04-01
 

@@ -395,6 +395,7 @@ var make_parse = function () {
 	constant("true", true);
 	constant("false", false);
 	constant("null", null);
+	constant("undefined");
 
 	constant("Math", Math);
 	constant("Date", Date);
