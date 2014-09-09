@@ -5,7 +5,7 @@ var operators = {
     '+': function(v) { return +v; }
   , '-': function(v) { return -v; }
   , '!': function(v) { return !v; }
-    
+
   , '[': function(v){ return v; }
   , '{': function(v){
       var r = {};
@@ -17,7 +17,7 @@ var operators = {
   , 'typeof': function(v){ return typeof v; }
   , 'new': function(v){ return new v }
   }
-  
+
 , 'binary': {
     '+': function(l, r) { return l + r; }
   , '-': function(l, r) { return l - r; }
@@ -34,7 +34,7 @@ var operators = {
   , '!==': function(l, r) { return l !== r; }
   , '&&': function(l, r) { return l && r; }
   , '||': function(l, r) { return l || r; }
-    
+
   , '.': function(l, r) {
       if(r){
         path = path + '.' + r;
@@ -48,7 +48,7 @@ var operators = {
       return l[r];
     }
   , '(': function(l, r){ return l.apply(null, r) }
-    
+
   , '|': function(l, r){ return r.call(null, l) }//filter. name|filter
   , 'in': function(l, r){
       if(this.assignment) {
@@ -59,11 +59,11 @@ var operators = {
       }
     }
   }
-  
+
 , 'ternary': {
     '?': function(f, s, t) { return f ? s : t; }
   , '(': function(f, s, t) { return f[s].apply(f, t) }
-  
+
   //filter. name | filter : arg2 : arg3
   , '|': function(f, s, t){ return s.apply(null, [f].concat(t)); }
   }
@@ -83,7 +83,7 @@ var evaluate = function(tree) {
     , arg
     , res
     ;
-  
+
   //操作符最多只有三元
   for(; n < 3; n++){
     arg = tree[argName[n]];
@@ -91,7 +91,7 @@ var evaluate = function(tree) {
       if(Array.isArray(arg)){
         args[n] = [];
         for(var i = 0, l = arg.length; i < l; i++){
-          args[n].push(typeof arg[i].key === 'undefined' ? 
+          args[n].push(typeof arg[i].key === 'undefined' ?
             evaluate(arg[i]) : [arg[i].key, evaluate(arg[i])]);
         }
       }else{
@@ -99,7 +99,7 @@ var evaluate = function(tree) {
       }
     }
   }
-  
+
   if(arity !== 'literal') {
     if(path && value !== '.' && value !== '[') {
       summary.paths[path] = true;
@@ -108,16 +108,15 @@ var evaluate = function(tree) {
       path = value;
     }
   }
-  
+
   switch(arity){
-    case 'unary': 
+    case 'unary':
     case 'binary':
     case 'ternary':
       try{
         res = getOperator(arity, value).apply(tree, args);
       }catch(e){
         //console.debug(e);
-        res = null;
       }
     break;
     case 'literal':
@@ -151,7 +150,7 @@ function reset(_context) {
   }else{
     context = {filters: {}, locals: {}};
   }
-  
+
   summary = {filters: {}, locals: {}, paths: {}, assignments: {}};
   path = '';
 }
@@ -163,7 +162,7 @@ function reset(_context) {
 //context.filters: 过滤器函数
 exports.eval = function(tree, _context) {
   reset(_context || {});
-  
+
   return evaluate(tree);
 };
 
@@ -171,9 +170,9 @@ exports.eval = function(tree, _context) {
 //return: {filters:[], locals:[], paths: [], assignments: []}
 exports.summary = function(tree) {
   reset();
-  
+
   evaluate(tree);
-  
+
   if(path) {
     summary.paths[path] = true;
   }

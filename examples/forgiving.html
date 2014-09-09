@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Forgiving</title>
+</head>
+<body>
+	<div id="main">
+		<h1>Forgiving 宽限异常</h1>
+		<div>
+      <code>a === undefined</code>: {{a === undefined}}
+      <code>a.b === undefined</code>: {{a.b === undefined}}
+      <code>a() === undefined</code>: {{a() === undefined}}
+    </div>
+	</div>
+  <script type="text/javascript" src="../src/ant-shim.js"></script>
+  <script type="text/javascript" src="../dist/ant.js"></script>
+  <script type="text/javascript">
+    var ant = new Ant(document.getElementById('main'), {
+      data: {
+
+      }
+    })
+  </script>
+</body>
+</html>
