@@ -1,6 +1,6 @@
 "use strict";
 
-var doc = require('../document.js')
+var doc = require('../env.js').document
   , utils = require('../utils.js')
   ;
 
@@ -25,12 +25,12 @@ dirs.html = {
 , update: function(val) {
     var el = doc.createElement('div');
     el.innerHTML = utils.isUndefined(val) ? '' : val;
-    
+
     var node;
     while(node = this.nodes.pop()) {
       node.parentNode && node.parentNode.removeChild(node);
     }
-    
+
     var nodes = el.childNodes;
     while(node = nodes[0]) {
       this.nodes.push(node);
@@ -39,7 +39,7 @@ dirs.html = {
   }
 };
 
-  
+
 dirs['if'] = {
   anchor: true
 , link: function() {
@@ -59,15 +59,15 @@ dirs['if'] = {
     }
     this.state = val;
   }
-  
+
 , show: function() {
     var anchor = this.anchors.end;
-    
+
     anchor.parentNode && anchor.parentNode.insertBefore(this.frag, anchor);
   }
 , hide: function() {
     var nodes = this.getNodes();
-    
+
     if(nodes) {
       for(var i = 0, l = nodes.length; i < l; i++) {
         this.frag.appendChild(nodes[i]);
@@ -86,9 +86,9 @@ dirs.template = {
     while(nodes[0]) {
       frag.appendChild(nodes[0]);
     }
-    
+
     this.el.content = frag;
-    
+
     //this.el.setAttribute(this.nodeName, '');
   }
 };

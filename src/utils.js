@@ -3,7 +3,7 @@
 //utils
 //---
 
-var doc = require('./document.js');
+var doc = require('./env.js').document;
 
 var keyPathReg = /(?:\.|\[)/g
   , bra = /\]/g
@@ -41,7 +41,7 @@ function extend(/* deep, target, object..., calllback */) {
     target = arguments[ i ] || {};
     i++;
   }
-  
+
   if(utils.isFunction(arguments[length - 1])) {
     callback = arguments[length - 1];
     length--;
@@ -61,11 +61,11 @@ function extend(/* deep, target, object..., calllback */) {
         if(options.hasOwnProperty(name) && name !== 'prototype'){
           src = target[ name ];
           copy = options[ name ];
-          
+
 
           // Recurse if we're merging plain objects or arrays
           if ( deep && copy && ( utils.isPlainObject(copy) || (copyIsArray = utils.isArray(copy)) ) ) {
-          
+
             // Prevent never-ending loop
             if ( target === copy ) {
               continue;
@@ -126,7 +126,7 @@ function tplParse(tpl, target) {
   return {el: el, tpl: tpl};
 }
 
- 
+
 var utils = {
   noop: function (){}
 , ie: !!doc.attachEvent
@@ -183,7 +183,7 @@ var utils = {
       return ret;
     }
   }
-  
+
 , parseKeyPath: parseKeyPath
 
 , deepSet: function (keyStr, value, obj) {

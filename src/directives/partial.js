@@ -1,9 +1,9 @@
 "use strict";
 
-var doc = require('../document.js')
+var doc = require('../env.js').document
   , utils = require('../utils.js')
   ;
-  
+
 module.exports = {
   terminal: true
 , replace: true
@@ -13,15 +13,16 @@ module.exports = {
       ;
 
     ant = vm.$root.$ant;
-    
+
     this.pName = this.path;
     this.vm = vm;
     this.path = '';
-    
+
     ant.setPartial({
       name: this.pName
     , target: function(el) { that.el.insertBefore(el, that.node) }
     , escape: this.escape
+    , path: vm.$getKeyPath()
     , context: this
     });
   }

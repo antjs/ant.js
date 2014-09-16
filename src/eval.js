@@ -47,9 +47,13 @@ var operators = {
       }
       return l[r];
     }
-  , '(': function(l, r){ return l.apply(null, r) }
 
+  , '(': function(l, r){ return l.apply(null, r) }
   , '|': function(l, r){ return r.call(null, l) }//filter. name|filter
+  , 'new': function(l, r){
+      return new (Function.prototype.bind.apply(l, r));
+    }
+
   , 'in': function(l, r){
       if(this.assignment) {
         //repeat

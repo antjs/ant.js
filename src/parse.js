@@ -452,27 +452,7 @@ var make_parse = function () {
 	infix("/", 60);
 	infix("%", 60);
 
-	infix(".", 80, function (left) {
-		this.first = left;
-		if (token.arity !== "name") {
-			error("Expected a property name.", token);
-		}
-		token.arity = "literal";
-		this.second = token;
-		this.arity = "binary";
-		advance();
-		return this;
-	});
-
-	infix("[", 80, function (left) {
-		this.first = left;
-		this.second = expression(0);
-		this.arity = "binary";
-		advance("]");
-		return this;
-	});
-
-	infix("(", 80, function (left) {
+	infix("(", 70, function (left) {
 		var a = [];
 		if (left.id === "." || left.id === "[") {
 			this.arity = "ternary";
@@ -499,6 +479,26 @@ var make_parse = function () {
 			}
 		}
 		advance(")");
+		return this;
+	});
+
+	infix(".", 80, function (left) {
+		this.first = left;
+		if (token.arity !== "name") {
+			error("Expected a property name.", token);
+		}
+		token.arity = "literal";
+		this.second = token;
+		this.arity = "binary";
+		advance();
+		return this;
+	});
+
+	infix("[", 80, function (left) {
+		this.first = left;
+		this.second = expression(0);
+		this.arity = "binary";
+		advance("]");
 		return this;
 	});
 
@@ -574,6 +574,27 @@ var make_parse = function () {
 		advance("}");
 		this.first = a;
 		this.arity = "unary";
+		return this;
+	});
+
+	prefix('new', function (left) {
+		var a = [];
+		this.first = expression(79);
+		if(token.id === '(') {
+			advance("(");
+			this.arity = 'binary';
+			this.second = a;
+			while (true) {
+				a.push(expression(0));
+				if (token.id !== ",") {
+					break;
+				}
+				advance(",");
+			}
+			advance(")");
+		}else{
+			this.arity = "unary";
+		}
 		return this;
 	});
 

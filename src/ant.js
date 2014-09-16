@@ -1,6 +1,6 @@
 "use strict";
 
-var doc = require('./document.js')
+var doc = require('./env.js').document
   , parse = require('./parse.js').parse
   , evaluate = require('./eval.js')
   , utils = require('./utils.js')
@@ -41,7 +41,7 @@ function setPrefix(newPrefix) {
  * @param {String | Element} opts.tpl
  * @param {Object} opts.data 渲染模板的数据. 该项如果为空, 稍后可以用 `tpl.render(model)` 来渲染生成 html.
  * @param {Boolean} opts.lazy 是否对 'input' 及 'textarea' 监听 `change` 事件, 而不是 `input` 事件
- * @param {Object} opts.events 
+ * @param {Object} opts.events
  * @param {Object} opts.partials
  * @param {String | HTMLELement} opts.el
  * @constructor
@@ -64,14 +64,14 @@ function Ant(tpl, opts) {
     , watchers = opts.watchers || {}
     , partials = opts.partials || {}
     ;
-  
+
   el = tplParse(tpl, opts.el);
   tpl = el.tpl;
   el = el.el;
-  
+
   //属性
   //----
-  
+
   this.options = opts;
   /**
    * ### ant.tpl
@@ -79,40 +79,40 @@ function Ant(tpl, opts) {
    * @type {String}
    */
   this.tpl = tpl;
-  
+
   /**
    * ### ant.el
    * 模板 DOM 对象.
    * @type {HTMLElementObject}
    */
   this.el = el;
-  
+
   /**
    * ### ant.data
    * 绑定模板的数据.
    * @type {Object} 数据对象, 不应该是数组.
    */
   this.data = {};
-  
+
   this.filters = filters;
   this.partials = partials;
-  
+
   this._partialInfo = {};
-  
+
   for(var event in events) {
     this.on(event, events[event]);
   }
-  
+
   buildViewModel.call(this);
-  
+
   for(var keyPath in watchers) {
     this.watch(keyPath, watchers[keyPath].bind(this));
   }
-  
+
   //这里需要合并可能存在的 this.data
   //表单控件可能会有默认值, `buildViewModel` 后会默认值会并入 `this.data` 中
   data = extend(this.data, data);
-  
+
   if(opts.data){
     this.render(data);
   }
@@ -158,42 +158,40 @@ extend(Ant.prototype, Event, {
     if(opts && opts.data){ options.data = null; }
     return new this.constructor(this.tpl, extend(true, options, opts));
   }
-  
+
 , get: function(key) {
     return deepGet(key, this.data);
   }
-  
+
   /**
    * ### ant.set
    * 更新 `ant.data` 中的数据
-   * @param {String} [key] 数据路径. 
+   * @param {String} [key] 数据路径.
    * @param {AnyType|Object} val 数据内容. 如果数据路径被省略, 第一个参数是一个对象. 那么 val 将替换 ant.data 或者并入其中
    * @param {Object} [opt] 参数项
    * @param {Boolean} opt.silence 是否静静的更新数据而不触发 `update` 事件及更新 DOM.
-   * @param {Boolean} opt.isExtend 数据设置类型. 是否将数据并入原数据. 
+   * @param {Boolean} opt.isExtend 数据设置类型. 是否将数据并入原数据.
             第一个参数是数据路径是该值默认为 false, 而第一个数据是数据对象的时候则默认为 true
    */
 , set: function(key, val, opt) {
     var changed, isExtend, parent, keys, path;
-    
+
     if(isUndefined(key)){ return this; }
-    
+
     if(isObject(key)){
       changed = true;
       opt = val;
       opt = opt || {};
       if(opt.isExtend !== false){
         isExtend = true;
-        //modelExtend(this.data, key, this._vm);
         extend(true, this.data, key);
       }else{
         isExtend = false;
-        //this.data = modelExtend({}, key, this._vm);
         this.data = extend(true, {}, key);
       }
     }else{
       opt = opt || {};
-      
+
       if(deepGet(key, this.data) !== val) {
         changed = true;
       }
@@ -219,10 +217,8 @@ extend(Ant.prototype, Event, {
             }
           }
           parent[path] = isObject(val) ? extend(true, isArray(val) ? [] : {}, val) : val;
-          //parent[path] = val;
           isExtend = false;
         }else{
-          //modelExtend(this.data, deepSet(key, val, {}), this._vm);
           extend(true, this.data, deepSet(key, val, {}));
           isExtend = true;
         }
@@ -242,22 +238,22 @@ extend(Ant.prototype, Event, {
    */
 , setPartial: function(partialInfo) {
     if(!partialInfo){ return; }
-    
+
     partialInfo = extend({}, this._partialInfo[partialInfo.name], partialInfo);
-    
+
     var els, _els, vm
       , name = partialInfo.name
       , target = partialInfo.target
       , partial = partialInfo.content || this.partials[name]
       , path = partialInfo.path || ''
       ;
-      
+
     if(name){
       this._partialInfo[name] = partialInfo;
     }
     if(partial) {
       vm = this._vm.$getVM(path);
-      
+
       if(typeof partial === 'string'){
         if(partialInfo.escape){
           els = [doc.createTextNode(partial)];
@@ -271,15 +267,15 @@ extend(Ant.prototype, Event, {
       }else{
         els = [(partial instanceof Ant) ? partial.el : partial];
       }
-      
+
       if(target){
         for(var i = 0, l = els.length; i < l; i++){
-          isFunction(target) ? 
+          isFunction(target) ?
             target.call(this, els[i]) :
             target.appendChild(els[i]);
         }
       }
-      
+
       vm.$build(els, partialInfo.context);
     }
     return this;
@@ -305,7 +301,7 @@ extend(Ant.prototype, Event, {
 });
 
 /**
- * 更新模板. 
+ * 更新模板.
  * @param {Object} data 要更新的数据. 增量数据或全新的数据.
  * @param {String} [keyPath] 需要更新的数据路径.
  * @param {AnyType|Object} [data] 需要更新的数据. 省略的话将使用现有的数据.
@@ -329,7 +325,7 @@ function update (keyPath, data, isExtend, isBubble) {
   }else{
     data = this.data;
   }
-  
+
   if(isUndefined(isExtend)){ isExtend = isObject(keyPath); }
   vm.$update(data, isExtend, isBubble !== false);
   return this;
@@ -339,7 +335,7 @@ function buildViewModel() {
   var vm = new ViewModel({
     $ant: this
   });
-  
+
   this._vm = vm;
   vm.$build(this.el);
 }
@@ -355,11 +351,11 @@ var NODETYPE = {
 function travelEl(el, vm, context) {
   context = create(context || {});
   context.assignment = create(context.assignment || {});
-  
+
   if(el.nodeType === NODETYPE.FRAGMENT) {
     el = el.childNodes;
   }
-  
+
   if(('length' in el) && isUndefined(el.nodeType)){
     //node list
     //对于 nodelist 如果其中有包含 {{text}} 直接量的表达式, 文本节点会被分割, 其节点数量可能会动态增加
@@ -368,7 +364,7 @@ function travelEl(el, vm, context) {
     }
     return;
   }
-  
+
   if(el.nodeType === NODETYPE.COMMENT){
     //注释节点
     return;
@@ -377,11 +373,11 @@ function travelEl(el, vm, context) {
     checkText(el, vm, context);
     return;
   }
-  
+
   if(checkAttr(el, vm, context)){
     return;
   }
-  
+
   //template
   //meta element has content, too.
   if(el.content && el.content.nodeType) {
@@ -389,7 +385,7 @@ function travelEl(el, vm, context) {
     el.parentNode && el.parentNode.replaceChild(el.content, el);
     return;
   }
-  
+
   for(var child = el.firstChild, next; child; ){
     next = child.nextSibling;
     travelEl(child, vm, context);
@@ -404,27 +400,27 @@ function checkAttr(el, vm, context) {
     , dir
     , terminalPriority, terminal
     ;
-  
+
   for (var i = 0, l = dirs.length; i < l; i++) {
     dir = dirs[i];
     dir.context = context;
     dir.assignment = context.assignment;
-   
+
     //对于 terminal 为 true 的 directive, 在解析完其相同权重的 directive 后中断遍历该元素
     if(terminalPriority > dir.priority) {
       break;
     }
-    
+
     el.removeAttribute(dir.nodeName);
-    
+
     setBinding(vm, dir);
-   
+
     if(dir.terminal) {
       terminal = true;
       terminalPriority = dir.priority;
     }
   }
-  
+
   if(terminal) {
     return true;
   }
@@ -437,10 +433,10 @@ function checkText(node, vm, context) {
     var tokens = token.parseToken(node.nodeValue)
       , textMap = tokens.textMap
       , el = node.parentNode
-      
+
       , t, dir
       ;
-    
+
     //将{{key}}分割成单独的文本节点
     if(textMap.length > 1) {
       textMap.forEach(function(text) {
@@ -451,7 +447,7 @@ function checkText(node, vm, context) {
       el.removeChild(node);
     }else{
       t = tokens[0];
-      //内置各占位符处理. 
+      //内置各占位符处理.
       //定义新的参数, 将其放到 directive 中处理?
       if(partialReg.test(t.path)) {
         t.path = t.path.replace(partialReg, '');
@@ -477,13 +473,13 @@ function setBinding(vm, dir) {
       //dir.node = doc.createComment(dir.type + ' = ' + dir.path);
       dir.node = doc.createTextNode('');
     }
-    
+
     dir.el = dir.el.parentNode;
     dir.el.replaceChild(dir.node, el);
   }
-  
+
   dir.link(vm);
-  
+
   if(dir.dirs) {
     dir.dirs.forEach(function(d) {
       addWatcher(vm, extend(create(dir), d));
@@ -504,14 +500,14 @@ function exParse(path) {
     , ast = {}
     , summary
     ;
-    
+
   try{
     ast = parse(path, this.token.type);
   }catch(e) {
     e.message = 'SyntaxError in "' + path + '" | ' + e.message;
     console.error(e);
   }
-  
+
   summary = evaluate.summary(ast);
   extend(this.token, summary);
   extend(this, summary);
@@ -520,23 +516,23 @@ function exParse(path) {
 
 function Watcher(relativeVm, token) {
   var ass = token.assignment;
-  
+
   this.token = token;
   this.relativeVm = relativeVm;
   this.ant = relativeVm.$root.$ant;
-  
+
   this.val = NaN;
-  
+
   this.state = Watcher.STATE_READY;
-  
+
   exParse.call(this, token.path);
-  
+
   relativeVm.$$sPaths = relativeVm.$$sPaths || [];
-  
+
   for(var i = 0, l = this.paths.length; i < l; i++){
     relativeVm.$getVM(this.paths[i], {assignment: ass, sPaths: relativeVm.$$sPaths}).$watchers.push(this);
   }
-  
+
   //没有变量的表达式
   if(!this.locals.length) {
     this.fn();
@@ -565,18 +561,18 @@ extend(Watcher.prototype, {
       , newVal
       , vals = {}
       ;
-      
+
     for(var i = 0, l = this.locals.length; i < l; i++){
       key = this.locals[i];
       vals[key] = this.relativeVm.$getVM(key, {assignment: dir.assignment}).$getData();
-      
+
       if(dir.assignment && dir.assignment[key] && this.paths.indexOf(key + '.$index') >= 0) {
         vals[key] = extend({'$index': dir.assignment[key]['$key'] * 1}, vals[key])
       }
     }
 
     newVal = this.getValue(vals);
-    
+
     if(newVal && newVal.then) {
       //a promise
       newVal.then(function(val) {
@@ -593,7 +589,7 @@ extend(Watcher.prototype, {
       , val
       , filters = extend({}, this.ant.filters, function(a, b) {  return b.bind(dir); })
       ;
-    
+
     try{
       val = evaluate.eval(this.ast, {locals: vals, filters: filters});
     }catch(e){
@@ -626,14 +622,14 @@ ViewModel.prototype = {
 , $watchers: null
 
 , $value: NaN
-  
+
 //获取 vm 不存在的话将新建一个.
 //opts.strict  不自动新建 vm
 //opts.scope
 , $getVM: function(path, opts) {
     path = path + '';
     opts = opts || {};
-    
+
     var key
       , cur = opts.scope || this.$root
       , assignment = opts.assignment || {}
@@ -641,12 +637,12 @@ ViewModel.prototype = {
       , sPaths = opts.sPaths || []
       , update, shiftScope
       ;
-    
+
     for(var key in assignment) {
       shiftScope = true;
       break;
     }
-      
+
     if(keyChain[0] in assignment) {
       cur = assignment[keyChain[0]];
       keyChain.shift();
@@ -659,7 +655,7 @@ ViewModel.prototype = {
     if(path){
       for(var i = 0, l = keyChain.length; i < l; i++){
         key = keyChain[i];
-        
+
         if(!cur[key]){
           if(opts.strict){ return null; }
           cur[key] = new ViewModel({
@@ -668,7 +664,7 @@ ViewModel.prototype = {
           , $key: key
           });
         }
-        
+
         cur = cur[key];
       }
     }
@@ -677,7 +673,7 @@ ViewModel.prototype = {
     }
     return cur;
   }
-  
+
 , $getKeyPath: function() {
     var keyPath = this.$key
       , cur = this
@@ -701,14 +697,14 @@ ViewModel.prototype = {
     var map = isExtend ? data : this
       , parent = this
       ;
-    
+
     for(var i = 0, l = this.$watchers.length; i < l; i++){
       if((this.$value !== data) || this.$watchers[i].state === Watcher.STATE_READY){
         this.$watchers[i].fn();
       }
     }
     this.$value = data;
-    
+
     if(isObject(map)){
       for(var path in map) {
         //传入的数据键值不能和 vm 中的自带属性名相同.
@@ -730,10 +726,10 @@ ViewModel.prototype = {
 , $build: function(el, context) {
     travelEl(el, this, context || {});
     var ant = this.$root.$ant;
-    
+
     //新加入模板后更新
     this.$update(ant.get(this.$getKeyPath()), true);
-    
+
     //引用父级作用域变量时, 自动运算
     if(this.$$sPaths) {
       for(var i = 0, l = this.$$sPaths.length; i < l; i++) {
