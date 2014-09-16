@@ -196,9 +196,9 @@ Ant.js 可以为 HTML 应用提供一个绑定数据的模板系统, 使其具�
   - 宽限异常. 常见的 TypeError 和 ReferenceError 会被处理成 `undefined`.
 
       如:
-        `notDefined.property === undefined`  `//true`
-        `notafunction() === undefined`       `//true`
-        `notDefined === undefined`           `//true`
+        notDefined.property === undefined  //true
+        notafunction() === undefined       //true
+        notDefined === undefined           //true
 
 
 API

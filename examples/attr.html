@@ -4,7 +4,7 @@
 	<meta charset="UTF-8">
 	<title>Attributes</title>
   <!--[if lt IE 9]>
-  <script type="text/javascript" src="../src/ant-es5-shim.js"></script>
+  <script type="text/javascript" src="../src/ant-shim.js"></script>
   <![endif]-->
   <script type="text/javascript" src="../dist/ant.js"></script>
 </head>
@@ -19,7 +19,7 @@
       <label for="bgcolor">背景颜色<input type="color" a-model=bgcolor value="#efefef" id="bgcolor"></label>
     </div>
   </div>
-<script type="text/javascript">
+<script type="text/javascript" id=js>
   var ant = new Ant(document.getElementById('template'), {
     data: {
       attr: {

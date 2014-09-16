@@ -3,10 +3,14 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Forgiving</title>
+  <style media="print">
+    #main > div {display:none;}
+  </style>
 </head>
 <body>
 	<div id="main">
 		<h1>Forgiving 宽限异常</h1>
+    <p>ReferrenceError 和 TypeError 等异常将被转换成 undefined</p>
 		<div>
       <code>a === undefined</code>: {{a === undefined}}
       <code>a.b === undefined</code>: {{a.b === undefined}}
@@ -17,9 +21,7 @@
   <script type="text/javascript" src="../dist/ant.js"></script>
   <script type="text/javascript">
     var ant = new Ant(document.getElementById('main'), {
-      data: {
-
-      }
+      data: {}
     })
   </script>
 </body>
