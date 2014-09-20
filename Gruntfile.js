@@ -95,6 +95,6 @@ module.exports = function(grunt) {
   
   
   // Default task(s).
-  grunt.registerTask('default', ['browserify', 'test', /* 'concat',  */'uglify', 'site']);
+  grunt.registerTask('default', ['browserify', 'test', 'concat', 'uglify', 'site']);
 
 };

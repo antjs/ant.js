@@ -11,7 +11,7 @@
         , args = name.trim().split(/\s+/)
         , ev = args.shift()
         ;
-      args = [ev, args.join(''), callback];
+      args = [ev, args.join(' '), callback];
       $(this.el).on.apply($(this.el), args);
       //jQuery 的事件监听函数是用 guid 标定的. 这样 `controller.off(handler)` 就可以起作用了
       handler.guid = callback.guid;
