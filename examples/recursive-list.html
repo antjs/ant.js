@@ -15,7 +15,7 @@
     {{{> tree}}}
   </div>
 <script id="tree" type="text/x-template">
-  <span a-text="item.name" ></span>
+  <span a-text="item.name" ></span> ({{item.list.length || 0}})
   <ul>
     <li a-repeat="item in item.list">
       {{{> tree}}}
@@ -28,15 +28,7 @@
 			item: {
 				name: '省市县'
 	    , list:[
-	        {name: '北京市', list: [{name:"东城区"},{name:"西城区"},{name:"崇文区"}]}
-	      , {name: '上海市', list: [{name:"黄浦区"},{name:"闸北区"},{name:"徐汇区"}]}
-	      , {name: '广东省', list: [
-	          {name:"广州",list:[
-	            {name:"荔湾区"},{name:"越秀区"},{name:"海珠区"},{name:"天河区"},{name:"白云区"},{name:"黄埔区"},{name:"番禺区"}
-	          ]}
-	        , {name:"韶关",list:[{name:"武江区"},{name:"浈江区"},{name:"曲江区"},{name:"始兴县"}]}
-	        , {name:"深圳",list:[{name:"罗湖区"},{name:"福田区"},{name:"南山区"},{name:"宝安区"},{name:"龙岗区"},{name:"盐田区"}]}
-	        ]}
+	        {name: '北京市'}
 	      ]
 			}
     }

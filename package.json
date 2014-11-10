@@ -23,7 +23,7 @@
   "license": "MIT",
   "readmeFilename": "README.md",
   "dependencies": {
-    "jsdom": "~0.10.4"
+    "jsdom": "~0.10.6"
   },
   "devDependencies": {
     "grunt-contrib-concat": "~0.4.0",
@@ -32,7 +32,7 @@
     "pygmentize-bundled": "~2.1.0",
     "grunt-contrib-watch": "~0.6.1",
     "grunt-browserify": "~2.0.8",
-    "tape": "~2.13.1",
+    "tape": "~3.0.2",
     "jquery": "~1.11.1"
   },
   "testling": {

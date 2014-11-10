@@ -1,6 +1,6 @@
 var test = require('tape');
 var Ant = require('../');
-var $ = require('jquery')(typeof window === 'undefined' ? Ant.doc.createWindow() : window);
+var $ = require('jquery')(typeof window === 'undefined' ? Ant.doc.parentWindow : window);
 
 test('构造函数', function(t) {
   t.equal(typeof Ant, 'function');
