@@ -20,8 +20,7 @@ module.exports = {
       , isSetDefaut = utils.isUndefined(ant.get(cur.$getKeyPath()))//界面的初始值不会覆盖 model 的初始值
       , crlf = /\r\n/g//IE 8 下 textarea 会自动将 \n 换行符换成 \r\n. 需要将其替换回来
       , callback = function(val) {
-          //执行这里的时候, 很可能 render 还未执行. vm.$getData(keyPath) 未定义, 不能返回新设置的值
-          var newVal = (val || vm.$getData(keyPath) || '') + ''
+          var newVal = (val || '') + ''
             , val = el[attr]
             ;
           val && val.replace && (val = val.replace(crlf, '\n'));
@@ -57,8 +56,8 @@ module.exports = {
           case 'radio':
             attr = 'checked';
             if(ie) { ev += ' click'; }
-            callback = function() {
-              el.checked = el.value === vm.$getData(keyPath) + '';
+            callback = function(val) {
+              el.checked = el.value === val + '';
             };
             isSetDefaut = el.checked;
           break;
@@ -84,8 +83,7 @@ module.exports = {
             }
             ant.set(cur.$getKeyPath(), vals, {isBubble: isInit !== true});
           };
-          callback = function(){
-            var vals = vm.$getData(keyPath);
+          callback = function(vals){
             if(vals && vals.length){
               for(var i = 0, l = el.options.length; i < l; i++){
                 el.options[i].selected = vals.indexOf(el.options[i].value) !== -1;
