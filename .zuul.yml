@@ -1,0 +1,22 @@
+ui: tape
+
+browsers:
+  - name: ie
+    version: 6..latest
+  - name: firefox
+    version: 8..latest
+  - name: chrome
+    version: 26..latest
+  - name: safari
+    version: 5..latest
+  - name: opera
+    version: 11..latest
+  - name: iphone
+    version: 4.3..latest
+  - name: ipad
+    version: 4.3..latest
+  - name: android
+    version: 4.0..latest
+
+browserify:
+  - exclude: jsdom

@@ -7,7 +7,8 @@
     "example": "examples"
   },
   "scripts": {
-    "test": "tape test/test*.js"
+    "test": "tape test/test*.js",
+    "test-browser": "zuul -- test"
   },
   "repository": {
     "type": "git",
@@ -26,24 +27,14 @@
     "jsdom": "~0.10.6"
   },
   "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-browserify": "~2.0.8",
     "grunt-contrib-concat": "~0.4.0",
     "grunt-contrib-uglify": "~0.4.0",
-    "grunt": "~0.4.1",
-    "pygmentize-bundled": "~2.1.0",
     "grunt-contrib-watch": "~0.6.1",
-    "grunt-browserify": "~2.0.8",
+    "jquery": "~1.11.1",
+    "pygmentize-bundled": "~2.1.0",
     "tape": "~3.0.2",
-    "jquery": "~1.11.1"
-  },
-  "testling": {
-    "files": "test/test*.js",
-    "browsers": [
-      "ie/6..latest",
-      "chrome/latest",
-      "firefox/latest",
-      "safari/latest",
-      "iphone/5..latest",
-      "android-browser/2..latest"
-    ]
+    "zuul": "^1.16.0"
   }
 }
